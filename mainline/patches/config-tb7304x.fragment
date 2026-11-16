@@ -43,3 +43,10 @@ CONFIG_KEYBOARD_MT6779=y
 CONFIG_KEYBOARD_MTK_PMIC=y
 # Reboot 10 s after a panic (the cmdline has no room for panic=10). Without it a dead init after switch_root hangs forever.
 CONFIG_PANIC_TIMEOUT=10
+# No usermode-helper firmware fallback: the Goodix driver asks for an optional config file that doesn't exist,
+# and the fallback made it wait 60 s before the touchscreen appeared.
+# CONFIG_FW_LOADER_USER_HELPER is not set
+# Boot time (initcall_debug, kernel #16): the RAID6 algorithm benchmark took 612 ms and ftrace's trace_eval_sync
+# 397 ms of the 1.7 s before /init. Nothing here uses RAID6 (it comes in with btrfs) or tracing.
+# CONFIG_RAID6_PQ_BENCHMARK is not set
+# CONFIG_FTRACE is not set

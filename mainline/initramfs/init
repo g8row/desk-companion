@@ -34,28 +34,26 @@ paint() {
 }
 
 # ---- 1. screen ------------------------------------------------------------
-# fbcon (console=tty0 comes from LK's part of the cmdline) clears and redraws fb0, wiping the paint: unbind it.
-for v in /sys/class/vtconsole/vtcon*; do
-	grep -q "frame buffer" $v/name 2>/dev/null && echo 0 > $v/bind
-done
-# LK leaves OVL0 layer 3 on top of the framebuffer with the "orange state" warning. Disabling the layer
-# (SRC_CON bit 3) stalls OVL until reset, so make it transparent instead: constant alpha 0 in L3_CON.
-# Only while LK's OVL0 pipeline is what's on screen (lkfb/simpledrm); mediatek-drm doesn't use OVL0.
-if [ "$(cat /sys/class/graphics/fb0/name 2>/dev/null)" != mediatekdrmfb ] &&
-   [ $(( $(devmem 0x1400702c 32) & 8 )) -ne 0 ]; then
-	devmem 0x14007090 32 $(( $(devmem 0x14007090 32) & ~0xff ))
-	log "OVL0 L3 (LK overlay) alpha set to 0"
-fi
-paint ff0000; sleep 2
-paint 00ff00; sleep 2
-paint 0000ff; sleep 1
-log "paint done (fb0: $([ -e /dev/fb0 ] && echo yes || echo no))"
-# mediatek-drm scans fb0 for real: give the screen back to the kernel console after the paint.
+# With mediatek-drm the kernel console is already on the panel: leave it alone (no colour test, it only cost
+# 1.5 s and flashed the screen). The red/green/blue paint stays as a sign of life for kernels where
+# mediatek-drm did not come up (LK's framebuffer through lkfb/simpledrm or /dev/mem).
 if [ "$(cat /sys/class/graphics/fb0/name 2>/dev/null)" = mediatekdrmfb ]; then
-	for v in /sys/class/vtconsole/vtcon*; do
-		grep -q "frame buffer" $v/name 2>/dev/null && echo 1 > $v/bind
-	done
 	log "display: mediatek-drm, console on screen"
+else
+	# fbcon (console=tty0 comes from LK's part of the cmdline) clears and redraws fb0, wiping the paint: unbind it.
+	for v in /sys/class/vtconsole/vtcon*; do
+		grep -q "frame buffer" $v/name 2>/dev/null && echo 0 > $v/bind
+	done
+	# LK leaves OVL0 layer 3 on top of the framebuffer with the "orange state" warning. Disabling the layer
+	# (SRC_CON bit 3) stalls OVL until reset, so make it transparent instead: constant alpha 0 in L3_CON.
+	if [ $(( $(devmem 0x1400702c 32) & 8 )) -ne 0 ]; then
+		devmem 0x14007090 32 $(( $(devmem 0x14007090 32) & ~0xff ))
+		log "OVL0 L3 (LK overlay) alpha set to 0"
+	fi
+	paint ff0000; usleep 500000
+	paint 00ff00; usleep 500000
+	paint 0000ff; usleep 500000
+	log "paint done (fb0: $([ -e /dev/fb0 ] && echo yes || echo no))"
 fi
 
 # ---- 2. USB gadget --------------------------------------------------------
@@ -103,7 +101,8 @@ gadget_android() {   # MTK 3.18 android_usb (stock kernel control run)
 }
 
 gadget_configfs || gadget_android || log "no USB gadget interface available"
-sleep 2
+# wait (up to 2 s) for the USB network interface instead of a fixed sleep
+i=0; while [ $i -lt 20 ] && ! ip link show usb0 >/dev/null 2>&1 && ! ip link show rndis0 >/dev/null 2>&1; do usleep 100000; i=$((i + 1)); done
 for i in usb0 rndis0; do
 	if ip link show $i >/dev/null 2>&1; then
 		ip addr add 172.16.42.1/24 dev $i; ip link set $i up
@@ -180,6 +179,17 @@ try_rootfs() {
 	mkdir -p /mnt/cache /newroot
 	mount -t ext4 -o rw,noatime,nosuid,nodev "$C" /mnt/cache || { log "stage 2: cannot mount $C"; return 1; }
 	IMG=/mnt/cache/linux/rootfs.img
+	# Rootfs update: a new image dropped in as rootfs.img.gz (from stage 2, scp/ssh) replaces the old one here,
+	# while nothing has it mounted. The old image is deleted first (cache is too small for both).
+	if [ -f $IMG.gz ]; then
+		log "stage 2: installing new rootfs from $IMG.gz"
+		rm -f $IMG $IMG.tmp
+		if gunzip -c $IMG.gz > $IMG.tmp && sync && mv $IMG.tmp $IMG; then
+			rm -f $IMG.gz; echo 0 > /mnt/cache/linux/bootcount; sync; log "stage 2: new rootfs installed"
+		else
+			log "stage 2: rootfs update FAILED"; rm -f $IMG.tmp
+		fi
+	fi
 	[ -f $IMG ] || { log "stage 2: no $IMG"; umount /mnt/cache; return 1; }
 	n=$(cat /mnt/cache/linux/bootcount 2>/dev/null); n=${n:-0}
 	if [ "$n" -ge 2 ]; then

@@ -17,11 +17,11 @@ Research notes (read-only investigations of the stock firmware, mainline tree an
 | Function | Status | How / notes | Next step |
 |---|---|---|---|
 | Boot | ✅ works | `recovery` partition via LK `oem reboot-recovery`. `fb_send.py` because stock `fastboot` stalls. Cmdline ≤ 99 chars. | — |
-| CPU, 4× A53 | ✅ all 4 cores, hotplug | `mediatek,mt6735-smp` enable-method: PSCI CPU_ON + SPM MTCMOS (`patches/smp_mt6735.c`) | cpufreq (ARMPLL + PMIC VPROC); clock currently whatever LK left |
+| CPU, 4× A53 | ✅ all 4 cores, hotplug, cpufreq 637–988 MHz | `mediatek,mt6735-smp` enable-method: PSCI CPU_ON + SPM MTCMOS (`patches/smp_mt6735.c`). cpufreq-dt on ARMPLL + MT6328 VPROC, schedutil; OPPs from the stock MT6737M table (see below) | 1092 MHz needs an ARMPLL post-divider change (FHCTL hopping or a CPU clock mux) |
 | Display | ✅ mediatek-drm | RDMA0 → DSI0 → NT51021B GX (`panel-novatek-nt51021b.c`), D2 mutex table, through the IOMMU. `fb0` = mediatekdrmfb with the kernel console on screen. (A one-off burst of 10 IOMMU faults at boot, before the first framebuffer is attached.) | Full OVL0 path for hardware planes; then GPU |
 | Backlight | ✅ | `pwm-backlight` on DISP_PWM, `/sys/class/backlight/backlight` (0–255, default 200) | — |
 | GPU (Mali-T720 MP1, 450 MHz) | ❌ not enabled | Panfrost supports Midgard T720; needs MFG power domain/clocks, and a KMS display for Mesa | After DRM |
-| Touch | ✅ works | Goodix GT9293, i2c1 @0x5d, `goodix,gt911`, IRQ GPIO10, reset GPIO62, VGP1 2.8 V | Ship the config (`goodix_9293_cfg.bin` wait ~20 s, harmless) |
+| Touch | ✅ works, at 1.0 s | Goodix GT9293, i2c1 @0x5d, `goodix,gt911`, IRQ GPIO10, reset GPIO62, VGP1 2.8 V. `FW_LOADER_USER_HELPER` off: its fallback for the optional `goodix_9293_cfg.bin` delayed the device to 62 s | — |
 | Buttons | ✅ works | Vol± on the SoC keypad (`mt6779-keypad`), Power on `mt6328-keys` | — |
 | USB | ✅ peripheral | Legacy CDC gadget `0525:a4aa` (ECM + ACM), 172.16.42.1, telnet, httpd | Host mode, VBUS/ID detection |
 | eMMC | ✅ probes (50 MHz, unused) | `init` never mounts it | Rootfs (research-rootfs) |
@@ -72,6 +72,27 @@ WEAKBAT unchanged) lasts until the next boot, because LK reprograms the charger 
 
 Bus numbers in stage 2: i2c-0 = i2c1 (touch), i2c-1 = i2c2 (sensors), i2c-2 = i2c3 (charger).
 
+## cpufreq (kernel #16)
+- OPPs in the DTS: 637 / 793 / 858 / 988 MHz at 1.10 / 1.15 / 1.1875 / 1.21875 V, from the stock kernel's MT6737M
+  table (`{kHz, uV/10, uV/10}` triplets at 0xfac558 in the stock Image: 1092 MHz at 1.25 V down to 221 MHz at 0.95 V).
+- All four keep ARMPLL at /2 (VCO 1274–1976 MHz). Mainline changes the PLL in place while the CPU runs from it,
+  so a post-divider change (1092 MHz at /1, < 500 MHz at /4) could glitch: left out.
+- `patches/0005`: the MT6328 regulator table had VPA's vsel register for VPROC (read 0.6 V; the real
+  VPROC_CON11 = 0x58 = 1.15 V at LK's 793 MHz). `patches/0006`: the mt6735 PLLs had no `fmax`, so every
+  `clk_set_rate` became 0 Hz (ARMPLL_CON1 = 0x84000000, CPU at a fraction of its clock while cpufreq said 988 MHz).
+- VSRAM (LDO, 1.35 V from LK) stays above every VPROC level.
+- Full-frame 90° rotate (PocketJS present): 110 ms naive / 19 ms tiled at 793 MHz; 102 / 15.8 / 7.6 ms (NEON) at 988.
+
+## Boot time (power-on to the PocketJS UI)
+| Stage | Before | Kernel #16 |
+|---|---|---|
+| Preloader + LK (`bootprof.pl_t` / `lk_t`) | 4.5 + 9.1 s | same; 5 s of LK is the unlocked "Orange State" warning |
+| Kernel to /init | 1.7 s | 1.7 s (#17 drops the RAID6 benchmark, 612 ms, and ftrace's `trace_eval_sync`, 397 ms) |
+| Stage 1 initramfs | 7.3 s | 0.4 s (no colour test with mediatek-drm, wait for usb0 instead of sleeping) |
+| OpenRC to the kiosk | ~20 s | ~4 s (`mdev -s` was 11.3 s: `/lib/mdev/persistent-storage` on 51 block devices) |
+| Touch | 62 s | 1 s |
+| UI usable | ~77 s | ~20 s |
+
 ## Known issues
 
 ### Display addresses: D2 die
@@ -115,5 +136,5 @@ KP_SEL=0, debounce 0x400 (same as stock), no key bits set.
 6. ~~Display: D2 DT fixes, IOMMU, NT51021B GX panel driver, D2 mutex table, mediatek-drm~~ (done). Next: the OVL0 path (hardware planes).
 7. MT6328 ADC + battery NTC + SM5414 driver with the desk charging policy.
 8. ~~Backlight~~ (done). GPU (Panfrost) next: MFG power domain/clocks, `DRM_PANFROST`, Mesa.
-9. cpufreq.
+9. ~~cpufreq~~ (done, up to 988 MHz). Next: 1092 MHz.
 10. WiFi: investigate CONSYS/WMT feasibility.
