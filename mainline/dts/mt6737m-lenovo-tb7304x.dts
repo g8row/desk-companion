@@ -122,11 +122,18 @@
 
 /*
  * CPU DVFS (cpufreq-dt): ARMPLL straight, VPROC from the MT6328 (patches/0005 fixes its vsel register).
- * Frequencies and voltages: the stock kernel's MT6737M table (1092/988/858/793/637/494/364/221 MHz at
- * 1.25/1.21875/1.1875/1.15/1.10/1.05/1.00/0.95 V, found in the stock Image), without PTP-OD's per-chip
- * undervolt. Only the ARMPLL /2 post-divider range is listed (VCO 1274-1976 MHz): mainline changes the PLL in
- * place, and a post-divider change while the CPU runs from it would glitch (the stock kernel uses FHCTL
- * hopping for that). So no 1092 MHz (needs /1) and nothing below 637 MHz (needs /4).
+ * Voltages from the stock kernel's MT6737M table (1092/988/858/793/637 MHz at 1.25/1.21875/1.1875/1.15/1.10 V,
+ * found in the stock Image), without PTP-OD's per-chip undervolt.
+ *
+ * Performance-only: every OPP is at ARMPLL post-divider /1 (VCO = CPU clock, >= 1 GHz). Measured by poking
+ * ARMPLL_CON1 from userspace (kernel #17): pcw changes are safe at any time; /2 -> /1 with the VCO moved first
+ * (patches/0007) worked; /1 -> /2 hung the SoC; and the PLL ignores pcw writes for a VCO above ~2 GHz, so 1092 MHz
+ * cannot be had at /2. Mainline has no CPU clock mux to park on (the stock kernel switches to MAINPLL around
+ * post-divider changes), so the table never goes back below /1: the only post-divider change is cpufreq's first
+ * switch away from LK's 793 MHz (/2), upwards. The cost is no idle below 1040 MHz.
+ * 1144 and 1196 MHz are overclocks, turbo-mode (boost; rootfs local.d/tb-cpu.start turns it on). 1196 MHz is the
+ * highest pcw the ARMPLL accepted (0xb8000-0xba000; writes above are dropped), and passed 30 s of a 4-core
+ * NEON/scalar cross-check at 1.30 V (kernel #20, poked by hand). +25 / +50 mV over the stock 1.25 V top.
  * VSRAM (LDO, 1.35 V from LK) stays above every VPROC level here.
  */
 / {
@@ -134,25 +141,27 @@
 		compatible = "operating-points-v2";
 		opp-shared;
 
-		opp-637000000 {
-			opp-hz = /bits/ 64 <637000000>;
-			opp-microvolt = <1100000>;
+		opp-1040000000 {
+			opp-hz = /bits/ 64 <1040000000>;
+			opp-microvolt = <1250000>;
 			clock-latency-ns = <50000>;
 		};
-		opp-793000000 {
-			opp-hz = /bits/ 64 <793000000>;
-			opp-microvolt = <1150000>;
+		opp-1092000000 {
+			opp-hz = /bits/ 64 <1092000000>;
+			opp-microvolt = <1250000>;
 			clock-latency-ns = <50000>;
 		};
-		opp-858000000 {
-			opp-hz = /bits/ 64 <858000000>;
-			opp-microvolt = <1187500>;
+		opp-1144000000 {
+			opp-hz = /bits/ 64 <1144000000>;
+			opp-microvolt = <1275000>;
 			clock-latency-ns = <50000>;
+			turbo-mode;
 		};
-		opp-988000000 {
-			opp-hz = /bits/ 64 <988000000>;
-			opp-microvolt = <1218750>;
+		opp-1196000000 {
+			opp-hz = /bits/ 64 <1196000000>;
+			opp-microvolt = <1300000>;
 			clock-latency-ns = <50000>;
+			turbo-mode;
 		};
 	};
 };
@@ -388,4 +397,14 @@
 
 &usb2phy {
 	status = "okay";
+};
+
+/*
+ * Mali-T720 MP1 (Panfrost). Power domain, mfgcfg clock and resets come from mt6735.dtsi; the supply is VCORE1
+ * as on the Galaxy Grand Prime+ (mt6737t-samsung-grandpplte.dts). No OPP table yet: the GPU runs at whatever
+ * mfg_sel LK left.
+ */
+&gpu {
+	status = "okay";
+	mali-supply = <&mt6328_vcore1_reg>;
 };

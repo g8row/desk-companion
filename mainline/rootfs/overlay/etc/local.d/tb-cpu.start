@@ -1,0 +1,5 @@
+#!/bin/sh
+# CPU: allow the boost OPPs (1144 / 1196 MHz overclock, see the DTS). schedutil picks them under load.
+# To stay at stock speeds: echo 0 > /sys/devices/system/cpu/cpufreq/boost (or delete this file).
+B=/sys/devices/system/cpu/cpufreq/boost
+[ -w $B ] && echo 1 > $B && logger -t tb7304 "cpu: boost on, max $(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq) kHz"
