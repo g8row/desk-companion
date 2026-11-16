@@ -213,3 +213,62 @@ Not verified / left alone:
   it causes occasional noisy samples (one CLAUDE run read 9–10 ms, then 3.9).
 - Engine follow-ups (not done, host/APK rebuild): smarter damage fallback than full-screen on an op-count
   change; skip the per-frame paint walk when nothing changed; cheaper present path.
+
+## [deck-rail] deck redesign: rail layout, icons, split pills
+Mockups (bento / rail / quick settings) on a Design canvas; built "rail" with the music row swapped for
+focus, lock | sleep-display and Caffeine.
+- Tablet: `pocketjs/apps/desk/deck.tsx` packs tiles into a 4×3 grid (`w`/`h` spans, dense, first fit);
+  consecutive tiles with one `group` are a split pill (vertical when tall; a full-height one becomes a
+  narrow rail, with the live volume level between its halves). Tiles draw as circle / pill / icon-only.
+  The core has one radius per box, so a pill half = full pill + same-colour cover over its inner end.
+- Icons: `apps/desk/icons/gen.ts` expands 2 px "strokes" into filled shapes (the SVG baker fills only),
+  light + ink tones, 32 px; six also large (48 px drawn on a 64 px canvas — pak textures must be pow2).
+  Bundle 8.3 → 10.1 MB.
+- deskd: tile fields icon/iconOn/w/h/group/fill/shape; `readMacState()` (one osascript: volumes +
+  Caffeine, only asked when running); builtins `caffeine.toggle`, `lock` (⌃⌘Q, needs Accessibility),
+  `display.sleep`; deck refreshes right after a tap; focus.* tiles drive deskd's timer.
+- Studio: icon/size/group/fill/circle fields; deck preview shows the packed 4×3 layout.
+Verified: tablet screenshot `shots/50-deck-rail.png`; Caffeine off/on and focus start/reset through the
+tile path; deskd tests 35 pass. Not verified: real finger taps (another session was driving the tablet,
+and `kiosk/tap.sh` injection did not register), lock and sleep display (would lock this Mac).
+
+## [claude-pane] CLAUDE pane v5: conversation layout
+Replaced the sessions rail, stat cells and tool timeline with the "conversation" layout chosen from
+`deskd/mockups/claude-pane.html`. Session chips sit on top in a stable order. Your last prompt and Claude's
+last reply fill the left column; the reply wraps by estimated Geist widths and scrolls by touch with a
+position bar and a "more ↓" pill. Tap the reply to read it full width. The side card shows the state: what
+it's doing now as a sentence (`$ cmd` for Bash), a permission with the full command and "always allow", a
+question, a plan, or finished with the turn time and edited files.
+- deskd: snapshot gains `prompt`, `reply` (markdown → plain), `now`, `steps`, `ctx`, `took`, `changed`,
+  `question`, `plan` and a per-session `held` request; `claudeTick` gains `held` and `run`.
+- Gate: answers AskUserQuestion (`updatedInput` with `answers` keyed by question text, multi-select
+  joined with ", "), ExitPlanMode (approve echoes the input; "auto-accept edits" adds `setMode`; keep
+  planning = deny), and "always allow" adds a session `addRules` entry. Questions/plans wait 50 s
+  (`claude-gate.sh` curl timeout raised to 58 s).
+- Pager: a shared `gesture.owner` so a vertical scroll never turns into a page swipe.
+- Other panes: the sheet offers "open →" for questions and plans. The toast also shows on CLAUDE when the
+  alert is for another session. A deskd restart no longer fires an empty toast.
+Verified on the tablet with a fake session posted to the hook endpoints: working, scrolled reply, reading
+mode, permission allow and always-allow, a two-question AskUserQuestion answered by taps (hook output had
+the right `answers`), plan approve + auto-accept edits, finished, and the sheet's "open →" on HOME.
+deskd tests 35 pass (`test/conversation.test.ts` new).
+Not verified: real Claude Code sessions answering through the gate. `hooks/claude-gate.sh` is still not
+installed as a PermissionRequest hook in `~/.claude/settings.json`, and Claude Code firing
+PermissionRequest for AskUserQuestion is implied by the docs but not stated. Without the gate, questions and
+plans show read-only with "answer on laptop".
+- Later: installed `hooks/claude-gate.sh` as a PermissionRequest hook (matcher `*`, timeout 60 s) in
+  `~/.claude/settings.json` (backup: `settings.json.bak-desk-gate`) and made it executable (it wasn't).
+  Ran the script by hand with a Bash request; a tap on the tablet returned the allow JSON.
+
+## [mainline] 2026-11-16 11:00–11:45 — fastboot `download:` stalls from the Mac
+- `fastboot boot` never reached the boot command: the upload stalls in "Sending", and LK then stops answering
+  until the tablet is rebooted (hold Power ~15 s; replugging USB does not help, the battery keeps LK alive).
+- Even a 4 KB `fastboot stage` stalls. Same on a USB 3 port, through a USB 2 hub, and with deskd and the adb
+  server stopped. `getvar` always works. Nothing was flashed.
+- LK's `download:` handler (0x41e222bc in lk.bin) is standard: size parse, battery > 3.5 V check
+  ("low power, need battery charging"), screen clear, `DATA%08x`, "USB Transferring..." on screen, 16 KB
+  `usb_read` chunks (0x41e20904), "USB Transmission OK", `OKAY`. Nothing explains a stall.
+- Next: test from a Linux host — `mainline/scripts/linux-test.sh` (images in GitHub release `mainline-test-1`),
+  and `scripts/analysis/fb_probe.py` (raw pyusb probe, shows which protocol phase stalls).
+- Fallback that avoids fastboot entirely: write `recovery` from rooted Android (`su -c dd`), then
+  `adb reboot recovery`.

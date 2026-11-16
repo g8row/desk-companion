@@ -24,6 +24,15 @@ If step 1 fails as expected, the only way to run these images without touching `
 (recovery only). `boot` (Magisk + Android) is never touched, and stock recovery is backed up in
 `../backup/partitions/recovery.bin` (16 MiB raw). **Get the user's OK before step 3.**
 
+## Update 2026-11-16: fastboot uploads stall from the Mac
+
+Every `download:` stalls (even 4 KB), so `fastboot boot` and `fastboot flash` both fail from the Mac, on a USB 3
+port and through a USB 2 hub. After a stall LK stops answering until the tablet is rebooted (hold Power ~15 s).
+To test from Linux: `mainline/scripts/linux-test.sh fetch`, then `probe`, `uploads`, `boot` (each command has a
+timeout; see the script header). The boot images are in the GitHub release `mainline-test-1`.
+If Linux stalls too, write `recovery` from rooted Android instead: `adb push` the image, `su -c dd` it to the
+recovery partition, check its checksum, `adb reboot recovery`.
+
 ## 0. Before you start
 
 - **Battery above 50 %**, USB cable to the Mac. The mainline kernel has **no charger driver** (SM5414),
