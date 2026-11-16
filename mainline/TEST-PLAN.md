@@ -30,6 +30,8 @@ Every `download:` stalls (even 4 KB), so `fastboot boot` and `fastboot flash` bo
 port and through a USB 2 hub. After a stall LK stops answering until the tablet is rebooted (hold Power ~15 s).
 To test from Linux: `mainline/scripts/linux-test.sh fetch`, then `probe`, `uploads`, `boot` (each command has a
 timeout; see the script header). The boot images are in the GitHub release `mainline-test-1`.
+Stock `recovery.bin` (for the restore step) and the other non-identifying dumps are in the release `stock-partitions-1`:
+`gh release download stock-partitions-1 -R g8row/desk-companion -p recovery.bin -p SHA256SUMS -D backup/partitions`.
 If Linux stalls too, write `recovery` from rooted Android instead: `adb push` the image, `su -c dd` it to the
 recovery partition, check its checksum, `adb reboot recovery`.
 
