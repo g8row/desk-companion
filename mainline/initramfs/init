@@ -153,6 +153,43 @@ ls /www > /dev/null
 log "ready: serial on ttyGS0, telnet/http on 172.16.42.1"
 dmesg | grep -i -E 'lkfb|simple|musb|udc|mmc0|wdt|watchdog' > /dev/tty0 2>/dev/null
 
+# ---- 3c. stage 2: Alpine in /cache/linux/rootfs.img (docs/mainline/research-rootfs.md) ----------------
+# tb.r=0 on the cmdline, or 2 failed tries in a row (bootcount, reset by stage 2 after 60 s), keep us here.
+# Only the cache partition is ever mounted read-write. Any failure before switch_root falls through to the
+# initramfs shell below, with telnet/http still running.
+ROOTMODE=auto
+for a in $(cat /proc/cmdline); do case "$a" in tb.r=*) ROOTMODE=${a#tb.r=} ;; esac; done
+find_part() {
+	for d in /sys/class/block/mmcblk0p*; do
+		grep -qx "PARTNAME=$1" $d/uevent 2>/dev/null && { echo /dev/${d##*/}; return 0; }
+	done
+	return 1
+}
+try_rootfs() {
+	[ "$ROOTMODE" = 0 ] && { log "stage 2 off (tb.r=0)"; return 1; }
+	C=$(find_part cache) || { log "stage 2: no cache partition"; return 1; }
+	mkdir -p /mnt/cache /newroot
+	mount -t ext4 -o rw,noatime,nosuid,nodev "$C" /mnt/cache || { log "stage 2: cannot mount $C"; return 1; }
+	IMG=/mnt/cache/linux/rootfs.img
+	[ -f $IMG ] || { log "stage 2: no $IMG"; umount /mnt/cache; return 1; }
+	n=$(cat /mnt/cache/linux/bootcount 2>/dev/null); n=${n:-0}
+	if [ "$n" -ge 2 ]; then
+		log "stage 2 failed $n times in a row, staying in the initramfs (echo 0 > /mnt/cache/linux/bootcount)"
+		return 1    # leave cache mounted for inspection
+	fi
+	echo $((n + 1)) > /mnt/cache/linux/bootcount; sync
+	mount -t ext4 -o loop,rw,noatime $IMG /newroot || { log "stage 2: cannot mount $IMG"; umount /mnt/cache; return 1; }
+	[ -x /newroot/sbin/init ] || { log "stage 2: no /sbin/init in $IMG"; umount /newroot /mnt/cache; return 1; }
+	log "stage 2: switch_root to $IMG (try $((n + 1)))"
+	cp $LOG /newroot/var/log/tb7304-stage1.log 2>/dev/null
+	# we are PID 1: kill -1 hits every other user process (telnetd, httpd, the status/display loops)
+	kill -9 -1 2>/dev/null; sleep 1
+	mkdir -p /newroot/mnt/cache && mount --move /mnt/cache /newroot/mnt/cache
+	for m in dev proc sys; do mount --move /$m /newroot/$m; done
+	exec switch_root /newroot /sbin/init
+}
+try_rootfs
+
 # ---- 4. self-reboot back to Android ---------------------------------------
 t=0
 while true; do

@@ -1,0 +1,8 @@
+auto lo
+iface lo inet loopback
+
+# USB ethernet (legacy CDC gadget, exists from kernel boot). The host side is a static 172.16.42.2.
+auto usb0
+iface usb0 inet static
+	address 172.16.42.1
+	netmask 255.255.255.0

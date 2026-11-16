@@ -39,3 +39,5 @@ CONFIG_INPUT_TOUCHSCREEN=y
 CONFIG_TOUCHSCREEN_GOODIX=y
 CONFIG_KEYBOARD_MT6779=y
 CONFIG_KEYBOARD_MTK_PMIC=y
+# Reboot 10 s after a panic (the cmdline has no room for panic=10). Without it a dead init after switch_root hangs forever.
+CONFIG_PANIC_TIMEOUT=10

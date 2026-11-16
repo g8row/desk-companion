@@ -10,6 +10,13 @@
 #   mainline/scripts/linux-test.sh flash [image]  # tablet in fastboot: WRITES the recovery partition (fb_send.py, pyusb)
 #   mainline/scripts/linux-test.sh run            # tablet in fastboot: `oem reboot-recovery` (boots what `flash` wrote)
 #   mainline/scripts/linux-test.sh shell          # wait for the mainline gadget, cancel the auto-reboot (mlsh.py wait)
+#   mainline/scripts/linux-test.sh to-fastboot    # Android -> LK fastboot, safely (see below)
+#   mainline/scripts/linux-test.sh to-recovery    # Android -> recovery (= mainline once flashed), safely
+#
+# ALWAYS leave Android with to-fastboot / to-recovery, never a bare `adb reboot ...`: Magisk counts every boot that
+# does not reach sys.boot_completed and enters safe mode after 2 (all modules disabled). Without tb7304x_strip,
+# system_server crashes in PackageManagerService, so the tablet then boot-loops for good. adb answers long before
+# boot completes. These commands wait for boot_completed, then reset Magisk's counter anyway, then reboot.
 #
 # Only `flash` writes flash. After a stall LK is wedged until the tablet reboots (hold Power ~15 s).
 # Stop any adb server first (`adb kill-server`), and nothing else should poll USB.
@@ -18,6 +25,20 @@ cd "$(dirname "$0")/../.."          # repo root
 REL=mainline-test-1
 OUT=mainline/out
 T() { local s=$1; shift; timeout -k 2 "$s" "$@"; local r=$?; [ $r = 124 ] && echo "*** TIMEOUT after ${s}s: $*"; return $r; }
+
+# Wait for Android to finish booting, zero Magisk's boot-loop counter, then `adb reboot $1`.
+adb_leave_android() {
+  local b= i
+  T 180 adb wait-for-device || return 1
+  for i in $(seq 1 60); do
+    b=$(T 10 adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r'); [ "$b" = 1 ] && break; sleep 5
+  done
+  [ "$b" = 1 ] || echo "!! Android did not finish booting (boot loop?); resetting Magisk's counter anyway"
+  T 20 adb shell "su -c \"magisk --sqlite \\\"UPDATE settings SET value=0 WHERE key='bootloop'\\\"\"" ||
+    echo "!! could not reset Magisk's bootloop counter"
+  T 20 adb shell "su -c \"magisk --sqlite 'SELECT value FROM settings WHERE key=\\\"bootloop\\\"'\"" 
+  T 20 adb reboot "$1"
+}
 
 ping() { echo "== ping"; T 5 fastboot getvar version 2>&1; }
 
@@ -52,5 +73,7 @@ run)
   T 20 "${PY:-python3}" -I mainline/scripts/analysis/fb_send.py - "oem reboot-recovery" ;;
 shell)
   T 250 python3 -I mainline/scripts/mlsh.py wait ;;
-*) sed -n 2,16p "$0"; exit 1 ;;
+to-fastboot|to-recovery)
+  adb_leave_android "$( [ "$1" = to-fastboot ] && echo bootloader || echo recovery )" ;;
+*) sed -n 2,24p "$0"; exit 1 ;;
 esac

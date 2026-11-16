@@ -16,7 +16,13 @@ tags 0x4e000000, cmdline starting with `bootopt=64S3,32N2,64N2`.
 This flow is tested and boots mainline. Run each device step on its own, and check the result before the next one.
 `PY` is a Python with pyusb installed. Don't run an adb server while fastboot is in use.
 
-1. Android to fastboot: `adb reboot bootloader`. The tablet shows up as `0bb4:0c01`.
+1. Android to fastboot: `mainline/scripts/linux-test.sh to-fastboot` (or `to-recovery` to boot what is already
+   flashed). The tablet shows up as `0bb4:0c01`. **Never use a bare `adb reboot ...` from Android.** Magisk counts
+   every boot that doesn't reach `sys.boot_completed`, and after 2 it enters safe mode, which disables all modules.
+   Without `tb7304x_strip`, Android then boot-loops (system_server NPE in PackageManagerService). adb comes up long
+   before boot completes. The helper waits for boot completion and resets Magisk's counter. To recover by hand, in
+   the looping Android: `su -c "magisk --sqlite \"UPDATE settings SET value=0 WHERE key='bootloop'\""`, then
+   `rm /data/adb/modules/*/disable` and reboot.
 2. Flash: `$PY -I mainline/scripts/analysis/fb_send.py mainline/out/boot-mainline.img flash:recovery`.
    Stock `fastboot flash` stalls; `fb_send.py` doesn't.
 3. Boot it: `$PY -I mainline/scripts/analysis/fb_send.py - "oem reboot-recovery"`.
@@ -27,6 +33,25 @@ This flow is tested and boots mainline. Run each device step on its own, and che
 5. Back to Android: `mlsh.py 'echo 1 > /proc/sys/kernel/sysrq; echo b > /proc/sysrq-trigger'`. `reboot -f` can hang.
 
 `mainline/scripts/linux-test.sh flash|run|shell` wraps steps 2–4.
+
+### Stage 2: Alpine on the eMMC
+- **Build:** `sh mainline/rootfs/build-rootfs.sh ~/.ssh/id_ed25519.pub` makes `mainline/rootfs/out/rootfs.img`.
+  It needs Docker and no qemu.
+- **Install** from a fully booted Android. Only `cache` is touched.
+  1. Push the image: `gzip -k rootfs.img; adb push rootfs.img.gz /data/local/tmp/`.
+  2. Unpack it into place and reset the boot counter:
+     `adb shell su -c "mkdir -p /cache/linux; /data/adb/magisk/busybox gunzip -c /data/local/tmp/rootfs.img.gz > /cache/linux/rootfs.img; echo 0 > /cache/linux/bootcount"`
+  3. Compare the sha256 with `rootfs.img.sha256`.
+- **Boot:** stage 1 (`init`) loop-mounts the image and runs `switch_root`. `mlsh.py` (telnet) keeps working, or use
+  `ssh root@172.16.42.1` (key only). Stage 2 keeps the 300 s auto-reboot unless `/tmp/stay` exists, and marks the
+  boot good after 60 s.
+- **Fallback:**
+  - After 2 boots in a row that don't reach 60 s, stage 1 stays in the initramfs. Reset with
+    `echo 0 > /mnt/cache/linux/bootcount`.
+  - `tb.r=0` on the cmdline turns stage 2 off.
+  - From Android: `rm /cache/linux/rootfs.img`.
+- **devmem in stage 2:** Alpine's busybox has no `devmem`. Copy the stage-1 busybox (`/opt/arm64/usr/bin/busybox` in
+  the build image) to `/usr/local/bin/bbdeb` and symlink `devmem` to it.
 
 ## Important: `fastboot boot` is probably NOT available
 

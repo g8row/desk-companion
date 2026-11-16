@@ -1,0 +1,7 @@
+# TB-7304X stage 2 (Alpine). Started by the initramfs (stage 1) via switch_root.
+::sysinit:/sbin/openrc sysinit
+::sysinit:/sbin/openrc boot
+::wait:/sbin/openrc default
+ttyGS0::respawn:/sbin/getty -L 115200 ttyGS0 vt100
+::ctrlaltdel:/sbin/reboot
+::shutdown:/sbin/openrc shutdown
