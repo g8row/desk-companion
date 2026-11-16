@@ -1,0 +1,11 @@
+#!/bin/sh
+# Desk charging policy until there is a real SM5414 driver (docs/mainline/STATUS.md):
+# LK programs CV 4.35 V / 700 mA with the safety timer off on every boot; for a tablet that stays plugged in,
+# hold the battery at 4.10 V (~80 %) and charge at 500 mA. Lasts until the next boot (LK re-inits the charger).
+B=$(basename "$(ls -d /sys/bus/platform/devices/1100f000.i2c/i2c-* 2>/dev/null | head -n1)")
+n=${B#i2c-}
+[ -n "$n" ] || { logger -t tb7304 "charger: i2c3 not found"; exit 0; }
+r0b=$(i2cget -y "$n" 0x49 0x0b b) || { logger -t tb7304 "charger: SM5414 not answering"; exit 0; }
+i2cset -y "$n" 0x49 0x0b $(( r0b & 0x0f ))      # BATREG = 0 -> 4.100 V, keep WEAKBAT
+i2cset -y "$n" 0x49 0x0a 0x08                   # FASTCHG = 100 + 8*50 = 500 mA
+logger -t tb7304 "charger: CV 4.10 V, 500 mA (0x0b $r0b -> $(i2cget -y "$n" 0x49 0x0b b), 0x0a $(i2cget -y "$n" 0x49 0x0a b))"
