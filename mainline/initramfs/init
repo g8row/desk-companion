@@ -1,0 +1,138 @@
+#!/bin/busybox sh
+# TB-7304X sign-of-life initramfs. Works on the mainline kernel and on the stock 3.18 kernel.
+#  - paints the screen red -> green -> blue (fb0, else /dev/mem at LK's fb_base)
+#  - USB gadget: CDC-ACM serial shell + CDC-ECM ethernet 172.16.42.1 (telnet, http with dmesg)
+#  - self-reboots after tb.autoreboot=<s> seconds (default 300) unless /tmp/stay exists,
+#    so the tablet returns to Android with nobody touching it.
+/bin/busybox mkdir -p /bin /sbin /usr/bin /usr/sbin /proc /sys /dev /tmp /run /www
+/bin/busybox --install -s
+export PATH=/bin:/sbin:/usr/bin:/usr/sbin
+
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t devtmpfs devtmpfs /dev 2>/dev/null || { mount -t tmpfs tmpfs /dev; mdev -s; }
+mkdir -p /dev/pts && mount -t devpts devpts /dev/pts
+mount -t tmpfs tmpfs /tmp
+mount -t configfs configfs /sys/kernel/config 2>/dev/null
+mount -t pstore pstore /sys/fs/pstore 2>/dev/null
+[ -e /dev/fb0 ] || { [ -e /dev/graphics/fb0 ] && ln -s /dev/graphics/fb0 /dev/fb0; }
+
+LOG=/www/init.log
+log() { echo "[tb7304] $*" > /dev/kmsg; echo "[tb7304] $*" >> $LOG; echo "[tb7304] $*" > /dev/tty0 2>/dev/null; }
+
+AUTOREBOOT=300
+for a in $(cat /proc/cmdline); do
+	case "$a" in tb.autoreboot=*) AUTOREBOOT=${a#tb.autoreboot=} ;; esac
+done
+log "init up, kernel $(uname -r), autoreboot=${AUTOREBOOT}s"
+log "cmdline: $(cat /proc/cmdline)"
+lkpaint info >> $LOG 2>&1
+
+paint() {
+	if [ -e /dev/fb0 ]; then lkpaint fb "$1" >> $LOG 2>&1 && return; fi
+	lkpaint mem "$1" >> $LOG 2>&1
+}
+
+# ---- 1. screen ------------------------------------------------------------
+paint ff0000; sleep 2
+paint 00ff00; sleep 2
+paint 0000ff; sleep 1
+log "paint done (fb0: $([ -e /dev/fb0 ] && echo yes || echo no))"
+
+# ---- 2. USB gadget --------------------------------------------------------
+gadget_configfs() {
+	G=/sys/kernel/config/usb_gadget/g1
+	[ -d /sys/kernel/config/usb_gadget ] || return 1
+	UDC=$(ls /sys/class/udc 2>/dev/null | head -n1)
+	[ -n "$UDC" ] || { log "no UDC in /sys/class/udc"; return 1; }
+	mkdir -p $G && cd $G || return 1
+	echo 0x1d6b > idVendor        # Linux Foundation
+	echo 0x0104 > idProduct       # Multifunction Composite Gadget
+	echo 0x0200 > bcdUSB
+	echo 0xEF > bDeviceClass; echo 0x02 > bDeviceSubClass; echo 0x01 > bDeviceProtocol
+	mkdir -p strings/0x409
+	echo "TB7304X-mainline" > strings/0x409/serialnumber
+	echo "Lenovo (test)" > strings/0x409/manufacturer
+	echo "TB-7304X mainline $(uname -r)" > strings/0x409/product
+	mkdir -p configs/c.1/strings/0x409
+	echo "ACM+ECM" > configs/c.1/strings/0x409/configuration
+	echo 250 > configs/c.1/MaxPower
+	mkdir -p functions/acm.usb0 && ln -s functions/acm.usb0 configs/c.1/
+	if mkdir -p functions/ecm.usb0 2>/dev/null; then
+		echo 02:00:00:73:04:01 > functions/ecm.usb0/host_addr
+		echo 02:00:00:73:04:02 > functions/ecm.usb0/dev_addr
+		ln -s functions/ecm.usb0 configs/c.1/
+	fi
+	echo "$UDC" > UDC
+	cd /
+	log "configfs gadget bound to $UDC"
+}
+
+gadget_android() {   # MTK 3.18 android_usb (stock kernel control run)
+	A=/sys/class/android_usb/android0
+	[ -d $A ] || return 1
+	echo 0 > $A/enable
+	echo 1d6b > $A/idVendor
+	echo 0104 > $A/idProduct
+	echo "Lenovo (test)" > $A/iManufacturer
+	echo "TB-7304X stock-kernel initramfs" > $A/iProduct
+	echo TB7304X-stock > $A/iSerial
+	echo acm,rndis > $A/functions 2>/dev/null || echo acm > $A/functions
+	[ -e $A/f_rndis/ethaddr ] && echo 02:00:00:73:04:01 > $A/f_rndis/ethaddr
+	echo 1 > $A/enable
+	log "android_usb gadget enabled: $(cat $A/functions)"
+}
+
+gadget_configfs || gadget_android || log "no USB gadget interface available"
+sleep 2
+for i in usb0 rndis0; do
+	if ip link show $i >/dev/null 2>&1; then
+		ip addr add 172.16.42.1/24 dev $i; ip link set $i up
+		log "net $i = 172.16.42.1"
+		cat > /tmp/udhcpd.conf <<EOF
+start 172.16.42.2
+end 172.16.42.2
+interface $i
+option subnet 255.255.255.0
+max_leases 1
+lease_file /tmp/udhcpd.leases
+EOF
+		touch /tmp/udhcpd.leases; udhcpd /tmp/udhcpd.conf
+	fi
+done
+telnetd -l /bin/sh -p 23
+httpd -h /www -p 80
+
+# serial shell on the ACM port (ttyGS0 on both kernels)
+( while true; do
+	[ -e /dev/ttyGS0 ] && setsid sh -c 'exec /bin/sh -i </dev/ttyGS0 >/dev/ttyGS0 2>&1'
+	sleep 1
+done ) &
+
+# ---- 3. status for the Mac (http://172.16.42.1/) --------------------------
+( while true; do
+	dmesg > /www/dmesg.txt
+	{ echo "== uname"; uname -a; echo "== cpuinfo"; cat /proc/cpuinfo; echo "== meminfo"; head -5 /proc/meminfo
+	  echo "== iomem"; cat /proc/iomem; echo "== partitions"; cat /proc/partitions
+	  echo "== udc"; ls /sys/class/udc; echo "== fb"; cat /sys/class/graphics/fb0/name 2>/dev/null
+	  echo "== pstore"; ls /sys/fs/pstore 2>/dev/null; } > /www/status.txt 2>&1
+	sleep 5
+done ) &
+ls /www > /dev/null
+log "ready: serial on ttyGS0, telnet/http on 172.16.42.1"
+dmesg | grep -i -E 'lkfb|simple|musb|udc|mmc0|wdt|watchdog' > /dev/tty0 2>/dev/null
+
+# ---- 4. self-reboot back to Android ---------------------------------------
+t=0
+while true; do
+	sleep 5; t=$((t + 5))
+	if [ -e /tmp/stay ]; then continue; fi
+	if [ "$AUTOREBOOT" -gt 0 ] && [ $t -ge "$AUTOREBOOT" ]; then
+		log "autoreboot after ${t}s"
+		sync
+		# fallback first: open the watchdog and never pet it (resets in ~10-30 s if reboot hangs)
+		( exec 3>/dev/watchdog; sleep 600 ) 2>/dev/null &
+		sleep 1
+		reboot -f
+	fi
+done

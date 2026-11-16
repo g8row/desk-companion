@@ -1,0 +1,296 @@
+<title>Claude Pane Redesign</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a column of 1024×600 tablet screens scaled to fit, each with a short verdict beside it.
+   Single dark theme on purpose: the tablet only runs dark. Tokens mirror deskd/ui/style.css. */
+:root{
+  --ground:#070707;--bg:#0a0a0a;--c1:#141414;--c2:#1d1d1d;
+  --line:#222;--line2:#363636;--mute:#8a8a8a;--soft:#b3b3b3;--fg:#ededed;--hi:#fff;
+  --accent:#a8c7fa;--accent-dim:rgba(168,199,250,.12);--on-accent:#0b1d33;
+  --warn:#f5c26b;--warn-dim:rgba(245,194,107,.13);--ok:#9fd8a8;--ok-dim:rgba(159,216,168,.12);
+  --t-read:#6f8fbf;--t-edit:#c79bf0;--t-bash:#f5c26b;--t-web:#7fd3c8;--t-other:#555;
+  --sans:"Geist",ui-sans-serif,system-ui,-apple-system,sans-serif;
+  --mono:"Geist Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  color-scheme:dark;
+}
+html,body{background:var(--ground);color:var(--fg)}
+body{font:400 15px/1.55 var(--sans);-webkit-font-smoothing:antialiased;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:32px 64px}
+.wrap{max-width:1180px;margin:0 auto;display:grid;gap:56px}
+header h1{font-weight:400;font-size:clamp(30px,4vw,44px);letter-spacing:-.035em;margin:0;text-wrap:balance}
+header p{color:var(--soft);max-width:68ch;margin:10px 0 0}
+.eyebrow{font:500 12px var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--mute)}
+.cut{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.cut span{font:12.5px var(--mono);color:var(--mute);border:1px dashed var(--line2);border-radius:999px;padding:4px 10px}
+.cut span s{color:var(--soft)}
+
+.opt{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:24px;align-items:start}
+@media (max-width:860px){.opt{grid-template-columns:minmax(0,1fr)}}
+.opt h2{font-weight:400;font-size:26px;letter-spacing:-.03em;margin:4px 0 8px}
+.opt .note{color:var(--soft);font-size:14.5px;display:grid;gap:10px;min-width:0}
+.opt .note ul{margin:0;padding-left:18px;display:grid;gap:4px}
+.opt .note b{color:var(--fg);font-weight:500}
+.tag{display:inline-block;font:12px var(--mono);color:var(--accent);background:var(--accent-dim);border-radius:999px;padding:3px 10px}
+
+/* scaled tablet frame */
+.dev{position:relative;width:100%;aspect-ratio:1024/600;border-radius:14px;overflow:hidden;border:1px solid var(--line2);box-shadow:0 0 0 6px #111,0 0 0 7px #2a2a2a;background:var(--bg)}
+.scr{position:absolute;left:0;top:0;width:1024px;height:600px;transform-origin:0 0;background:var(--bg);display:flex;flex-direction:column;overflow:hidden}
+.nav{display:grid;grid-template-columns:repeat(8,1fr);border-bottom:1px solid var(--line);height:56px;flex:none}
+.nav span{display:grid;place-items:center;font:20px var(--mono);letter-spacing:.02em;color:var(--mute);border-right:1px solid var(--line);position:relative}
+.nav span.on{color:var(--hi);background:var(--c1)}
+.nav span.on::after{content:"";position:absolute;bottom:4px;width:32px;height:3px;border-radius:2px;background:var(--accent)}
+.nav span .b{position:absolute;top:10px;right:14px;width:9px;height:9px;border-radius:2px;background:var(--warn)}
+.body{flex:1;min-height:0;position:relative}
+.mono{font-family:var(--mono)}
+.pill{font:500 20px var(--sans);border-radius:999px;padding:13px 26px;border:1px solid var(--line2);color:var(--fg);background:transparent;white-space:nowrap}
+.pill.p{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.pill.sm{font-size:17px;padding:9px 18px}
+.sq{display:inline-block;width:12px;height:12px;border-radius:3px;flex:none}
+.s-work{background:var(--accent)}.s-wait{background:var(--warn)}.s-done{background:var(--ok)}.s-idle{background:#444}
+@keyframes pulse{50%{opacity:.35}}
+.s-work.live{animation:pulse 1.4s infinite}
+@media (prefers-reduced-motion:reduce){.s-work.live{animation:none}}
+.meter{height:6px;border-radius:3px;background:var(--c2);overflow:hidden}
+.meter i{display:block;height:100%;background:var(--accent);border-radius:3px}
+
+/* ---------- A: conversation ---------- */
+.A .chips{display:flex;gap:10px;padding:16px 24px 0}
+.A .chip{display:flex;align-items:center;gap:10px;font:19px var(--sans);padding:9px 18px;border-radius:999px;border:1px solid var(--line2);color:var(--soft)}
+.A .chip.on{background:var(--c2);color:var(--hi);border-color:#4a4a4a}
+.A .chip.wait{border-color:var(--warn);color:var(--warn)}
+.A .grid{display:grid;grid-template-columns:1fr 330px;gap:28px;padding:22px 24px 0;height:calc(100% - 140px)}
+.A .ask{font:18px var(--mono);color:var(--mute);margin-bottom:14px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.A .ask b{color:var(--accent);font-weight:400}
+.A .reply{font:300 27px/1.42 var(--sans);color:var(--fg);letter-spacing:-.01em;display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden}
+.A .now{background:var(--c1);border:1px solid var(--line);border-radius:22px;padding:20px 22px;display:flex;flex-direction:column;gap:14px}
+.A .now .k{font:15px var(--mono);color:var(--mute);letter-spacing:.06em;text-transform:uppercase}
+.A .now .act{font:400 23px/1.3 var(--sans);color:var(--hi)}
+.A .now .act small{display:block;font:17px var(--mono);color:var(--accent);margin-top:6px}
+.A .steps{font:16.5px/1.75 var(--mono);color:var(--mute)}
+.A .steps div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.A .ctx{margin-top:auto;display:grid;gap:8px;font:16px var(--mono);color:var(--mute)}
+.A .ctx span{display:flex;justify-content:space-between}
+.A .bar{position:absolute;left:24px;right:24px;bottom:18px;display:flex;gap:12px;align-items:center}
+.A .bar .meta{margin-left:auto;font:16px var(--mono);color:var(--mute)}
+
+/* ---------- B: wall ---------- */
+.B .cols{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);height:100%}
+.B .col{background:var(--bg);padding:20px 22px 20px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.B .col.wait{background:linear-gradient(var(--warn-dim),transparent 60%),var(--bg)}
+.B .st{display:flex;align-items:center;gap:10px;font:16px var(--mono);letter-spacing:.07em;text-transform:uppercase}
+.B .st.work{color:var(--accent)}.B .st.wait{color:var(--warn)}.B .st.done{color:var(--ok)}
+.B .st em{margin-left:auto;font-style:normal;color:var(--mute);letter-spacing:0;text-transform:none}
+.B .name{font:400 32px var(--sans);letter-spacing:-.03em;color:var(--hi);line-height:1}
+.B .doing{font:400 22px/1.32 var(--sans);color:var(--fg)}
+.B .reply{font:300 19px/1.45 var(--sans);color:var(--soft);display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden}
+.B .foot{margin-top:auto;display:grid;gap:10px}
+.B .foot .m{display:flex;justify-content:space-between;font:15px var(--mono);color:var(--mute)}
+.B .row{display:flex;gap:10px}
+.B .row .pill{flex:1;text-align:center;padding:12px 0}
+
+/* ---------- C: now ---------- */
+.C .body{display:grid;grid-template-columns:84px 1fr}
+.C .rail{border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;gap:14px;padding-top:20px}
+.C .rail .r{width:56px;height:56px;border-radius:16px;display:grid;place-items:center;font:500 22px var(--mono);color:var(--soft);border:1px solid var(--line2);position:relative}
+.C .rail .r.on{background:var(--c2);color:var(--hi);border-color:#4a4a4a}
+.C .rail .r .sq{position:absolute;top:-4px;right:-4px;width:14px;height:14px;border:2px solid var(--bg);box-sizing:content-box}
+.C .main{padding:22px 30px 18px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.C .top{display:flex;align-items:baseline;gap:16px;font:17px var(--mono);color:var(--mute)}
+.C .top b{font:400 22px var(--sans);color:var(--soft)}
+.C .top .r{margin-left:auto}
+.C .hero{font:300 50px/1.08 var(--sans);letter-spacing:-.035em;color:var(--hi);text-wrap:balance}
+.C .hero small{display:block;font:400 19px var(--mono);letter-spacing:0;color:var(--accent);margin-top:10px}
+.C .strip{display:flex;gap:3px;height:34px;align-items:stretch}
+.C .strip i{border-radius:4px;min-width:6px}
+.C .strip i.live{outline:2px solid var(--hi);outline-offset:2px}
+.C .legend{display:flex;gap:18px;font:15px var(--mono);color:var(--mute);margin-top:-6px}
+.C .legend span{display:flex;align-items:center;gap:7px}
+.C .said{border-top:1px solid var(--line);padding-top:14px;font:300 21px/1.45 var(--sans);color:var(--soft);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.C .said b{font:400 15px var(--mono);color:var(--mute);letter-spacing:.06em;text-transform:uppercase;margin-right:10px}
+.C .bar{margin-top:auto;display:flex;gap:12px;align-items:center}
+.C .bar .ctx{margin-left:auto;width:220px;display:grid;gap:6px;font:15px var(--mono);color:var(--mute)}
+
+/* ---------- D: inbox ---------- */
+.D .body{padding:14px 24px 0;display:flex;flex-direction:column;gap:12px}
+.D .sec{font:15px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--mute);display:flex;align-items:center;gap:10px}
+.D .card{border-radius:22px;border:1px solid var(--line);background:var(--c1);padding:16px 20px;display:grid;grid-template-columns:1fr auto;gap:8px 20px;align-items:center}
+.D .card.wait{border-color:rgba(245,194,107,.5);background:linear-gradient(90deg,var(--warn-dim),var(--c1) 70%)}
+.D .who{font:16px var(--mono);color:var(--mute)}
+.D .who b{color:var(--fg);font-weight:500;font-family:var(--sans);font-size:19px;margin-right:8px}
+.D .q{font:400 27px/1.2 var(--sans);color:var(--hi);letter-spacing:-.02em}
+.D .q small{font:18px var(--mono);color:var(--soft);margin-left:10px;letter-spacing:0}
+.D .txt{font:300 20px/1.42 var(--sans);color:var(--fg);grid-column:1/-1;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.D .acts{display:flex;gap:10px;grid-row:1/3;grid-column:2}
+.D .line{display:flex;align-items:center;gap:14px;padding:12px 6px;border-bottom:1px solid var(--line);font:19px var(--sans)}
+.D .line .n{width:150px;color:var(--fg)}
+.D .line .a{flex:1;color:var(--soft);font-family:var(--mono);font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.D .line .t{font:16px var(--mono);color:var(--mute)}
+.D .line .meter{width:90px}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">deskd · claude pane · 1024×600</div>
+  <h1>Four ways to make the Claude pane worth looking at</h1>
+  <p>Same sample data in each: <b>lenovo-tab</b> working, <b>desk-demo</b> waiting on a Bash permission, <b>deskd</b> just finished. Every option drops the same clutter from the main view. Token totals belong on PULSE, and the raw tool log can stay one tap away.</p>
+  <div class="cut">
+    <span><s>sessions sidebar</s> → chips, rail or columns</span>
+    <span><s>in / out 44.9m / 132k</s> → PULSE</span>
+    <span><s>tools 35 · Bash 16 · Read…</s> → gone</span>
+    <span><s>~/lenovo-tab · up 6m · 0 agents</s> → one small meta line</span>
+    <span><s>text timeline with ~4.6s</s> → plain sentence or colour strip</span>
+    <span><s>timeline / prompts / reply tabs</s> → reply always visible</span>
+  </div>
+</header>
+
+<!-- A -->
+<section class="opt">
+  <div class="dev"><div class="scr A">
+    <div class="nav"><span>HOME</span><span class="on">CLAUDE</span><span>PULSE</span><span>DECK</span><span>MUSIC</span><span>BOARD</span><span>FOCUS</span><span>SYSTEM</span></div>
+    <div class="body">
+      <div class="chips">
+        <div class="chip on"><i class="sq s-work live"></i>lenovo-tab</div>
+        <div class="chip wait"><i class="sq s-wait"></i>desk-demo · needs you</div>
+        <div class="chip"><i class="sq s-done"></i>deskd</div>
+      </div>
+      <div class="grid">
+        <div>
+          <div class="ask"><b>you ›</b> the claude page is kind of useless, most of the screen is unreadable — mock out some designs</div>
+          <div class="reply">Looked at the current pane: the session list eats a third of the width and the stats band repeats numbers you never read. I'm writing four layouts at the tablet's real size so you can compare them side by side.</div>
+        </div>
+        <div class="now">
+          <div class="k">now · 12s</div>
+          <div class="act">Writing the mockup page<small>Write · claude-pane.html</small></div>
+          <div class="steps">
+            <div>Read 40-claude.png</div>
+            <div>Bash list deskd ui</div>
+            <div>Read claude.ts</div>
+          </div>
+          <div class="ctx"><span>context</span><span>359k / 1M</span><div class="meter"><i style="width:36%"></i></div></div>
+        </div>
+      </div>
+      <div class="bar">
+        <span class="pill p">open in claude</span><span class="pill">terminal</span><span class="pill">copy reply</span>
+        <span class="meta">opus-5-5 · ~/lenovo-tab · 6m</span>
+      </div>
+    </div>
+  </div></div>
+  <div class="note">
+    <span class="tag">A · Conversation</span>
+    <h2>Read it like a chat</h2>
+    <p>Your last prompt and Claude's last reply fill most of the screen, in large type. A side card says what it's doing right now in one sentence.</p>
+    <ul><li><b>Good for</b> one main session you glance at.</li><li><b>Cost</b> other sessions shrink to chips. The amber chip still pulls your eye.</li></ul>
+  </div>
+</section>
+
+<!-- B -->
+<section class="opt">
+  <div class="dev"><div class="scr B">
+    <div class="nav"><span>HOME</span><span class="on">CLAUDE</span><span>PULSE</span><span>DECK</span><span>MUSIC</span><span>BOARD</span><span>FOCUS</span><span>SYSTEM</span></div>
+    <div class="body">
+      <div class="cols">
+        <div class="col wait">
+          <div class="st wait"><i class="sq s-wait"></i>needs you<em>7s</em></div>
+          <div class="name">desk-demo</div>
+          <div class="doing">Wants to run Bash:<br><span class="mono" style="font-size:19px;color:var(--warn)">rm -rf build/</span></div>
+          <div class="reply">Tests pass. Clearing the stale build dir before the release bundle so old chunks don't ship.</div>
+          <div class="foot"><div class="row"><span class="pill">deny</span><span class="pill p">allow</span></div></div>
+        </div>
+        <div class="col">
+          <div class="st work"><i class="sq s-work live"></i>working<em>12s</em></div>
+          <div class="name">lenovo-tab</div>
+          <div class="doing">Writing the mockup page</div>
+          <div class="reply">Looked at the current pane: the session list eats a third of the width and the stats band repeats numbers you never read…</div>
+          <div class="foot"><div class="m"><span>context</span><span>36%</span></div><div class="meter"><i style="width:36%"></i></div></div>
+        </div>
+        <div class="col">
+          <div class="st done"><i class="sq s-done"></i>done<em>4m</em></div>
+          <div class="name">deskd</div>
+          <div class="doing">Finished: usage provider rewrite</div>
+          <div class="reply">Usage now reads the 5-hour and weekly windows from the API headers. 14 tests pass; the old log scraper is removed.</div>
+          <div class="foot"><div class="m"><span>context</span><span>71%</span></div><div class="meter"><i style="width:71%;background:var(--warn)"></i></div></div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+  <div class="note">
+    <span class="tag">B · Wall</span>
+    <h2>Every session at once</h2>
+    <p>Up to three sessions side by side, each with its state, what it's doing in a sentence, and its last reply. Permission prompts get answered right in the column. Tap a column for the full view.</p>
+    <ul><li><b>Good for</b> running several sessions in parallel.</li><li><b>Cost</b> the text is shorter per session, and four or more sessions need paging.</li></ul>
+  </div>
+</section>
+
+<!-- C -->
+<section class="opt">
+  <div class="dev"><div class="scr C">
+    <div class="nav"><span>HOME</span><span class="on">CLAUDE</span><span>PULSE</span><span>DECK</span><span>MUSIC</span><span>BOARD</span><span>FOCUS</span><span>SYSTEM</span></div>
+    <div class="body">
+      <div class="rail">
+        <div class="r on">LT<i class="sq s-work live"></i></div>
+        <div class="r">DD<i class="sq s-wait"></i></div>
+        <div class="r">DK<i class="sq s-done"></i></div>
+      </div>
+      <div class="main">
+        <div class="top"><b>lenovo-tab</b>opus-5-5 · 6m<span class="r">10:24</span></div>
+        <div class="hero">Writing the mockup page<small>Write · claude-pane.html · 12s</small></div>
+        <div class="strip" id="strip"></div>
+        <div class="legend"><span><i class="sq" style="background:var(--t-read)"></i>read</span><span><i class="sq" style="background:var(--t-edit)"></i>edit</span><span><i class="sq" style="background:var(--t-bash)"></i>bash</span><span><i class="sq" style="background:var(--t-web)"></i>web</span><span style="margin-left:auto">last 6 min, width = time</span></div>
+        <div class="said"><b>said</b>Looked at the current pane: the session list eats a third of the width and the stats band repeats numbers you never read. Writing four layouts at the tablet's real size.</div>
+        <div class="bar"><span class="pill p">open in claude</span><span class="pill">terminal</span>
+          <div class="ctx"><span style="display:flex;justify-content:space-between"><span>context</span><span>36%</span></span><div class="meter"><i style="width:36%"></i></div></div></div>
+      </div>
+    </div>
+  </div></div>
+  <div class="note">
+    <span class="tag">C · Now</span>
+    <h2>One big sentence</h2>
+    <p>The current action is the headline, readable from across the desk. The tool timeline becomes a colour strip where width is time, so a three-minute Bash call stands out without any text.</p>
+    <ul><li><b>Good for</b> an ambient glance: is it stuck, is it busy?</li><li><b>Cost</b> less room for the reply, and the rail initials are cryptic.</li></ul>
+  </div>
+</section>
+
+<!-- D -->
+<section class="opt">
+  <div class="dev"><div class="scr D">
+    <div class="nav"><span>HOME</span><span class="on">CLAUDE<i class="b"></i></span><span>PULSE</span><span>DECK</span><span>MUSIC</span><span>BOARD</span><span>FOCUS</span><span>SYSTEM</span></div>
+    <div class="body">
+      <div class="sec"><i class="sq s-wait"></i>needs you</div>
+      <div class="card wait">
+        <div class="who"><b>desk-demo</b>7s ago</div>
+        <div class="acts"><span class="pill">deny</span><span class="pill p">allow</span></div>
+        <div class="q">Allow Bash?<small>rm -rf build/</small></div>
+      </div>
+      <div class="sec"><i class="sq s-done"></i>finished</div>
+      <div class="card">
+        <div class="who"><b>deskd</b>4m ago</div>
+        <div class="acts"><span class="pill sm">copy</span><span class="pill sm">open</span></div>
+        <div class="txt">Usage now reads the 5-hour and weekly windows from the API headers. 14 tests pass; the old log scraper is removed.</div>
+      </div>
+      <div class="sec"><i class="sq s-work"></i>working</div>
+      <div>
+        <div class="line"><i class="sq s-work live"></i><span class="n">lenovo-tab</span><span class="a">Writing the mockup page</span><div class="meter"><i style="width:36%"></i></div><span class="t">12s</span></div>
+      </div>
+    </div>
+  </div></div>
+  <div class="note">
+    <span class="tag">D · Inbox</span>
+    <h2>Only what wants you</h2>
+    <p>Sessions sorted by what they need: permission prompts first with big buttons, finished sessions with their final reply, working ones as a single quiet line.</p>
+    <ul><li><b>Good for</b> treating the tablet as a to-do surface.</li><li><b>Cost</b> working sessions get little detail. Tap a line to see more.</li></ul>
+  </div>
+</section>
+</div>
+
+<script>
+// scale each 1024×600 screen to its frame
+const fit=()=>document.querySelectorAll('.dev').forEach(d=>{d.firstElementChild.style.transform=`scale(${d.clientWidth/1024})`});
+new ResizeObserver(fit).observe(document.body);fit();
+// C: tool strip, width = duration
+const calls=[["read",3],["read",4],["bash",9],["edit",6],["read",2],["bash",25],["web",12],["read",3],["edit",8],["bash",143],["read",4],["bash",5],["edit",11],["read",3],["bash",14],["edit",20,1]];
+const col={read:"--t-read",edit:"--t-edit",bash:"--t-bash",web:"--t-web"};
+const s=document.getElementById('strip');
+for(const [k,w,live] of calls){const i=document.createElement('i');i.style.flex=w;i.style.background=`var(${col[k]})`;i.title=`${k} ${w}s`;if(live)i.className='live';s.appendChild(i)}
+</script>

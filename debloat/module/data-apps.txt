@@ -1,0 +1,4 @@
+com.google.android.gms
+com.android.vending
+com.chaozhuo.filemanager
+com.google.android.inputmethod.latin

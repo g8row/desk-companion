@@ -1,0 +1,105 @@
+# Packages to strip from the TB-7304X (stock TB-7304X_S000039_180828_ROW).
+# One package per line. Lines starting with # are comments.
+# KEEP (not listed here): framework, SystemUI, Settings, providers, Telephony/TeleService,
+# Bluetooth, GooglePackageInstaller (only installer on this ROM), WebViewGoogle (only WebView),
+# Shell, DocumentsUI, ExternalStorage/MTP, KeyChain/CertInstaller, CaptivePortalLogin,
+# DefaultContainerService, InputDevices, MTKThermalManager, CarrierConfig, Stk1, LenovoLauncher (until replaced),
+# gb.xxy.hr (user app).
+
+# --- Google services / apps ---
+com.google.android.gms
+com.google.android.gsf
+com.google.android.gsf.login
+com.android.vending
+com.google.android.backuptransport
+com.google.android.configupdater
+com.google.android.syncadapters.contacts
+com.google.android.setupwizard
+com.google.android.apps.messaging
+com.google.android.videos
+com.google.android.inputmethod.korean
+com.google.android.apps.inputmethod.zhuyin
+com.android.partnerbrowsercustomizations.tmobile
+# Gboard: replaced by AOSP-free keyboard later; remove only once a replacement is installed
+com.google.android.inputmethod.latin
+
+# --- Lenovo / Huaqin (ODM) ---
+com.lenovo.ota
+com.lenovo.lsf
+com.lenovo.lsf.device
+com.lenovo.ue.device
+com.lenovo.lewea
+com.lenovo.weather.theme.dreamlandPad
+com.lenovo.soundrecorder
+lenovo.filemanager
+com.chaozhuo.filemanager
+com.tblenovo.setup
+com.huaqin.apphide
+com.huaqin.capsensortest
+com.huaqin.countrylist
+com.huaqin.lenovoprivacy
+com.huaqin.runtime
+com.huaqin.factoryservice
+com.archer.providers.autoboot
+
+# --- Kids mode / WantJoin ---
+com.android.wantjoin.childmode.ctrl
+com.android.wantjoin.settings
+com.wantjoin.safeBrowser
+
+# --- Japanese theme engine ---
+jp.co.fsi.fskaren.lenovo
+jp.co.fsi.fskaren.lenovo.theme.aqua
+jp.co.fsi.fskaren.lenovo.theme.decoCute
+jp.co.fsi.fskaren.lenovo.theme.decoKira
+jp.co.fsi.fskaren.lenovo.theme.japaneseStyle
+jp.co.fsi.fskaren.lenovo.theme.pretty
+jp.co.fsi.fskaren.lenovo.theme.sf
+jp.co.fsi.fskaren.lenovo.theme.stylish
+jp.co.fsi.fskaren.lenovo.theme.toyBox
+jp.co.fsi.fskaren.lenovo.theme.wood
+
+# --- AOSP extras ---
+com.android.dreams.basic
+com.android.wallpaper.livepicker
+com.android.wallpaperbackup
+com.android.wallpapercropper
+com.android.musicfx
+com.android.printspooler
+com.android.bookmarkprovider
+com.android.htmlviewer
+com.android.cts.ctsshim
+com.android.cts.priv.ctsshim
+com.android.emergency
+com.android.managedprovisioning
+com.android.backupconfirm
+com.android.sharedstoragebackup
+com.android.calculator2
+com.android.deskclock
+com.android.fmradio
+com.android.dialer
+com.android.contacts
+com.android.providers.calendar
+com.android.providers.downloads.ui
+
+# --- MediaTek engineering / test tools ---
+com.mediatek.atci.service
+com.example
+com.mediatek.bluetooth.dtt
+com.mediatek.cellbroadcastreceiver
+com.mediatek.engineermodecmas
+com.mediatek.calendarimporter
+com.mediatek.ftprecheck
+com.mediatek.lbs.em2.ui
+com.mediatek.miravision.ui
+com.mediatek.omacp
+com.mediatek.schpwronoff
+com.mediatek.sensorhub.ui
+com.mtk.telephony
+com.mediatek.ygps
+com.mediatek.camera
+
+# --- launcher (PocketJS is HOME now) ---
+com.lenovo.launcher
+com.lenovo.launcher.provider
+com.mediatek.batterywarning

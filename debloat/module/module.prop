@@ -1,0 +1,6 @@
+id=tb7304x_strip
+name=TB-7304X Strip
+version=v1
+versionCode=1
+author=g8row
+description=Systemlessly removes Google services, Lenovo/ODM bloat and MTK test tools; trims animations.

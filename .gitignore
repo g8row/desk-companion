@@ -1,0 +1,32 @@
+# large / generated / third-party
+backup/partitions/
+backup/*.log
+tools/venv/
+tools/mtkclient/
+tools/magisk/*.apk
+tools/magisk/patch/
+*.img
+.DS_Store
+node_modules/
+mainline/src/
+mainline/build/
+mainline/out/
+mainline/**/*.img
+mainline/**/*.gz
+deskd/deskd.log
+mainline/stock/*.raw
+mainline/stock/Image
+*.apk
+.site-preview/
+# private / device-specific — never publish
+backup/*
+!backup/packages-stock.txt
+!backup/packages-stripped.txt
+deskd/desk.config.json
+kiosk/*.bin
+kiosk/fb-front.png
+.claude/
+shots/
+tools/apks/
+tools/magisk/
+mainline/stock/lk.strings

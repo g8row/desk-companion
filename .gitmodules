@@ -1,0 +1,4 @@
+[submodule "pocketjs"]
+	path = pocketjs
+	url = https://github.com/g8row/pocketjs.git
+	branch = android-host

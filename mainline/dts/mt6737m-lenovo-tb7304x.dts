@@ -1,0 +1,109 @@
+// SPDX-License-Identifier: BSD-3-Clause
+/*
+ * Lenovo Tab 7 Essential TB-7304X (MT6737M, 1 GB, 600x1024 DSI panel).
+ * Minimal bring-up DTS adapted from mt6735p-doogee-x5pro.dts (MT6735P, same
+ * "mt6735m" pinctrl/pwrap variant) and the stock 3.18 DTB extracted from boot.img.
+ *
+ * Goal: boot to an initramfs with USB gadget + a simple-framebuffer on the
+ * display LK left running (registered by drivers/soc/mediatek/mtk-lk-fb.c from
+ * /chosen "atag,videolfb" + the OVL0 registers). No panel/touch/WiFi/GPU yet.
+ */
+
+/dts-v1/;
+
+#include "mt6735m.dtsi"
+#include "mt6328.dtsi"
+#include <dt-bindings/gpio/gpio.h>
+
+/ {
+	model = "Lenovo Tab 7 Essential TB-7304X";
+	compatible = "lenovo,tb7304x", "mediatek,mt6737m", "mediatek,mt6735";
+
+	aliases {
+		serial0 = &uart0;
+	};
+
+	chosen {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+		/* LK overwrites bootargs with the boot.img cmdline + its own additions */
+		stdout-path = "serial0:921600n8";
+	};
+
+	/* LK rewrites this from its mblock table (1 GB minus its own reservations) */
+	memory@40000000 {
+		device_type = "memory";
+		reg = <0 0x40000000 0 0x40000000>;
+	};
+
+	reserved-memory {
+		/* same place the stock kernel uses for pstore ("mediatek,pstore") */
+		ramoops@43f10000 {
+			compatible = "ramoops";
+			reg = <0x0 0x43f10000 0x0 0x000e0000>;
+			no-map;
+
+			record-size = <0x00080000>;
+			console-size = <0x00040000>;
+			ftrace-size = <0x00000000>;
+			pmsg-size = <0x00010000>;
+		};
+
+		/* MTK ram_console + minirdump areas used by LK/stock kernel: leave untouched */
+		memory@43f00000 {
+			reg = <0x0 0x43f00000 0x0 0x00010000>;
+			no-map;
+		};
+
+		memory@43ff0000 {
+			reg = <0x0 0x43ff0000 0x0 0x00010000>;
+			no-map;
+		};
+	};
+};
+
+/* Doogee X5 Pro port reports secondary CPUs broken with stock ATF; start with 1 core. */
+/delete-node/ &cpu1;
+/delete-node/ &cpu2;
+/delete-node/ &cpu3;
+
+&uart0 {
+	status = "okay";
+};
+
+/* eMMC: probed read-only by userspace convention (init never mounts it). */
+&mmc0 {
+	status = "okay";
+
+	vmmc-supply = <&mt6328_vemc33_reg>;
+	vqmmc-supply = <&mt6328_vio18_reg>;
+
+	bus-width = <8>;
+	max-frequency = <50000000>;	/* conservative: no HS200/HS400 tuning data yet */
+	cap-mmc-highspeed;
+	non-removable;
+};
+
+&pwrap {
+	status = "okay";
+};
+
+&spm {
+	/* as on Doogee X5 Pro: VEN domain does not come up */
+	/delete-node/ power-domain@MT6735_POWER_DOMAIN_VEN;
+};
+
+&usb2 {
+	status = "okay";
+	dr_mode = "peripheral";
+
+	usb_con: connector {
+		compatible = "usb-b-connector";
+		type = "micro";
+	};
+};
+
+&usb2phy {
+	status = "okay";
+};

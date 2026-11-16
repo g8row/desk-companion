@@ -1,0 +1,929 @@
+stock.dts: Warning (ranges_format): /soc:ranges: empty "ranges" property but its #address-cells (1) differs from / (2)
+stock.dts: Warning (ranges_format): /soc:ranges: empty "ranges" property but its #size-cells (1) differs from / (2)
+stock.dts: Warning (unit_address_vs_reg): /mtk-msdc.0: node has a reg or ranges property, but no unit name
+stock.dts: Warning (unit_address_vs_reg): /interrupt-controller@10220000/gic-cpuif@0: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /interrupt-controller@10220000/gic-cpuif@1: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /interrupt-controller@10220000/gic-cpuif@2: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /interrupt-controller@10220000/gic-cpuif@3: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus: node has a reg or ranges property, but no unit name
+stock.dts: Warning (unit_address_vs_reg): /bus/eintc@10005000/MD1_SIM1_HOT_PLUG_EINT@0: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/eintc@10005000/pmic@206: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/simswitch@0: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/cpu_dbgapb: node has a reg or ranges property, but no unit name
+stock.dts: Warning (unit_address_vs_reg): /bus/pinctrl@0x10211000/ssw@1: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/pinctrl@0x10211000/ssw@2: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/pinctrl@0x10211000/ssw@3: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/pinctrl@0x10211000/ssw@4: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/pinctrl@0x10211000/vsram@1: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/pinctrl@0x10211000/vsram@2: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/pinctrl@0x10211000/clockbuf@1: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/pinctrl@0x10211000/clockbuf@2: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/pinctrl@0x10211000/eint@0: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/pinctrl@0x10211000/cam0@0: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/pinctrl@0x10211000/cam0@1: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/pinctrl@0x10211000/cam0@2: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/pinctrl@0x10211000/cam0@3: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/pinctrl@0x10211000/cam1@0: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/pinctrl@0x10211000/cam1@1: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/pinctrl@0x10211000/cam1@2: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/pinctrl@0x10211000/cam1@3: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/pinctrl@0x10211000/cam@0: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/pinctrl@0x10211000/cam@1: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/pinctrl@0x10211000/gpslna@0: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/pinctrl@0x10211000/gpslna@1: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/pinctrl@0x10211000/gpslna@2: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/pinctrl@0x10211000/mmc0@default: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/pinctrl@0x10211000/mmc0@register_default: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/pinctrl@0x10211000/mmc1@default: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/pinctrl@0x10211000/mmc1@sdr104: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/pinctrl@0x10211000/mmc1@sdr50: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/pinctrl@0x10211000/mmc1@ddr50: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/pinctrl@0x10211000/mmc1@register_default: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/nfc@0: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/mt_soc_ul1_pcm@11220000: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/mt_soc_voice_md1@11220000: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/mt_soc_hdmi_pcm@11220000: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/mt_soc_uldlloopback_pcm@11220000: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/mt_soc_i2s0_pcm@11220000: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/mt_soc_mrgrx_pcm@11220000: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/mt_soc_mrgrx_awb_pcm@11220000: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/mt_soc_fm_i2s_pcm@11220000: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/mt_soc_fm_i2s_awb_pcm@11220000: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/mt_soc_i2s0dl1_pcm@11220000: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/mt_soc_dl1_awb_pcm@11220000: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/mt_soc_voice_md1_bt@11220000: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/mt_soc_voip_bt_out@11220000: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/mt_soc_voip_bt_in@11220000: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/mt_soc_tdmrx_pcm@11220000: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/mt_soc_fm_mrgtx_pcm@11220000: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/mt_soc_ul2_pcm@11220000: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/mt_soc_i2s0_awb_pcm@11220000: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/mt_soc_voice_md2@11220000: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/mt_soc_routing_pcm@11220000: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/mt_soc_voice_md2_bt@11220000: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/mt_soc_hp_impedance_pcm@11220000: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/mt_soc_codec_name@11220000: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/mt_soc_dummy_pcm@11220000: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/mt_soc_codec_dummy_name@11220000: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/mt_soc_routing_dai_name@11220000: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/mt_soc_dai_name@11220000: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/mt_soc_offload_gdma@11220000: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/mt_soc_dl2_pcm@11220000: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/ISP_SYSR@0x15000000: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /bus/ISP_PIPEM@0x15000000: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /hwmsensor@0: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /gsensor@0: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /capsensor@0: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /als_ps@0: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /m_acc_pl@0: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /m_alsps_pl@0: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /m_batch_pl@0: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /batchsensor@0: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /gyroscope@0: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /m_gyro_pl@0: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /barometer@0: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /m_baro_pl@0: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /msensor@0: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /m_mag_pl@0: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /orientation@0: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /mt8193ckgen@0: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /multibridge@0: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /led@0: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /led@1: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /led@2: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /led@3: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /led@4: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /led@5: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /led@6: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /vibrator@0: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /cust_accel@0: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_vs_reg): /cust_accel@1: node has a unit name, but no reg or ranges property
+stock.dts: Warning (unit_address_format): /cpus/cpu@000: unit name should not have leading 0s
+stock.dts: Warning (unit_address_format): /cpus/cpu@001: unit name should not have leading 0s
+stock.dts: Warning (unit_address_format): /cpus/cpu@002: unit name should not have leading 0s
+stock.dts: Warning (unit_address_format): /cpus/cpu@003: unit name should not have leading 0s
+stock.dts: Warning (unit_address_format): /memory@00000000: unit name should not have leading 0s
+stock.dts: Warning (simple_bus_reg): /mtk-msdc.0/default: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /soc/gpio: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /soc/pmu: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /soc/timer: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /soc/mt_pmic_regulator: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /soc/als: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /soc/cap_sensor: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /soc/gse_1: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /soc/ext_buck_oc: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /soc/swtp: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /soc/dsi_te: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /bus/INFRACFG_AO@0x10000000: simple-bus unit address format error, expected "10000000"
+stock.dts: Warning (simple_bus_reg): /bus/PWRAP@0x10001000: simple-bus unit address format error, expected "10001000"
+stock.dts: Warning (simple_bus_reg): /bus/PERICFG@0x10002000: simple-bus unit address format error, expected "10002000"
+stock.dts: Warning (simple_bus_reg): /bus/FHCTL@0x10209F00: simple-bus unit address format error, expected "10209f00"
+stock.dts: Warning (simple_bus_reg): /bus/KP@0x10003000: simple-bus unit address format error, expected "10003000"
+stock.dts: Warning (simple_bus_reg): /bus/SLEEP@0x10006000: simple-bus unit address format error, expected "10006000"
+stock.dts: Warning (simple_bus_reg): /bus/RSVD@0x10009000: simple-bus unit address format error, expected "10009000"
+stock.dts: Warning (simple_bus_reg): /bus/bat_meter: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /bus/bat_meter1: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /bus/bat_notify: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /bus/bat_comm: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /bus/bat_id: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /bus/mdcldma@1000A000: simple-bus unit address format error, expected "1000a000"
+stock.dts: Warning (simple_bus_reg): /bus/dbgapb_base@1011A000: simple-bus unit address format error, expected "1011a000"
+stock.dts: Warning (simple_bus_reg): /bus/simswitch@0: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /bus/DNL3_XGPT64@0x1000C000: simple-bus unit address format error, expected "1000c000"
+stock.dts: Warning (simple_bus_reg): /bus/MCUCFG@0x10200000: simple-bus unit address format error, expected "10200000"
+stock.dts: Warning (simple_bus_reg): /bus/RSVD@0x10200200: simple-bus unit address format error, expected "10200200"
+stock.dts: Warning (simple_bus_reg): /bus/MCUSYS_MISCCFG@0x10200400: simple-bus unit address format error, expected "10200400"
+stock.dts: Warning (simple_bus_reg): /bus/MCUSYS_MCUCFG@0x10200600: simple-bus unit address format error, expected "10200600"
+stock.dts: Warning (simple_bus_reg): /bus/INFRACFG@0x10201000: simple-bus unit address format error, expected "10201000"
+stock.dts: Warning (simple_bus_reg): /bus/SRAMROM@0x10202000: simple-bus unit address format error, expected "10202000"
+stock.dts: Warning (simple_bus_reg): /bus/EMI@0x10203000: simple-bus unit address format error, expected "10203000"
+stock.dts: Warning (simple_bus_reg): /bus/APMIXED@0x10209000: simple-bus unit address format error, expected "10209000"
+stock.dts: Warning (simple_bus_reg): /bus/RSVD@0x1020C000: simple-bus unit address format error, expected "1020c000"
+stock.dts: Warning (simple_bus_reg): /bus/INFRA_MBIST@0x1020D000: simple-bus unit address format error, expected "1020d000"
+stock.dts: Warning (simple_bus_reg): /bus/TRNG@0x1020F000: simple-bus unit address format error, expected "1020f000"
+stock.dts: Warning (simple_bus_reg): /bus/CKSYS@0x10210000: simple-bus unit address format error, expected "10210000"
+stock.dts: Warning (simple_bus_reg): /bus/MIPI_RX_ANA_CSI0@0x10215800: simple-bus unit address format error, expected "10215800"
+stock.dts: Warning (simple_bus_reg): /bus/MIPI_RX_ANA_CSI1@0x10215C00: simple-bus unit address format error, expected "10215c00"
+stock.dts: Warning (simple_bus_reg): /bus/AP_CCIF1@0x10218000: simple-bus unit address format error, expected "10218000"
+stock.dts: Warning (simple_bus_reg): /bus/MD_CCIF1@0x10219000: simple-bus unit address format error, expected "10219000"
+stock.dts: Warning (simple_bus_reg): /bus/INFRA_MD@0x1021C000: simple-bus unit address format error, expected "1021c000"
+stock.dts: Warning (simple_bus_reg): /bus/DBGAPB@0x10400000: simple-bus unit address format error, expected "10400000"
+stock.dts: Warning (simple_bus_reg): /bus/DEBUGTOP_CA7L@0x10800000: simple-bus unit address format error, expected "10800000"
+stock.dts: Warning (simple_bus_reg): /bus/DEBUGTOP_MD1@0x10450000: simple-bus unit address format error, expected "10450000"
+stock.dts: Warning (simple_bus_reg): /bus/DEBUGTOP_MD2@0x10470000: simple-bus unit address format error, expected "10470000"
+stock.dts: Warning (simple_bus_reg): /bus/CA9@0x10220000: simple-bus unit address format error, expected "10220000"
+stock.dts: Warning (simple_bus_reg): /bus/cpu_dbgapb: simple-bus unit address format error, expected "10810000"
+stock.dts: Warning (simple_bus_reg): /bus/AP_DMA_IRDA@0x11000100: simple-bus unit address format error, expected "11000100"
+stock.dts: Warning (simple_bus_reg): /bus/PWM@0x11006000: simple-bus unit address format error, expected "11006000"
+stock.dts: Warning (simple_bus_reg): /bus/G3D_CONFIG@0x13000000: simple-bus unit address format error, expected "13000000"
+stock.dts: Warning (simple_bus_reg): /bus/IMGSYS@0x15000000: simple-bus unit address format error, expected "15000000"
+stock.dts: Warning (simple_bus_reg): /bus/syscfg_pctl_a@0x10211000: simple-bus unit address format error, expected "0"
+stock.dts: Warning (simple_bus_reg): /bus/pinctrl@0x10211000: simple-bus unit address format error, expected "0"
+stock.dts: Warning (simple_bus_reg): /bus/SPI1@0x1100A000: simple-bus unit address format error, expected "1100a000"
+stock.dts: Warning (simple_bus_reg): /bus/touch@: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /bus/accdet@: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /bus/THERM_CTRL@0x1100B000: simple-bus unit address format error, expected "1100b000"
+stock.dts: Warning (simple_bus_reg): /bus/AP_DMA_BTIF_TX@0x11000780: simple-bus unit address format error, expected "11000780"
+stock.dts: Warning (simple_bus_reg): /bus/AP_DMA_BTIF_RX@0x11000800: simple-bus unit address format error, expected "11000800"
+stock.dts: Warning (simple_bus_reg): /bus/BTIF@0x1100C000: simple-bus unit address format error, expected "1100c000"
+stock.dts: Warning (simple_bus_reg): /bus/nfc@0: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /bus/gps: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /bus/wifi@180F0000: simple-bus unit address format error, expected "180f0000"
+stock.dts: Warning (simple_bus_reg): /bus/NFI@0x1100D000: simple-bus unit address format error, expected "1100d000"
+stock.dts: Warning (simple_bus_reg): /bus/DISP_PWM0@0x1100E000: simple-bus unit address format error, expected "1100e000"
+stock.dts: Warning (simple_bus_reg): /bus/IRDA@0x11010000: simple-bus unit address format error, expected "11010000"
+stock.dts: Warning (simple_bus_reg): /bus/mt_soc_ul1_pcm@11220000: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /bus/mt_soc_voice_md1@11220000: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /bus/mt_soc_hdmi_pcm@11220000: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /bus/mt_soc_uldlloopback_pcm@11220000: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /bus/mt_soc_i2s0_pcm@11220000: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /bus/mt_soc_mrgrx_pcm@11220000: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /bus/mt_soc_mrgrx_awb_pcm@11220000: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /bus/mt_soc_fm_i2s_pcm@11220000: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /bus/mt_soc_fm_i2s_awb_pcm@11220000: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /bus/mt_soc_i2s0dl1_pcm@11220000: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /bus/mt_soc_dl1_awb_pcm@11220000: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /bus/mt_soc_voice_md1_bt@11220000: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /bus/mt_soc_voip_bt_out@11220000: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /bus/mt_soc_voip_bt_in@11220000: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /bus/mt_soc_tdmrx_pcm@11220000: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /bus/mt_soc_fm_mrgtx_pcm@11220000: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /bus/mt_soc_ul2_pcm@11220000: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /bus/mt_soc_i2s0_awb_pcm@11220000: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /bus/mt_soc_voice_md2@11220000: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /bus/mt_soc_routing_pcm@11220000: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /bus/mt_soc_voice_md2_bt@11220000: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /bus/mt_soc_hp_impedance_pcm@11220000: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /bus/mt_soc_codec_name@11220000: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /bus/mt_soc_dummy_pcm@11220000: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /bus/mt_soc_codec_dummy_name@11220000: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /bus/mt_soc_routing_dai_name@11220000: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /bus/mt_soc_dai_name@11220000: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /bus/mt_soc_offload_gdma@11220000: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /bus/mt_soc_dl2_pcm@11220000: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /bus/USB1@0x11260000: simple-bus unit address format error, expected "11260000"
+stock.dts: Warning (simple_bus_reg): /bus/MSDC3@0x11260000: simple-bus unit address format error, expected "11260000"
+stock.dts: Warning (simple_bus_reg): /bus/WCN_AHB@0x11270000: simple-bus unit address format error, expected "11270000"
+stock.dts: Warning (simple_bus_reg): /bus/MDPERIPHERALS@0x20000000: simple-bus unit address format error, expected "20000000"
+stock.dts: Warning (simple_bus_reg): /bus/MD2PERIPHERALS@0x30000000: simple-bus unit address format error, expected "30000000"
+stock.dts: Warning (simple_bus_reg): /bus/C2KPERIPHERALS@0x38000000: simple-bus unit address format error, expected "38000000"
+stock.dts: Warning (simple_bus_reg): /bus/MFGCFG@0x13000000: simple-bus unit address format error, expected "13000000"
+stock.dts: Warning (simple_bus_reg): /bus/MALI@0x13040000: simple-bus unit address format error, expected "13040000"
+stock.dts: Warning (simple_bus_reg): /bus/DISPSYS@0x14007000: simple-bus unit address format error, expected "14007000"
+stock.dts: Warning (simple_bus_reg): /bus/DISP_OVL0@0x14007000: simple-bus unit address format error, expected "14007000"
+stock.dts: Warning (simple_bus_reg): /bus/DISP_OVL1@0x14008000: simple-bus unit address format error, expected "14008000"
+stock.dts: Warning (simple_bus_reg): /bus/DISP_RDMA0@0x14009000: simple-bus unit address format error, expected "14009000"
+stock.dts: Warning (simple_bus_reg): /bus/DISP_RDMA1@0x1400A000: simple-bus unit address format error, expected "1400a000"
+stock.dts: Warning (simple_bus_reg): /bus/gpio@0x10000e00: simple-bus unit address format error, expected "10000e00"
+stock.dts: Warning (simple_bus_reg): /bus/DISP_WDMA0@0x1400B000: simple-bus unit address format error, expected "1400b000"
+stock.dts: Warning (simple_bus_reg): /bus/DISP_COLOR@0x1400C000: simple-bus unit address format error, expected "1400c000"
+stock.dts: Warning (simple_bus_reg): /bus/DISP_CCORR@0x1400D000: simple-bus unit address format error, expected "1400d000"
+stock.dts: Warning (simple_bus_reg): /bus/DISP_AAL@0x1400E000: simple-bus unit address format error, expected "1400e000"
+stock.dts: Warning (simple_bus_reg): /bus/DISP_GAMMA@0x1400F000: simple-bus unit address format error, expected "1400f000"
+stock.dts: Warning (simple_bus_reg): /bus/DISP_DITHER@0x14010000: simple-bus unit address format error, expected "14010000"
+stock.dts: Warning (simple_bus_reg): /bus/DISP_UFOE@0x14011000: simple-bus unit address format error, expected "14011000"
+stock.dts: Warning (simple_bus_reg): /bus/DSI0@0x14012000: simple-bus unit address format error, expected "14012000"
+stock.dts: Warning (simple_bus_reg): /bus/DPI0@0x14013000: simple-bus unit address format error, expected "14013000"
+stock.dts: Warning (simple_bus_reg): /bus/DISP_PWM@0x14014000: simple-bus unit address format error, expected "14014000"
+stock.dts: Warning (simple_bus_reg): /bus/MM_MUTEX@0x14015000: simple-bus unit address format error, expected "14015000"
+stock.dts: Warning (simple_bus_reg): /bus/MIPI_TX_CONFIG@0x14018000: simple-bus unit address format error, expected "14018000"
+stock.dts: Warning (simple_bus_reg): /bus/ISPSYS@0x15000000: simple-bus unit address format error, expected "15004000"
+stock.dts: Warning (simple_bus_reg): /bus/ISP_SYSR@0x15000000: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /bus/ISP_PIPEM@0x15000000: missing or empty reg/ranges property
+stock.dts: Warning (simple_bus_reg): /bus/SENINF_TOP@0x15008000: simple-bus unit address format error, expected "15008000"
+stock.dts: Warning (simple_bus_reg): /bus/CAM@0x15004000: simple-bus unit address format error, expected "15004000"
+stock.dts: Warning (simple_bus_reg): /bus/VENC@0x15009000: simple-bus unit address format error, expected "15009000"
+stock.dts: Warning (simple_bus_reg): /bus/VDEC@0x1500B000: simple-bus unit address format error, expected "1500b000"
+stock.dts: Warning (simple_bus_reg): /bus/JPGENC@0x1500A000: simple-bus unit address format error, expected "1500a000"
+stock.dts: Warning (simple_bus_reg): /bus/IMGSYS_CONFG@0x15000000: simple-bus unit address format error, expected "15000000"
+stock.dts: Warning (simple_bus_reg): /bus/VDEC_GCON@0x16000000: simple-bus unit address format error, expected "16000000"
+stock.dts: Warning (simple_bus_reg): /bus/VDEC_FULL_TOP@0x16020000: simple-bus unit address format error, expected "16020000"
+stock.dts: Warning (simple_bus_reg): /bus/CHIPID@08000000: simple-bus unit address format error, expected "8000000"
+stock.dts: Warning (simple_bus_reg): /bus/MTKFB@5e200000: simple-bus unit address format error, expected "7f000000"
+stock.dts: Warning (unique_unit_address): /hwmsensor@0: duplicate unit-address (also used in node /gsensor@0)
+stock.dts: Warning (unique_unit_address): /hwmsensor@0: duplicate unit-address (also used in node /capsensor@0)
+stock.dts: Warning (unique_unit_address): /gsensor@0: duplicate unit-address (also used in node /capsensor@0)
+stock.dts: Warning (unique_unit_address): /hwmsensor@0: duplicate unit-address (also used in node /als_ps@0)
+stock.dts: Warning (unique_unit_address): /gsensor@0: duplicate unit-address (also used in node /als_ps@0)
+stock.dts: Warning (unique_unit_address): /capsensor@0: duplicate unit-address (also used in node /als_ps@0)
+stock.dts: Warning (unique_unit_address): /hwmsensor@0: duplicate unit-address (also used in node /m_acc_pl@0)
+stock.dts: Warning (unique_unit_address): /gsensor@0: duplicate unit-address (also used in node /m_acc_pl@0)
+stock.dts: Warning (unique_unit_address): /capsensor@0: duplicate unit-address (also used in node /m_acc_pl@0)
+stock.dts: Warning (unique_unit_address): /als_ps@0: duplicate unit-address (also used in node /m_acc_pl@0)
+stock.dts: Warning (unique_unit_address): /hwmsensor@0: duplicate unit-address (also used in node /m_alsps_pl@0)
+stock.dts: Warning (unique_unit_address): /gsensor@0: duplicate unit-address (also used in node /m_alsps_pl@0)
+stock.dts: Warning (unique_unit_address): /capsensor@0: duplicate unit-address (also used in node /m_alsps_pl@0)
+stock.dts: Warning (unique_unit_address): /als_ps@0: duplicate unit-address (also used in node /m_alsps_pl@0)
+stock.dts: Warning (unique_unit_address): /m_acc_pl@0: duplicate unit-address (also used in node /m_alsps_pl@0)
+stock.dts: Warning (unique_unit_address): /hwmsensor@0: duplicate unit-address (also used in node /m_batch_pl@0)
+stock.dts: Warning (unique_unit_address): /gsensor@0: duplicate unit-address (also used in node /m_batch_pl@0)
+stock.dts: Warning (unique_unit_address): /capsensor@0: duplicate unit-address (also used in node /m_batch_pl@0)
+stock.dts: Warning (unique_unit_address): /als_ps@0: duplicate unit-address (also used in node /m_batch_pl@0)
+stock.dts: Warning (unique_unit_address): /m_acc_pl@0: duplicate unit-address (also used in node /m_batch_pl@0)
+stock.dts: Warning (unique_unit_address): /m_alsps_pl@0: duplicate unit-address (also used in node /m_batch_pl@0)
+stock.dts: Warning (unique_unit_address): /hwmsensor@0: duplicate unit-address (also used in node /batchsensor@0)
+stock.dts: Warning (unique_unit_address): /gsensor@0: duplicate unit-address (also used in node /batchsensor@0)
+stock.dts: Warning (unique_unit_address): /capsensor@0: duplicate unit-address (also used in node /batchsensor@0)
+stock.dts: Warning (unique_unit_address): /als_ps@0: duplicate unit-address (also used in node /batchsensor@0)
+stock.dts: Warning (unique_unit_address): /m_acc_pl@0: duplicate unit-address (also used in node /batchsensor@0)
+stock.dts: Warning (unique_unit_address): /m_alsps_pl@0: duplicate unit-address (also used in node /batchsensor@0)
+stock.dts: Warning (unique_unit_address): /m_batch_pl@0: duplicate unit-address (also used in node /batchsensor@0)
+stock.dts: Warning (unique_unit_address): /hwmsensor@0: duplicate unit-address (also used in node /gyroscope@0)
+stock.dts: Warning (unique_unit_address): /gsensor@0: duplicate unit-address (also used in node /gyroscope@0)
+stock.dts: Warning (unique_unit_address): /capsensor@0: duplicate unit-address (also used in node /gyroscope@0)
+stock.dts: Warning (unique_unit_address): /als_ps@0: duplicate unit-address (also used in node /gyroscope@0)
+stock.dts: Warning (unique_unit_address): /m_acc_pl@0: duplicate unit-address (also used in node /gyroscope@0)
+stock.dts: Warning (unique_unit_address): /m_alsps_pl@0: duplicate unit-address (also used in node /gyroscope@0)
+stock.dts: Warning (unique_unit_address): /m_batch_pl@0: duplicate unit-address (also used in node /gyroscope@0)
+stock.dts: Warning (unique_unit_address): /batchsensor@0: duplicate unit-address (also used in node /gyroscope@0)
+stock.dts: Warning (unique_unit_address): /hwmsensor@0: duplicate unit-address (also used in node /m_gyro_pl@0)
+stock.dts: Warning (unique_unit_address): /gsensor@0: duplicate unit-address (also used in node /m_gyro_pl@0)
+stock.dts: Warning (unique_unit_address): /capsensor@0: duplicate unit-address (also used in node /m_gyro_pl@0)
+stock.dts: Warning (unique_unit_address): /als_ps@0: duplicate unit-address (also used in node /m_gyro_pl@0)
+stock.dts: Warning (unique_unit_address): /m_acc_pl@0: duplicate unit-address (also used in node /m_gyro_pl@0)
+stock.dts: Warning (unique_unit_address): /m_alsps_pl@0: duplicate unit-address (also used in node /m_gyro_pl@0)
+stock.dts: Warning (unique_unit_address): /m_batch_pl@0: duplicate unit-address (also used in node /m_gyro_pl@0)
+stock.dts: Warning (unique_unit_address): /batchsensor@0: duplicate unit-address (also used in node /m_gyro_pl@0)
+stock.dts: Warning (unique_unit_address): /gyroscope@0: duplicate unit-address (also used in node /m_gyro_pl@0)
+stock.dts: Warning (unique_unit_address): /hwmsensor@0: duplicate unit-address (also used in node /barometer@0)
+stock.dts: Warning (unique_unit_address): /gsensor@0: duplicate unit-address (also used in node /barometer@0)
+stock.dts: Warning (unique_unit_address): /capsensor@0: duplicate unit-address (also used in node /barometer@0)
+stock.dts: Warning (unique_unit_address): /als_ps@0: duplicate unit-address (also used in node /barometer@0)
+stock.dts: Warning (unique_unit_address): /m_acc_pl@0: duplicate unit-address (also used in node /barometer@0)
+stock.dts: Warning (unique_unit_address): /m_alsps_pl@0: duplicate unit-address (also used in node /barometer@0)
+stock.dts: Warning (unique_unit_address): /m_batch_pl@0: duplicate unit-address (also used in node /barometer@0)
+stock.dts: Warning (unique_unit_address): /batchsensor@0: duplicate unit-address (also used in node /barometer@0)
+stock.dts: Warning (unique_unit_address): /gyroscope@0: duplicate unit-address (also used in node /barometer@0)
+stock.dts: Warning (unique_unit_address): /m_gyro_pl@0: duplicate unit-address (also used in node /barometer@0)
+stock.dts: Warning (unique_unit_address): /hwmsensor@0: duplicate unit-address (also used in node /m_baro_pl@0)
+stock.dts: Warning (unique_unit_address): /gsensor@0: duplicate unit-address (also used in node /m_baro_pl@0)
+stock.dts: Warning (unique_unit_address): /capsensor@0: duplicate unit-address (also used in node /m_baro_pl@0)
+stock.dts: Warning (unique_unit_address): /als_ps@0: duplicate unit-address (also used in node /m_baro_pl@0)
+stock.dts: Warning (unique_unit_address): /m_acc_pl@0: duplicate unit-address (also used in node /m_baro_pl@0)
+stock.dts: Warning (unique_unit_address): /m_alsps_pl@0: duplicate unit-address (also used in node /m_baro_pl@0)
+stock.dts: Warning (unique_unit_address): /m_batch_pl@0: duplicate unit-address (also used in node /m_baro_pl@0)
+stock.dts: Warning (unique_unit_address): /batchsensor@0: duplicate unit-address (also used in node /m_baro_pl@0)
+stock.dts: Warning (unique_unit_address): /gyroscope@0: duplicate unit-address (also used in node /m_baro_pl@0)
+stock.dts: Warning (unique_unit_address): /m_gyro_pl@0: duplicate unit-address (also used in node /m_baro_pl@0)
+stock.dts: Warning (unique_unit_address): /barometer@0: duplicate unit-address (also used in node /m_baro_pl@0)
+stock.dts: Warning (unique_unit_address): /hwmsensor@0: duplicate unit-address (also used in node /msensor@0)
+stock.dts: Warning (unique_unit_address): /gsensor@0: duplicate unit-address (also used in node /msensor@0)
+stock.dts: Warning (unique_unit_address): /capsensor@0: duplicate unit-address (also used in node /msensor@0)
+stock.dts: Warning (unique_unit_address): /als_ps@0: duplicate unit-address (also used in node /msensor@0)
+stock.dts: Warning (unique_unit_address): /m_acc_pl@0: duplicate unit-address (also used in node /msensor@0)
+stock.dts: Warning (unique_unit_address): /m_alsps_pl@0: duplicate unit-address (also used in node /msensor@0)
+stock.dts: Warning (unique_unit_address): /m_batch_pl@0: duplicate unit-address (also used in node /msensor@0)
+stock.dts: Warning (unique_unit_address): /batchsensor@0: duplicate unit-address (also used in node /msensor@0)
+stock.dts: Warning (unique_unit_address): /gyroscope@0: duplicate unit-address (also used in node /msensor@0)
+stock.dts: Warning (unique_unit_address): /m_gyro_pl@0: duplicate unit-address (also used in node /msensor@0)
+stock.dts: Warning (unique_unit_address): /barometer@0: duplicate unit-address (also used in node /msensor@0)
+stock.dts: Warning (unique_unit_address): /m_baro_pl@0: duplicate unit-address (also used in node /msensor@0)
+stock.dts: Warning (unique_unit_address): /hwmsensor@0: duplicate unit-address (also used in node /m_mag_pl@0)
+stock.dts: Warning (unique_unit_address): /gsensor@0: duplicate unit-address (also used in node /m_mag_pl@0)
+stock.dts: Warning (unique_unit_address): /capsensor@0: duplicate unit-address (also used in node /m_mag_pl@0)
+stock.dts: Warning (unique_unit_address): /als_ps@0: duplicate unit-address (also used in node /m_mag_pl@0)
+stock.dts: Warning (unique_unit_address): /m_acc_pl@0: duplicate unit-address (also used in node /m_mag_pl@0)
+stock.dts: Warning (unique_unit_address): /m_alsps_pl@0: duplicate unit-address (also used in node /m_mag_pl@0)
+stock.dts: Warning (unique_unit_address): /m_batch_pl@0: duplicate unit-address (also used in node /m_mag_pl@0)
+stock.dts: Warning (unique_unit_address): /batchsensor@0: duplicate unit-address (also used in node /m_mag_pl@0)
+stock.dts: Warning (unique_unit_address): /gyroscope@0: duplicate unit-address (also used in node /m_mag_pl@0)
+stock.dts: Warning (unique_unit_address): /m_gyro_pl@0: duplicate unit-address (also used in node /m_mag_pl@0)
+stock.dts: Warning (unique_unit_address): /barometer@0: duplicate unit-address (also used in node /m_mag_pl@0)
+stock.dts: Warning (unique_unit_address): /m_baro_pl@0: duplicate unit-address (also used in node /m_mag_pl@0)
+stock.dts: Warning (unique_unit_address): /msensor@0: duplicate unit-address (also used in node /m_mag_pl@0)
+stock.dts: Warning (unique_unit_address): /hwmsensor@0: duplicate unit-address (also used in node /orientation@0)
+stock.dts: Warning (unique_unit_address): /gsensor@0: duplicate unit-address (also used in node /orientation@0)
+stock.dts: Warning (unique_unit_address): /capsensor@0: duplicate unit-address (also used in node /orientation@0)
+stock.dts: Warning (unique_unit_address): /als_ps@0: duplicate unit-address (also used in node /orientation@0)
+stock.dts: Warning (unique_unit_address): /m_acc_pl@0: duplicate unit-address (also used in node /orientation@0)
+stock.dts: Warning (unique_unit_address): /m_alsps_pl@0: duplicate unit-address (also used in node /orientation@0)
+stock.dts: Warning (unique_unit_address): /m_batch_pl@0: duplicate unit-address (also used in node /orientation@0)
+stock.dts: Warning (unique_unit_address): /batchsensor@0: duplicate unit-address (also used in node /orientation@0)
+stock.dts: Warning (unique_unit_address): /gyroscope@0: duplicate unit-address (also used in node /orientation@0)
+stock.dts: Warning (unique_unit_address): /m_gyro_pl@0: duplicate unit-address (also used in node /orientation@0)
+stock.dts: Warning (unique_unit_address): /barometer@0: duplicate unit-address (also used in node /orientation@0)
+stock.dts: Warning (unique_unit_address): /m_baro_pl@0: duplicate unit-address (also used in node /orientation@0)
+stock.dts: Warning (unique_unit_address): /msensor@0: duplicate unit-address (also used in node /orientation@0)
+stock.dts: Warning (unique_unit_address): /m_mag_pl@0: duplicate unit-address (also used in node /orientation@0)
+stock.dts: Warning (unique_unit_address): /hwmsensor@0: duplicate unit-address (also used in node /mt8193ckgen@0)
+stock.dts: Warning (unique_unit_address): /gsensor@0: duplicate unit-address (also used in node /mt8193ckgen@0)
+stock.dts: Warning (unique_unit_address): /capsensor@0: duplicate unit-address (also used in node /mt8193ckgen@0)
+stock.dts: Warning (unique_unit_address): /als_ps@0: duplicate unit-address (also used in node /mt8193ckgen@0)
+stock.dts: Warning (unique_unit_address): /m_acc_pl@0: duplicate unit-address (also used in node /mt8193ckgen@0)
+stock.dts: Warning (unique_unit_address): /m_alsps_pl@0: duplicate unit-address (also used in node /mt8193ckgen@0)
+stock.dts: Warning (unique_unit_address): /m_batch_pl@0: duplicate unit-address (also used in node /mt8193ckgen@0)
+stock.dts: Warning (unique_unit_address): /batchsensor@0: duplicate unit-address (also used in node /mt8193ckgen@0)
+stock.dts: Warning (unique_unit_address): /gyroscope@0: duplicate unit-address (also used in node /mt8193ckgen@0)
+stock.dts: Warning (unique_unit_address): /m_gyro_pl@0: duplicate unit-address (also used in node /mt8193ckgen@0)
+stock.dts: Warning (unique_unit_address): /barometer@0: duplicate unit-address (also used in node /mt8193ckgen@0)
+stock.dts: Warning (unique_unit_address): /m_baro_pl@0: duplicate unit-address (also used in node /mt8193ckgen@0)
+stock.dts: Warning (unique_unit_address): /msensor@0: duplicate unit-address (also used in node /mt8193ckgen@0)
+stock.dts: Warning (unique_unit_address): /m_mag_pl@0: duplicate unit-address (also used in node /mt8193ckgen@0)
+stock.dts: Warning (unique_unit_address): /orientation@0: duplicate unit-address (also used in node /mt8193ckgen@0)
+stock.dts: Warning (unique_unit_address): /hwmsensor@0: duplicate unit-address (also used in node /multibridge@0)
+stock.dts: Warning (unique_unit_address): /gsensor@0: duplicate unit-address (also used in node /multibridge@0)
+stock.dts: Warning (unique_unit_address): /capsensor@0: duplicate unit-address (also used in node /multibridge@0)
+stock.dts: Warning (unique_unit_address): /als_ps@0: duplicate unit-address (also used in node /multibridge@0)
+stock.dts: Warning (unique_unit_address): /m_acc_pl@0: duplicate unit-address (also used in node /multibridge@0)
+stock.dts: Warning (unique_unit_address): /m_alsps_pl@0: duplicate unit-address (also used in node /multibridge@0)
+stock.dts: Warning (unique_unit_address): /m_batch_pl@0: duplicate unit-address (also used in node /multibridge@0)
+stock.dts: Warning (unique_unit_address): /batchsensor@0: duplicate unit-address (also used in node /multibridge@0)
+stock.dts: Warning (unique_unit_address): /gyroscope@0: duplicate unit-address (also used in node /multibridge@0)
+stock.dts: Warning (unique_unit_address): /m_gyro_pl@0: duplicate unit-address (also used in node /multibridge@0)
+stock.dts: Warning (unique_unit_address): /barometer@0: duplicate unit-address (also used in node /multibridge@0)
+stock.dts: Warning (unique_unit_address): /m_baro_pl@0: duplicate unit-address (also used in node /multibridge@0)
+stock.dts: Warning (unique_unit_address): /msensor@0: duplicate unit-address (also used in node /multibridge@0)
+stock.dts: Warning (unique_unit_address): /m_mag_pl@0: duplicate unit-address (also used in node /multibridge@0)
+stock.dts: Warning (unique_unit_address): /orientation@0: duplicate unit-address (also used in node /multibridge@0)
+stock.dts: Warning (unique_unit_address): /mt8193ckgen@0: duplicate unit-address (also used in node /multibridge@0)
+stock.dts: Warning (unique_unit_address): /hwmsensor@0: duplicate unit-address (also used in node /led@0)
+stock.dts: Warning (unique_unit_address): /gsensor@0: duplicate unit-address (also used in node /led@0)
+stock.dts: Warning (unique_unit_address): /capsensor@0: duplicate unit-address (also used in node /led@0)
+stock.dts: Warning (unique_unit_address): /als_ps@0: duplicate unit-address (also used in node /led@0)
+stock.dts: Warning (unique_unit_address): /m_acc_pl@0: duplicate unit-address (also used in node /led@0)
+stock.dts: Warning (unique_unit_address): /m_alsps_pl@0: duplicate unit-address (also used in node /led@0)
+stock.dts: Warning (unique_unit_address): /m_batch_pl@0: duplicate unit-address (also used in node /led@0)
+stock.dts: Warning (unique_unit_address): /batchsensor@0: duplicate unit-address (also used in node /led@0)
+stock.dts: Warning (unique_unit_address): /gyroscope@0: duplicate unit-address (also used in node /led@0)
+stock.dts: Warning (unique_unit_address): /m_gyro_pl@0: duplicate unit-address (also used in node /led@0)
+stock.dts: Warning (unique_unit_address): /barometer@0: duplicate unit-address (also used in node /led@0)
+stock.dts: Warning (unique_unit_address): /m_baro_pl@0: duplicate unit-address (also used in node /led@0)
+stock.dts: Warning (unique_unit_address): /msensor@0: duplicate unit-address (also used in node /led@0)
+stock.dts: Warning (unique_unit_address): /m_mag_pl@0: duplicate unit-address (also used in node /led@0)
+stock.dts: Warning (unique_unit_address): /orientation@0: duplicate unit-address (also used in node /led@0)
+stock.dts: Warning (unique_unit_address): /mt8193ckgen@0: duplicate unit-address (also used in node /led@0)
+stock.dts: Warning (unique_unit_address): /multibridge@0: duplicate unit-address (also used in node /led@0)
+stock.dts: Warning (unique_unit_address): /hwmsensor@0: duplicate unit-address (also used in node /vibrator@0)
+stock.dts: Warning (unique_unit_address): /gsensor@0: duplicate unit-address (also used in node /vibrator@0)
+stock.dts: Warning (unique_unit_address): /capsensor@0: duplicate unit-address (also used in node /vibrator@0)
+stock.dts: Warning (unique_unit_address): /als_ps@0: duplicate unit-address (also used in node /vibrator@0)
+stock.dts: Warning (unique_unit_address): /m_acc_pl@0: duplicate unit-address (also used in node /vibrator@0)
+stock.dts: Warning (unique_unit_address): /m_alsps_pl@0: duplicate unit-address (also used in node /vibrator@0)
+stock.dts: Warning (unique_unit_address): /m_batch_pl@0: duplicate unit-address (also used in node /vibrator@0)
+stock.dts: Warning (unique_unit_address): /batchsensor@0: duplicate unit-address (also used in node /vibrator@0)
+stock.dts: Warning (unique_unit_address): /gyroscope@0: duplicate unit-address (also used in node /vibrator@0)
+stock.dts: Warning (unique_unit_address): /m_gyro_pl@0: duplicate unit-address (also used in node /vibrator@0)
+stock.dts: Warning (unique_unit_address): /barometer@0: duplicate unit-address (also used in node /vibrator@0)
+stock.dts: Warning (unique_unit_address): /m_baro_pl@0: duplicate unit-address (also used in node /vibrator@0)
+stock.dts: Warning (unique_unit_address): /msensor@0: duplicate unit-address (also used in node /vibrator@0)
+stock.dts: Warning (unique_unit_address): /m_mag_pl@0: duplicate unit-address (also used in node /vibrator@0)
+stock.dts: Warning (unique_unit_address): /orientation@0: duplicate unit-address (also used in node /vibrator@0)
+stock.dts: Warning (unique_unit_address): /mt8193ckgen@0: duplicate unit-address (also used in node /vibrator@0)
+stock.dts: Warning (unique_unit_address): /multibridge@0: duplicate unit-address (also used in node /vibrator@0)
+stock.dts: Warning (unique_unit_address): /led@0: duplicate unit-address (also used in node /vibrator@0)
+stock.dts: Warning (unique_unit_address): /hwmsensor@0: duplicate unit-address (also used in node /cust_accel@0)
+stock.dts: Warning (unique_unit_address): /gsensor@0: duplicate unit-address (also used in node /cust_accel@0)
+stock.dts: Warning (unique_unit_address): /capsensor@0: duplicate unit-address (also used in node /cust_accel@0)
+stock.dts: Warning (unique_unit_address): /als_ps@0: duplicate unit-address (also used in node /cust_accel@0)
+stock.dts: Warning (unique_unit_address): /m_acc_pl@0: duplicate unit-address (also used in node /cust_accel@0)
+stock.dts: Warning (unique_unit_address): /m_alsps_pl@0: duplicate unit-address (also used in node /cust_accel@0)
+stock.dts: Warning (unique_unit_address): /m_batch_pl@0: duplicate unit-address (also used in node /cust_accel@0)
+stock.dts: Warning (unique_unit_address): /batchsensor@0: duplicate unit-address (also used in node /cust_accel@0)
+stock.dts: Warning (unique_unit_address): /gyroscope@0: duplicate unit-address (also used in node /cust_accel@0)
+stock.dts: Warning (unique_unit_address): /m_gyro_pl@0: duplicate unit-address (also used in node /cust_accel@0)
+stock.dts: Warning (unique_unit_address): /barometer@0: duplicate unit-address (also used in node /cust_accel@0)
+stock.dts: Warning (unique_unit_address): /m_baro_pl@0: duplicate unit-address (also used in node /cust_accel@0)
+stock.dts: Warning (unique_unit_address): /msensor@0: duplicate unit-address (also used in node /cust_accel@0)
+stock.dts: Warning (unique_unit_address): /m_mag_pl@0: duplicate unit-address (also used in node /cust_accel@0)
+stock.dts: Warning (unique_unit_address): /orientation@0: duplicate unit-address (also used in node /cust_accel@0)
+stock.dts: Warning (unique_unit_address): /mt8193ckgen@0: duplicate unit-address (also used in node /cust_accel@0)
+stock.dts: Warning (unique_unit_address): /multibridge@0: duplicate unit-address (also used in node /cust_accel@0)
+stock.dts: Warning (unique_unit_address): /led@0: duplicate unit-address (also used in node /cust_accel@0)
+stock.dts: Warning (unique_unit_address): /vibrator@0: duplicate unit-address (also used in node /cust_accel@0)
+stock.dts: Warning (unique_unit_address): /led@1: duplicate unit-address (also used in node /cust_accel@1)
+stock.dts: Warning (unique_unit_address): /bus/syscfg_pctl_a@0x10211000: duplicate unit-address (also used in node /bus/pinctrl@0x10211000)
+stock.dts: Warning (unique_unit_address): /bus/simswitch@0: duplicate unit-address (also used in node /bus/nfc@0)
+stock.dts: Warning (unique_unit_address): /bus/usb2jtag@10000000: duplicate unit-address (also used in node /bus/btcvsd@10000000)
+stock.dts: Warning (unique_unit_address): /bus/audio@11220000: duplicate unit-address (also used in node /bus/mt_soc_dl1_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/audio@11220000: duplicate unit-address (also used in node /bus/mt_soc_ul1_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_ul1_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/audio@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md1@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md1@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_ul1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md1@11220000)
+stock.dts: Warning (unique_unit_address): /bus/audio@11220000: duplicate unit-address (also used in node /bus/mt_soc_hdmi_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_hdmi_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_ul1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_hdmi_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1@11220000: duplicate unit-address (also used in node /bus/mt_soc_hdmi_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/audio@11220000: duplicate unit-address (also used in node /bus/mt_soc_uldlloopback_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_uldlloopback_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_ul1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_uldlloopback_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1@11220000: duplicate unit-address (also used in node /bus/mt_soc_uldlloopback_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_hdmi_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_uldlloopback_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/audio@11220000: duplicate unit-address (also used in node /bus/mt_soc_i2s0_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_i2s0_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_ul1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_i2s0_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1@11220000: duplicate unit-address (also used in node /bus/mt_soc_i2s0_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_hdmi_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_i2s0_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_uldlloopback_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_i2s0_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/audio@11220000: duplicate unit-address (also used in node /bus/mt_soc_mrgrx_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_mrgrx_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_ul1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_mrgrx_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1@11220000: duplicate unit-address (also used in node /bus/mt_soc_mrgrx_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_hdmi_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_mrgrx_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_uldlloopback_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_mrgrx_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_mrgrx_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/audio@11220000: duplicate unit-address (also used in node /bus/mt_soc_mrgrx_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_mrgrx_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_ul1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_mrgrx_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1@11220000: duplicate unit-address (also used in node /bus/mt_soc_mrgrx_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_hdmi_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_mrgrx_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_uldlloopback_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_mrgrx_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_mrgrx_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_mrgrx_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/audio@11220000: duplicate unit-address (also used in node /bus/mt_soc_fm_i2s_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_fm_i2s_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_ul1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_fm_i2s_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1@11220000: duplicate unit-address (also used in node /bus/mt_soc_fm_i2s_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_hdmi_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_fm_i2s_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_uldlloopback_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_fm_i2s_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_fm_i2s_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_fm_i2s_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_fm_i2s_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/audio@11220000: duplicate unit-address (also used in node /bus/mt_soc_fm_i2s_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_fm_i2s_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_ul1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_fm_i2s_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1@11220000: duplicate unit-address (also used in node /bus/mt_soc_fm_i2s_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_hdmi_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_fm_i2s_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_uldlloopback_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_fm_i2s_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_fm_i2s_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_fm_i2s_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_fm_i2s_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_i2s_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_fm_i2s_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/audio@11220000: duplicate unit-address (also used in node /bus/mt_soc_i2s0dl1_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_i2s0dl1_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_ul1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_i2s0dl1_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1@11220000: duplicate unit-address (also used in node /bus/mt_soc_i2s0dl1_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_hdmi_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_i2s0dl1_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_uldlloopback_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_i2s0dl1_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_i2s0dl1_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_i2s0dl1_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_i2s0dl1_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_i2s_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_i2s0dl1_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_i2s_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_i2s0dl1_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/audio@11220000: duplicate unit-address (also used in node /bus/mt_soc_dl1_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dl1_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_ul1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dl1_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1@11220000: duplicate unit-address (also used in node /bus/mt_soc_dl1_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_hdmi_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dl1_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_uldlloopback_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dl1_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dl1_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dl1_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dl1_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_i2s_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dl1_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_i2s_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dl1_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dl1_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/audio@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md1_bt@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md1_bt@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_ul1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md1_bt@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md1_bt@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_hdmi_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md1_bt@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_uldlloopback_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md1_bt@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md1_bt@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md1_bt@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md1_bt@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_i2s_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md1_bt@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_i2s_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md1_bt@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md1_bt@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md1_bt@11220000)
+stock.dts: Warning (unique_unit_address): /bus/audio@11220000: duplicate unit-address (also used in node /bus/mt_soc_voip_bt_out@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voip_bt_out@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_ul1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voip_bt_out@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1@11220000: duplicate unit-address (also used in node /bus/mt_soc_voip_bt_out@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_hdmi_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voip_bt_out@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_uldlloopback_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voip_bt_out@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voip_bt_out@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voip_bt_out@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voip_bt_out@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_i2s_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voip_bt_out@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_i2s_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voip_bt_out@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voip_bt_out@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voip_bt_out@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1_bt@11220000: duplicate unit-address (also used in node /bus/mt_soc_voip_bt_out@11220000)
+stock.dts: Warning (unique_unit_address): /bus/audio@11220000: duplicate unit-address (also used in node /bus/mt_soc_voip_bt_in@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voip_bt_in@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_ul1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voip_bt_in@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1@11220000: duplicate unit-address (also used in node /bus/mt_soc_voip_bt_in@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_hdmi_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voip_bt_in@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_uldlloopback_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voip_bt_in@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voip_bt_in@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voip_bt_in@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voip_bt_in@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_i2s_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voip_bt_in@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_i2s_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voip_bt_in@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voip_bt_in@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voip_bt_in@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1_bt@11220000: duplicate unit-address (also used in node /bus/mt_soc_voip_bt_in@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voip_bt_out@11220000: duplicate unit-address (also used in node /bus/mt_soc_voip_bt_in@11220000)
+stock.dts: Warning (unique_unit_address): /bus/audio@11220000: duplicate unit-address (also used in node /bus/mt_soc_tdmrx_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_tdmrx_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_ul1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_tdmrx_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1@11220000: duplicate unit-address (also used in node /bus/mt_soc_tdmrx_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_hdmi_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_tdmrx_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_uldlloopback_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_tdmrx_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_tdmrx_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_tdmrx_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_tdmrx_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_i2s_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_tdmrx_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_i2s_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_tdmrx_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_tdmrx_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_tdmrx_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1_bt@11220000: duplicate unit-address (also used in node /bus/mt_soc_tdmrx_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voip_bt_out@11220000: duplicate unit-address (also used in node /bus/mt_soc_tdmrx_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voip_bt_in@11220000: duplicate unit-address (also used in node /bus/mt_soc_tdmrx_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/audio@11220000: duplicate unit-address (also used in node /bus/mt_soc_fm_mrgtx_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_fm_mrgtx_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_ul1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_fm_mrgtx_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1@11220000: duplicate unit-address (also used in node /bus/mt_soc_fm_mrgtx_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_hdmi_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_fm_mrgtx_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_uldlloopback_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_fm_mrgtx_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_fm_mrgtx_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_fm_mrgtx_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_fm_mrgtx_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_i2s_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_fm_mrgtx_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_i2s_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_fm_mrgtx_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_fm_mrgtx_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_fm_mrgtx_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1_bt@11220000: duplicate unit-address (also used in node /bus/mt_soc_fm_mrgtx_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voip_bt_out@11220000: duplicate unit-address (also used in node /bus/mt_soc_fm_mrgtx_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voip_bt_in@11220000: duplicate unit-address (also used in node /bus/mt_soc_fm_mrgtx_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_tdmrx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_fm_mrgtx_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/audio@11220000: duplicate unit-address (also used in node /bus/mt_soc_ul2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_ul2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_ul1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_ul2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1@11220000: duplicate unit-address (also used in node /bus/mt_soc_ul2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_hdmi_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_ul2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_uldlloopback_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_ul2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_ul2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_ul2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_ul2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_i2s_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_ul2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_i2s_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_ul2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_ul2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_ul2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1_bt@11220000: duplicate unit-address (also used in node /bus/mt_soc_ul2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voip_bt_out@11220000: duplicate unit-address (also used in node /bus/mt_soc_ul2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voip_bt_in@11220000: duplicate unit-address (also used in node /bus/mt_soc_ul2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_tdmrx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_ul2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_mrgtx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_ul2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/audio@11220000: duplicate unit-address (also used in node /bus/mt_soc_i2s0_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_i2s0_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_ul1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_i2s0_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1@11220000: duplicate unit-address (also used in node /bus/mt_soc_i2s0_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_hdmi_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_i2s0_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_uldlloopback_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_i2s0_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_i2s0_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_i2s0_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_i2s0_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_i2s_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_i2s0_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_i2s_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_i2s0_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_i2s0_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_i2s0_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1_bt@11220000: duplicate unit-address (also used in node /bus/mt_soc_i2s0_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voip_bt_out@11220000: duplicate unit-address (also used in node /bus/mt_soc_i2s0_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voip_bt_in@11220000: duplicate unit-address (also used in node /bus/mt_soc_i2s0_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_tdmrx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_i2s0_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_mrgtx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_i2s0_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_ul2_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_i2s0_awb_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/audio@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md2@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md2@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_ul1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md2@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md2@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_hdmi_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md2@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_uldlloopback_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md2@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md2@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md2@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md2@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_i2s_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md2@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_i2s_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md2@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md2@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md2@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1_bt@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md2@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voip_bt_out@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md2@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voip_bt_in@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md2@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_tdmrx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md2@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_mrgtx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md2@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_ul2_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md2@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md2@11220000)
+stock.dts: Warning (unique_unit_address): /bus/audio@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_ul1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_hdmi_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_uldlloopback_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_i2s_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_i2s_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1_bt@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voip_bt_out@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voip_bt_in@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_tdmrx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_mrgtx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_ul2_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md2@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/audio@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md2_bt@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md2_bt@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_ul1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md2_bt@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md2_bt@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_hdmi_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md2_bt@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_uldlloopback_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md2_bt@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md2_bt@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md2_bt@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md2_bt@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_i2s_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md2_bt@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_i2s_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md2_bt@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md2_bt@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md2_bt@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1_bt@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md2_bt@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voip_bt_out@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md2_bt@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voip_bt_in@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md2_bt@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_tdmrx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md2_bt@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_mrgtx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md2_bt@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_ul2_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md2_bt@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md2_bt@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md2@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md2_bt@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_routing_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_voice_md2_bt@11220000)
+stock.dts: Warning (unique_unit_address): /bus/audio@11220000: duplicate unit-address (also used in node /bus/mt_soc_hp_impedance_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_hp_impedance_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_ul1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_hp_impedance_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1@11220000: duplicate unit-address (also used in node /bus/mt_soc_hp_impedance_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_hdmi_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_hp_impedance_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_uldlloopback_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_hp_impedance_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_hp_impedance_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_hp_impedance_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_hp_impedance_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_i2s_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_hp_impedance_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_i2s_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_hp_impedance_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_hp_impedance_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_hp_impedance_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1_bt@11220000: duplicate unit-address (also used in node /bus/mt_soc_hp_impedance_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voip_bt_out@11220000: duplicate unit-address (also used in node /bus/mt_soc_hp_impedance_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voip_bt_in@11220000: duplicate unit-address (also used in node /bus/mt_soc_hp_impedance_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_tdmrx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_hp_impedance_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_mrgtx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_hp_impedance_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_ul2_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_hp_impedance_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_hp_impedance_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md2@11220000: duplicate unit-address (also used in node /bus/mt_soc_hp_impedance_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_routing_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_hp_impedance_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md2_bt@11220000: duplicate unit-address (also used in node /bus/mt_soc_hp_impedance_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/audio@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_ul1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_hdmi_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_uldlloopback_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_i2s_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_i2s_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1_bt@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voip_bt_out@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voip_bt_in@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_tdmrx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_mrgtx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_ul2_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md2@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_routing_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md2_bt@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_hp_impedance_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/audio@11220000: duplicate unit-address (also used in node /bus/mt_soc_dummy_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dummy_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_ul1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dummy_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1@11220000: duplicate unit-address (also used in node /bus/mt_soc_dummy_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_hdmi_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dummy_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_uldlloopback_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dummy_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dummy_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dummy_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dummy_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_i2s_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dummy_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_i2s_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dummy_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dummy_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dummy_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1_bt@11220000: duplicate unit-address (also used in node /bus/mt_soc_dummy_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voip_bt_out@11220000: duplicate unit-address (also used in node /bus/mt_soc_dummy_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voip_bt_in@11220000: duplicate unit-address (also used in node /bus/mt_soc_dummy_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_tdmrx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dummy_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_mrgtx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dummy_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_ul2_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dummy_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dummy_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md2@11220000: duplicate unit-address (also used in node /bus/mt_soc_dummy_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_routing_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dummy_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md2_bt@11220000: duplicate unit-address (also used in node /bus/mt_soc_dummy_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_hp_impedance_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dummy_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_codec_name@11220000: duplicate unit-address (also used in node /bus/mt_soc_dummy_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/audio@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_dummy_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_dummy_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_ul1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_dummy_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_dummy_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_hdmi_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_dummy_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_uldlloopback_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_dummy_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_dummy_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_dummy_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_dummy_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_i2s_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_dummy_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_i2s_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_dummy_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_dummy_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_dummy_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1_bt@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_dummy_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voip_bt_out@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_dummy_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voip_bt_in@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_dummy_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_tdmrx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_dummy_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_mrgtx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_dummy_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_ul2_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_dummy_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_dummy_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md2@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_dummy_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_routing_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_dummy_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md2_bt@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_dummy_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_hp_impedance_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_dummy_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_codec_name@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_dummy_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dummy_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_codec_dummy_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/audio@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_ul1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_hdmi_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_uldlloopback_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_i2s_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_i2s_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1_bt@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voip_bt_out@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voip_bt_in@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_tdmrx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_mrgtx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_ul2_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md2@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_routing_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md2_bt@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_hp_impedance_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_codec_name@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dummy_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_codec_dummy_name@11220000: duplicate unit-address (also used in node /bus/mt_soc_routing_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/audio@11220000: duplicate unit-address (also used in node /bus/mt_soc_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_ul1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1@11220000: duplicate unit-address (also used in node /bus/mt_soc_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_hdmi_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_uldlloopback_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_i2s_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_i2s_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1_bt@11220000: duplicate unit-address (also used in node /bus/mt_soc_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voip_bt_out@11220000: duplicate unit-address (also used in node /bus/mt_soc_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voip_bt_in@11220000: duplicate unit-address (also used in node /bus/mt_soc_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_tdmrx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_mrgtx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_ul2_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md2@11220000: duplicate unit-address (also used in node /bus/mt_soc_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_routing_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md2_bt@11220000: duplicate unit-address (also used in node /bus/mt_soc_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_hp_impedance_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_codec_name@11220000: duplicate unit-address (also used in node /bus/mt_soc_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dummy_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_codec_dummy_name@11220000: duplicate unit-address (also used in node /bus/mt_soc_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_routing_dai_name@11220000: duplicate unit-address (also used in node /bus/mt_soc_dai_name@11220000)
+stock.dts: Warning (unique_unit_address): /bus/audio@11220000: duplicate unit-address (also used in node /bus/mt_soc_offload_gdma@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_offload_gdma@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_ul1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_offload_gdma@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1@11220000: duplicate unit-address (also used in node /bus/mt_soc_offload_gdma@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_hdmi_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_offload_gdma@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_uldlloopback_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_offload_gdma@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_offload_gdma@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_offload_gdma@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_offload_gdma@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_i2s_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_offload_gdma@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_i2s_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_offload_gdma@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_offload_gdma@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_offload_gdma@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1_bt@11220000: duplicate unit-address (also used in node /bus/mt_soc_offload_gdma@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voip_bt_out@11220000: duplicate unit-address (also used in node /bus/mt_soc_offload_gdma@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voip_bt_in@11220000: duplicate unit-address (also used in node /bus/mt_soc_offload_gdma@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_tdmrx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_offload_gdma@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_mrgtx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_offload_gdma@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_ul2_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_offload_gdma@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_offload_gdma@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md2@11220000: duplicate unit-address (also used in node /bus/mt_soc_offload_gdma@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_routing_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_offload_gdma@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md2_bt@11220000: duplicate unit-address (also used in node /bus/mt_soc_offload_gdma@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_hp_impedance_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_offload_gdma@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_codec_name@11220000: duplicate unit-address (also used in node /bus/mt_soc_offload_gdma@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dummy_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_offload_gdma@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_codec_dummy_name@11220000: duplicate unit-address (also used in node /bus/mt_soc_offload_gdma@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_routing_dai_name@11220000: duplicate unit-address (also used in node /bus/mt_soc_offload_gdma@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dai_name@11220000: duplicate unit-address (also used in node /bus/mt_soc_offload_gdma@11220000)
+stock.dts: Warning (unique_unit_address): /bus/audio@11220000: duplicate unit-address (also used in node /bus/mt_soc_dl2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dl2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_ul1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dl2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1@11220000: duplicate unit-address (also used in node /bus/mt_soc_dl2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_hdmi_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dl2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_uldlloopback_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dl2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dl2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dl2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_mrgrx_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dl2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_i2s_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dl2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_i2s_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dl2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0dl1_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dl2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dl1_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dl2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md1_bt@11220000: duplicate unit-address (also used in node /bus/mt_soc_dl2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voip_bt_out@11220000: duplicate unit-address (also used in node /bus/mt_soc_dl2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voip_bt_in@11220000: duplicate unit-address (also used in node /bus/mt_soc_dl2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_tdmrx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dl2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_fm_mrgtx_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dl2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_ul2_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dl2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_i2s0_awb_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dl2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md2@11220000: duplicate unit-address (also used in node /bus/mt_soc_dl2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_routing_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dl2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_voice_md2_bt@11220000: duplicate unit-address (also used in node /bus/mt_soc_dl2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_hp_impedance_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dl2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_codec_name@11220000: duplicate unit-address (also used in node /bus/mt_soc_dl2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dummy_pcm@11220000: duplicate unit-address (also used in node /bus/mt_soc_dl2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_codec_dummy_name@11220000: duplicate unit-address (also used in node /bus/mt_soc_dl2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_routing_dai_name@11220000: duplicate unit-address (also used in node /bus/mt_soc_dl2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_dai_name@11220000: duplicate unit-address (also used in node /bus/mt_soc_dl2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/mt_soc_offload_gdma@11220000: duplicate unit-address (also used in node /bus/mt_soc_dl2_pcm@11220000)
+stock.dts: Warning (unique_unit_address): /bus/USB1@0x11260000: duplicate unit-address (also used in node /bus/MSDC3@0x11260000)
+stock.dts: Warning (unique_unit_address): /bus/G3D_CONFIG@0x13000000: duplicate unit-address (also used in node /bus/MFGCFG@0x13000000)
+stock.dts: Warning (unique_unit_address): /bus/DISPSYS@0x14007000: duplicate unit-address (also used in node /bus/DISP_OVL0@0x14007000)
+stock.dts: Warning (unique_unit_address): /bus/smi_common@14017000: duplicate unit-address (also used in node /bus/met_smi@14017000)
+stock.dts: Warning (unique_unit_address): /bus/IMGSYS@0x15000000: duplicate unit-address (also used in node /bus/ISPSYS@0x15000000)
+stock.dts: Warning (unique_unit_address): /bus/kd_camera_hw1@15008000: duplicate unit-address (also used in node /bus/kd_camera_hw2@15008000)
+stock.dts: Warning (unique_unit_address): /bus/IMGSYS@0x15000000: duplicate unit-address (also used in node /bus/ISP_SYSR@0x15000000)
+stock.dts: Warning (unique_unit_address): /bus/ISPSYS@0x15000000: duplicate unit-address (also used in node /bus/ISP_SYSR@0x15000000)
+stock.dts: Warning (unique_unit_address): /bus/IMGSYS@0x15000000: duplicate unit-address (also used in node /bus/ISP_PIPEM@0x15000000)
+stock.dts: Warning (unique_unit_address): /bus/ISPSYS@0x15000000: duplicate unit-address (also used in node /bus/ISP_PIPEM@0x15000000)
+stock.dts: Warning (unique_unit_address): /bus/ISP_SYSR@0x15000000: duplicate unit-address (also used in node /bus/ISP_PIPEM@0x15000000)
+stock.dts: Warning (unique_unit_address): /bus/IMGSYS@0x15000000: duplicate unit-address (also used in node /bus/IMGSYS_CONFG@0x15000000)
+stock.dts: Warning (unique_unit_address): /bus/ISPSYS@0x15000000: duplicate unit-address (also used in node /bus/IMGSYS_CONFG@0x15000000)
+stock.dts: Warning (unique_unit_address): /bus/ISP_SYSR@0x15000000: duplicate unit-address (also used in node /bus/IMGSYS_CONFG@0x15000000)
+stock.dts: Warning (unique_unit_address): /bus/ISP_PIPEM@0x15000000: duplicate unit-address (also used in node /bus/IMGSYS_CONFG@0x15000000)
+stock.dts: Warning (gpios_property): /bus/mt_soc_dl1_pcm@11220000:audclk-gpio: Could not get phandle node for (cell 0)
+stock.dts: Warning (gpios_property): /bus/mt_soc_dl1_pcm@11220000:audmiso-gpio: Could not get phandle node for (cell 0)
+stock.dts: Warning (gpios_property): /bus/mt_soc_dl1_pcm@11220000:audmosi-gpio: Could not get phandle node for (cell 0)
+stock.dts: Warning (gpios_property): /bus/mt_soc_dl1_pcm@11220000:vowclk-gpio: Could not get phandle node for (cell 0)
+stock.dts: Warning (gpios_property): /bus/mt_soc_dl1_pcm@11220000:extspkamp-gpio: Could not get phandle node for (cell 0)
+stock.dts: Warning (gpios_property): /bus/mt_soc_dl1_pcm@11220000: Missing property '#gpio-cells' in node /soc/mt_pmic_regulator/ldo_regulators/ldo_vcamd or bad phandle (referred from i2s1clk-gpio[0])
+stock.dts: Warning (gpios_property): /bus/mt_soc_dl1_pcm@11220000: Missing property '#gpio-cells' in node /bus/pinctrl@0x10211000/audrcvspklow or bad phandle (referred from i2s1dat-gpio[0])
+stock.dts: Warning (gpios_property): /bus/mt_soc_dl1_pcm@11220000:i2s1mclk-gpio: property size (8) too small for cell size 2
+stock.dts: Warning (gpios_property): /bus/mt_soc_dl1_pcm@11220000: Missing property '#gpio-cells' in node /soc/mt_pmic_regulator/ldo_regulators/ldo_vcama or bad phandle (referred from i2s1ws-gpio[0])
+stock.dts: Warning (gpios_property): /bus/mt_soc_routing_pcm@11220000: Missing property '#gpio-cells' in node /bus/pinctrl@0x10211000/mmc1@ddr50 or bad phandle (referred from i2s1clk-gpio[0])
+stock.dts: Warning (gpios_property): /bus/mt_soc_routing_pcm@11220000: Missing property '#gpio-cells' in node /bus/pinctrl@0x10211000/mmc1@sdr104 or bad phandle (referred from i2s1dat-gpio[0])
+stock.dts: Warning (gpios_property): /bus/mt_soc_routing_pcm@11220000:i2s1mclk-gpio: property size (8) too small for cell size 2
+stock.dts: Warning (gpios_property): /bus/mt_soc_routing_pcm@11220000: Missing property '#gpio-cells' in node /bus/pinctrl@0x10211000/mmc1@sdr50 or bad phandle (referred from i2s1ws-gpio[0])
