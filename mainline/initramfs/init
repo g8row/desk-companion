@@ -34,6 +34,16 @@ paint() {
 }
 
 # ---- 1. screen ------------------------------------------------------------
+# fbcon (console=tty0 comes from LK's part of the cmdline) clears and redraws fb0, wiping the paint: unbind it.
+for v in /sys/class/vtconsole/vtcon*; do
+	grep -q "frame buffer" $v/name 2>/dev/null && echo 0 > $v/bind
+done
+# LK leaves OVL0 layer 3 on top of the framebuffer with the "orange state" warning. Disabling the layer
+# (SRC_CON bit 3) stalls OVL until reset, so make it transparent instead: constant alpha 0 in L3_CON.
+if [ $(( $(devmem 0x1400702c 32) & 8 )) -ne 0 ]; then
+	devmem 0x14007090 32 $(( $(devmem 0x14007090 32) & ~0xff ))
+	log "OVL0 L3 (LK overlay) alpha set to 0"
+fi
 paint ff0000; sleep 2
 paint 00ff00; sleep 2
 paint 0000ff; sleep 1
@@ -118,6 +128,27 @@ done ) &
 	  echo "== pstore"; ls /sys/fs/pstore 2>/dev/null; } > /www/status.txt 2>&1
 	sleep 5
 done ) &
+# ---- 3b. display watcher (tb.dispwatch=0 turns it off) --------------------
+# Addresses from the STOCK dtb (mainline mt6735.dtsi has RDMA0/DSI0/MUTEX at the wrong offsets for this chip).
+# Interrupt status registers are cleared after each read, so each line shows the events of the last second.
+# frames: OVL INTSTA bit1 / RDMA bit2 = frame done; RDMA bit4 = FIFO underflow.
+DISPWATCH=1
+for a in $(cat /proc/cmdline); do case "$a" in tb.dispwatch=*) DISPWATCH=${a#tb.dispwatch=} ;; esac; done
+if [ "$DISPWATCH" != 0 ]; then ( r() { devmem $1 32; }
+	i=0
+	while true; do
+		ovl_sta=$(r 0x14007000); ovl_int=$(r 0x14007008); devmem 0x14007008 32 0
+		rdma_int=$(r 0x14009004); devmem 0x14009004 32 0
+		dsi_int=$(r 0x1401200c)
+		line="t=$(cut -d' ' -f1 /proc/uptime) ovl sta=$ovl_sta int=$ovl_int src=$(r 0x1400702c) l0=$(r 0x14007f40) dbg=$(r 0x14007240)"
+		line="$line rdma int=$rdma_int con=$(r 0x14009010) st=$(r 0x14009030) dsi int=$dsi_int dbg=$(r 0x14012148)/$(r 0x1401214c)"
+		line="$line cg=$(r 0x14000100)/$(r 0x14000110) larb0=$(r 0x14015004) smi=$(r 0x14016004)"
+		echo "$line" >> /www/disp.log
+		echo "[disp] $line" > /dev/kmsg
+		i=$((i + 1)); [ $i -lt 180 ] && sleep 1 || sleep 10
+	done ) &
+fi
+
 ls /www > /dev/null
 log "ready: serial on ttyGS0, telnet/http on 172.16.42.1"
 dmesg | grep -i -E 'lkfb|simple|musb|udc|mmc0|wdt|watchdog' > /dev/tty0 2>/dev/null

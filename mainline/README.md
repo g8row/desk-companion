@@ -1,7 +1,65 @@
 # Mainline Linux on the Lenovo TB-7304X (MT6737M): research and first boot images
 
-Status (2026-11-16): **built, not tested on the device.** Nothing here has been written to or run on the tablet.
-The run steps are in [TEST-PLAN.md](TEST-PLAN.md).
+Status (2026-11-16): **mainline 7.0.10 boots on the tablet** from the `recovery` partition. Working: display (on LK's
+framebuffer), touch, all buttons, all 4 CPU cores, eMMC (read-only) and a USB shell and network.
+The run steps are in [TEST-PLAN.md](TEST-PLAN.md). Results and findings are in [section 0](#0-bring-up-results-2026-11-16).
+
+## 0. Bring-up results (2026-11-16)
+
+| Area | State | Notes |
+|---|---|---|
+| Boot | works | `fb_send.py out/boot-mainline.img flash:recovery`, then `fb_send.py - "oem reboot-recovery"` (TEST-PLAN.md). |
+| Display | works (simpledrm on LK's framebuffer) | See "Display findings" below. No DRM pipeline or panel driver yet. |
+| Touch | works | Goodix GT9293 on i2c1 @0x5d, `goodix,gt911` compatible, portrait coordinates, no axis swap. |
+| Buttons | work | Vol+/Vol- on the SoC keypad (`mediatek,mt6779-keypad` @0x10003000), Power via `mt6328-keys`. |
+| CPUs | all 4 work, hotplug works | New enable-method `mediatek,mt6735-smp` (`patches/smp_mt6735.c`). See "SMP findings". |
+| USB | works (peripheral) | Legacy CDC gadget `0525:a4aa` (ECM + ACM) takes the UDC. Device 172.16.42.1, telnet without login. |
+| eMMC | probes | Not mounted by `init`. |
+| WiFi/BT | no driver | MT6625L via CONSYS: no mainline driver. |
+| Charger, battery, RTC, thermal, sensors | not done | Research in progress. |
+| IOMMU (M4U) | deferred | "mm dts parse fail". SMI larbs therefore have no IOMMU (see patch 0002). |
+
+### Boot and tooling findings
+- LK's fastboot has no `boot`, and the stock `fastboot` tool stalls in the `download:` data phase.
+  `scripts/analysis/fb_send.py` (pyusb, 1 MiB bulk writes) uploads reliably. Usage: `fb_send.py <file> <cmd>`,
+  or `fb_send.py - "<cmd>"` to send a command only.
+- **LK keeps only 99 characters** of the boot image's cmdline. `build-in-docker.sh` fails the build if ours is longer.
+  LK prepends its own items (including `console=tty0`).
+- `scripts/mlsh.py` is a telnet shell to the tablet. `mlsh.py wait` waits for the gadget and touches `/tmp/stay`
+  (this cancels the 300 s auto-reboot). On the host, use a dedicated NetworkManager profile for the tablet's `enx*`
+  interface, with 172.16.42.2/24 and `never-default`. **Never run `nmcli d connect`**: it can move the host's main
+  wired profile onto the tablet link.
+- `reboot -f` can hang. `echo b > /proc/sysrq-trigger` always works.
+
+### Display findings
+- LK leaves OVL0 (0x14007000) scanning its framebuffer at 0x7f7b0000 (600x1024, pitch 2432) in DSI video mode.
+  `mtk-lk-fb` hands that framebuffer to simpledrm.
+- **fbcon** (`console=tty0` comes from LK) clears and redraws fb0, wiping anything else drawn there. `init` unbinds it.
+- OVL0 **layer 3** (0x7fa10000) holds LK's "orange state" warning overlay. Disabling the layer (SRC_CON bit 3)
+  **stalls OVL** until reset: the screen shows RGB columns or goes black. Setting its constant alpha to 0
+  (`L3_CON` 0x14007090, low byte) hides it safely. `init` does that.
+- **The mainline `mt6735.dtsi` display addresses are wrong for this chip.** The stock DTB has RDMA0 0x14009000,
+  DSI0 0x14012000, MUTEX 0x14013000 and MIPI_TX 0x14018000; the dtsi has 14008000, 14011000 and 14017000.
+  Wrong addresses read back `0x1234`. This must be fixed before `DRM_MEDIATEK` can drive the panel.
+- With no IOMMU bound, `mtk_smi_larb_resume` dereferenced `larb->mmu` (NULL). Patch 0002 skips the port
+  configuration in that case.
+- `init` has a display-register watcher (`[disp]` lines in dmesg and `/www/disp.log`). Turn it off with `tb.dispwatch=0`.
+
+### SMP findings
+- The stock ATF's PSCI `CPU_ON` only records the entry point. It does not power the core.
+  The stock kernel's `enable-method = "mt-boot"` calls PSCI `CPU_ON` and then powers the core's MTCMOS domain
+  itself through the SPM (0x10006000). This is the "firmware issue" the Doogee DTS mentions.
+- `patches/smp_mt6735.c` does the same in mainline:
+  - It is hooked into `arch/arm64/kernel/cpu_ops.c` by `patches/0003-arm64-mt6735-smp.sh`.
+  - Before each SPM write it writes the project key `0x0b160001` to `POWERON_CONFIG_SET`.
+  - Power-on order: `PWR_ON`, then `PWR_ON_2ND`; wait for the status bits; clear `ISO`; clear `L1_PDN` and wait for
+    its ack; set `SRAM_ISOINT_B`; clear `SRAM_CKISO` and `CLK_DIS`; set `RST_B`.
+  - Hotplug off does the reverse, after the core is in WFI.
+- Verified on the tablet:
+  - All 4 cores come up at boot (`SMP: Total of 4 processors activated`).
+  - A 4-way busy loop runs at about 88% on every core, and timer interrupts and IPIs reach every core.
+  - cpu3 goes offline and back online, and powers back on from `PWR_CON=0x32`.
+- This should also work on other MT6735/MT6737 devices running stock ATF.
 
 ## TL;DR
 
@@ -125,6 +183,9 @@ Fastboot product string: `HQ8735B_TB_N`.
 | `dts/mt6737m-lenovo-tb7304x.dts` | Minimal board DTS (from the Doogee X5 Pro DTS and the stock DTB). See below. |
 | `patches/mtk-lk-fb.c` | New tiny driver, `CONFIG_MTK_LK_FB`. See below. |
 | `patches/0001-soc-mediatek-mtk-lk-fb.sh` | Idempotently adds the driver and DTS to the kernel tree (Kconfig, Makefile, dts Makefile). |
+| `patches/0002-memory-mtk-smi-skip-larb-port-config-without-iommu.patch` | Fixes a NULL dereference in `mtk_smi_larb_resume` when no IOMMU is bound. |
+| `patches/0003-arm64-mt6735-smp.sh`, `patches/smp_mt6735.c` | The `mediatek,mt6735-smp` enable-method: PSCI CPU_ON plus the SPM power-on. |
+| `scripts/analysis/fb_send.py`, `scripts/mlsh.py` | pyusb fastboot client (upload, flash, oem); telnet shell to the running tablet. |
 | `patches/config-tb7304x.fragment` | Appended to the pmOS config. See below. |
 | `initramfs/init`, `initramfs/lkpaint.c` | Busybox init and a static screen-fill tool. Work on both mainline and the stock 3.18 kernel. See below. |
 | `scripts/Dockerfile`, `scripts/build.sh`, `scripts/build-in-docker.sh` | Reproducible build (OrbStack/Docker, Debian trixie arm64, native gcc 14.2, Debian `mkbootimg` 34.0.5, busybox-static 1.37.0). |
@@ -133,7 +194,8 @@ Fastboot product string: `HQ8735B_TB_N`.
 | `out/` | Build outputs plus `SHA256SUMS`, `kernel.config`, `build.log`, LK disassembly excerpts. |
 
 The DTS (`dts/mt6737m-lenovo-tb7304x.dts`):
-- 1 CPU
+- 4 CPUs with `enable-method = "mediatek,mt6735-smp"`
+- touch (Goodix on i2c1, VGP1 at 2.8 V), SoC keypad (volume keys), MT6328 power key
 - uart0, eMMC at a conservative 50 MHz (no HS200/HS400 tuning)
 - pwrap + MT6328
 - musb in `dr_mode = "peripheral"`
@@ -147,6 +209,7 @@ The driver (`patches/mtk-lk-fb.c`, `CONFIG_MTK_LK_FB`):
 
 The config fragment (`patches/config-tb7304x.fragment`):
 - no modules, `DRM_MEDIATEK` off (so nothing reprograms the display)
+- evdev, Goodix touch, `mt6779-keypad`, MT6328 PMIC keys
 - simpledrm + fbdev + fbcon + logo
 - `/dev/mem` without STRICT_DEVMEM
 - embedded initramfs
@@ -163,7 +226,7 @@ The initramfs (`initramfs/init`, `initramfs/lkpaint.c`):
 ### Images (`out/`)
 | Image | Kernel | Cmdline (LK appends its own items) |
 |---|---|---|
-| `boot-mainline.img` (13.3 MB) | 7.0.10-tb7304x+ Image.gz + `mt6737m-lenovo-tb7304x.dtb` | `bootopt=64S3,32N2,64N2 console=tty0 clk_ignore_unused pd_ignore_unused regulator_ignore_unused maxcpus=1 ignore_loglevel panic=10 oops=panic tb.autoreboot=300` |
+| `boot-mainline.img` (13.3 MB) | 7.0.10-tb7304x+ Image.gz + `mt6737m-lenovo-tb7304x.dtb` | `bootopt=64S3,32N2,64N2 clk_ignore_unused pd_ignore_unused regulator_ignore_unused` (99-char LK limit; `init` defaults to `tb.autoreboot=300`) |
 | `boot-mainline-noovl.img` | same | same + `lkfb.ovl=0` |
 | `boot-stock-kernel-initramfs.img` (8.9 MB) | stock 3.18 kernel+DTB, byte-for-byte | `bootopt=64S3,32N2,64N2 panic=10 tb.autoreboot=300` |
 
@@ -192,22 +255,21 @@ cd mainline
    - If reading OVL hangs the bus (display clocks gated), use the `-noovl` image.
 3. **USB gadget on mainline:** musb is in pmOS's config and the Doogee DTS. It is untested on MT6737M. VBUS/ID detection
    is not wired up; we force peripheral mode.
-4. **SMP:** disabled (`maxcpus=1`, only cpu0 in the DT), following the Doogee notes.
+4. **SMP:** solved (see section 0). Add `maxcpus=1` to the cmdline in `build-in-docker.sh` to fall back to one core.
 5. **No charger driver.** Keep the battery charged and keep the test short (auto-reboot helps).
 6. **Watchdog:** mainline `mtk_wdt` (TOPRGU, 10 s) pets the watchdog from the kernel. Whether LK hands over an armed
    watchdog is unknown. If the kernel hangs before the watchdog driver probes, recovery may need a long press on Power.
 7. **eMMC:** probed (read-only use: init never mounts anything) at 50 MHz. If mmc init misbehaves it only costs a
    storage device in `/proc/partitions`.
 
-## 4. Next steps after a successful boot
-1. Read `lkfb:` and `musb` lines from `dmesg.txt`. Pin the framebuffer in DT (`simple-framebuffer` + reserved-memory)
-   and drop the OVL probing.
-2. Identify the LCM, then write or port a `drm_panel` driver (nt51021b / nt35521z / hx8394d init sequences are in the
-   stock kernel and LK) and enable `DRM_MEDIATEK` with dsi0.
-3. Touch: add `goodix,gt9293`-compatible on i2c1 @0x5d (IRQ GPIO 10, reset GPIO from the stock pinctrl) and enable i2c1.
-4. SMP: test `psci` CPU_ON with stock ATF (the Doogee note says it is broken; it may differ here).
-5. WiFi: no mainline path today (MT6625L/CONSYS). This decides whether mainline is usable as a daily OS here.
-6. Long term: a chain-loaded U-Boot (`gitlab.com/alifilhan0/u-boot`, MT6735 port, used by grandpplte) would give a
+## 4. Next steps
+Done: boot, touch, keys, SMP (see section 0).
+1. Display: fix the display addresses in the dtsi, identify the LCM, then write or port a `drm_panel` driver
+   (nt51021b / nt35521z / hx8394d init sequences are in the stock kernel and LK) and enable `DRM_MEDIATEK` with dsi0.
+2. Root filesystem on the eMMC, with `init` as a stage 1 that can fall back.
+3. Charger (SM5414 on I2C3), battery reporting, RTC, thermal.
+4. WiFi: no mainline path today (MT6625L/CONSYS). This decides whether mainline is usable as a daily OS here.
+5. Long term: a chain-loaded U-Boot (`gitlab.com/alifilhan0/u-boot`, MT6735 port, used by grandpplte) would give a
    proper `fastboot boot`-like RAM loader without touching LK.
 
 ## Sources

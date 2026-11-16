@@ -6,6 +6,9 @@
 set -euo pipefail
 M=/m; K=$M/src/linux; O=/kout; OUT=$M/out; mkdir -p $OUT /build
 JOBS=$(nproc)
+# Native on an arm64 host (Mac), cross on x86_64 (taos): CROSS/BUSYBOX come from the Dockerfile.
+if [ "$(uname -m)" != aarch64 ]; then export CROSS_COMPILE=aarch64-linux-gnu-; fi
+CC=${CROSS_COMPILE:-}gcc; STRIP=${CROSS_COMPILE:-}strip; BUSYBOX=${BUSYBOX:-${BUSYBOX_ARM64:-/bin/busybox}}; [ -x "$BUSYBOX" ] || BUSYBOX=/bin/busybox
 CMDLINE_BASE="bootopt=64S3,32N2,64N2"
 MKB="mkbootimg --base 0x40000000 --kernel_offset 0x00080000 --ramdisk_offset 0x04000000 \
  --second_offset 0x00f00000 --tags_offset 0x0e000000 --pagesize 2048 --header_version 0 \
@@ -34,9 +37,9 @@ if cmp -s /build/stock-repack.img <(head -c $n /stock/boot.bin); then echo "   s
 
 echo "== 1. initramfs"
 R=/build/rootfs; rm -rf $R; mkdir -p $R/bin $R/www $R/dev
-cp /bin/busybox $R/bin/busybox
-gcc -static -O2 -Wall -o $R/bin/lkpaint $M/initramfs/lkpaint.c
-strip $R/bin/lkpaint
+cp $BUSYBOX $R/bin/busybox
+$CC -static -O2 -Wall -o $R/bin/lkpaint $M/initramfs/lkpaint.c
+$STRIP $R/bin/lkpaint
 cp $M/initramfs/init $R/init; chmod 755 $R/init
 mknod -m 600 $R/dev/console c 5 1; mknod -m 666 $R/dev/null c 1 3
 (cd $R && find . | sort | cpio -o -H newc --owner=0:0 2>/dev/null) > /build/initramfs.cpio
@@ -44,11 +47,14 @@ gzip -9 -n -c /build/initramfs.cpio > $OUT/initramfs.cpio.gz
 ls -la $OUT/initramfs.cpio.gz
 
 echo "== 2. kernel"
-sh $M/patches/0001-soc-mediatek-mtk-lk-fb.sh $K
+for p in $M/patches/0*.sh; do sh "$p" $K; done
+for p in $M/patches/0*.patch; do   # idempotent: skip patches that are already applied
+  patch -d $K -p1 -R -f -s --dry-run < "$p" >/dev/null 2>&1 && continue
+  patch -d $K -p1 -N -s < "$p" && echo "   applied $(basename $p)"; done
 cp $M/src/pmaports/device/*/linux-postmarketos-mediatek-mt6735/config-postmarketos-mediatek-mt6735.aarch64 $O/.config
 cat $M/patches/config-tb7304x.fragment >> $O/.config
 make -C $K O=$O ARCH=arm64 olddefconfig >/dev/null
-for opt in MODULES DRM_MEDIATEK MTK_LK_FB DRM_SIMPLEDRM FB_DEVICE STRICT_DEVMEM INITRAMFS_SOURCE USB_MUSB_GADGET USB_CONFIGFS_ECM PSTORE_RAM; do
+for opt in TOUCHSCREEN_GOODIX KEYBOARD_MT6779 MODULES DRM_MEDIATEK MTK_LK_FB DRM_SIMPLEDRM FB_DEVICE STRICT_DEVMEM INITRAMFS_SOURCE USB_MUSB_GADGET USB_CONFIGFS_ECM PSTORE_RAM; do
   grep -E "^(# )?CONFIG_${opt}[= ]" $O/.config || echo "   CONFIG_$opt missing"; done
 make -C $K O=$O ARCH=arm64 -j$JOBS KBUILD_BUILD_USER=tb7304 KBUILD_BUILD_HOST=mainline Image.gz mediatek/mt6737m-lenovo-tb7304x.dtb 2>&1 | grep -E "error|warning: |Kernel: |DTC" | grep -v "^  DTC" | tail -40 || true
 cp $O/.config $OUT/kernel.config
@@ -65,7 +71,11 @@ PY
 
 echo "== 3. boot images"
 cat $O/arch/arm64/boot/Image.gz $OUT/mt6737m-lenovo-tb7304x.dtb > /build/Image.gz-dtb
-CL="$CMDLINE_BASE console=tty0 clk_ignore_unused pd_ignore_unused regulator_ignore_unused maxcpus=1 ignore_loglevel panic=10 oops=panic tb.autoreboot=300"
+# LK keeps only ~99 chars of the image cmdline (the rest is cut off: "...regulator_ignore_unused maxc" on the first boot).
+# All 4 cores come up at boot through enable-method "mediatek,mt6735-smp" (patches/smp_mt6735.c).
+# Add maxcpus=1 here to fall back to a single core.
+CL="$CMDLINE_BASE clk_ignore_unused pd_ignore_unused regulator_ignore_unused"
+[ ${#CL} -le 99 ] || { echo "cmdline is ${#CL} chars, LK truncates after 99"; exit 1; }
 $MKB --kernel /build/Image.gz-dtb --ramdisk $OUT/initramfs.cpio.gz --cmdline "$CL" -o $OUT/boot-mainline.img
 # lkfb.ovl=0: same, but the shim does not touch display registers (only atag,videolfb)
 $MKB --kernel /build/Image.gz-dtb --ramdisk $OUT/initramfs.cpio.gz --cmdline "$CL lkfb.ovl=0" -o $OUT/boot-mainline-noovl.img

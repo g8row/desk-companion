@@ -1,0 +1,15 @@
+diff --git a/drivers/memory/mtk-smi.c b/drivers/memory/mtk-smi.c
+index 43f050769..15075fd44 100644
+--- a/drivers/memory/mtk-smi.c
++++ b/drivers/memory/mtk-smi.c
+@@ -705,6 +705,10 @@ static int __maybe_unused mtk_smi_larb_resume(struct device *dev)
+ 	if (MTK_SMI_CAPS(larb->larb_gen->flags_general, MTK_SMI_FLAG_SLEEP_CTL))
+ 		mtk_smi_larb_sleep_ctrl_disable(larb);
+ 
++	/* No IOMMU bound this larb (larb->mmu unset): leave the port setup as the bootloader left it */
++	if (!larb->mmu)
++		return 0;
++
+ 	/* Configure the basic setting for this larb */
+ 	return larb_gen->config_port(dev);
+ }

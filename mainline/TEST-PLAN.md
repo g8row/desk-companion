@@ -11,6 +11,23 @@ Everything here runs from the `mainline/` folder. Images are in `out/`.
 All three use the stock header layout: v0, page 2048, base 0x40000000, kernel 0x40080000, ramdisk 0x44000000,
 tags 0x4e000000, cmdline starting with `bootopt=64S3,32N2,64N2`.
 
+## Working flow (2026-11-16, Linux host)
+
+This flow is tested and boots mainline. Run each device step on its own, and check the result before the next one.
+`PY` is a Python with pyusb installed. Don't run an adb server while fastboot is in use.
+
+1. Android to fastboot: `adb reboot bootloader`. The tablet shows up as `0bb4:0c01`.
+2. Flash: `$PY -I mainline/scripts/analysis/fb_send.py mainline/out/boot-mainline.img flash:recovery`.
+   Stock `fastboot flash` stalls; `fb_send.py` doesn't.
+3. Boot it: `$PY -I mainline/scripts/analysis/fb_send.py - "oem reboot-recovery"`.
+4. Within ~10 s of boot, run `python3 -I mainline/scripts/mlsh.py wait`. It waits for the `0525:a4aa` gadget at
+   172.16.42.1 and touches `/tmp/stay`, which cancels the 300 s auto-reboot. Then run commands with
+   `mlsh.py 'cmd'`. The host needs 172.16.42.2/24 on the `enx*` interface (dedicated NM profile, `never-default`).
+   **Never `nmcli d connect`.**
+5. Back to Android: `mlsh.py 'echo 1 > /proc/sys/kernel/sysrq; echo b > /proc/sysrq-trigger'`. `reboot -f` can hang.
+
+`mainline/scripts/linux-test.sh flash|run|shell` wraps steps 2–4.
+
 ## Important: `fastboot boot` is probably NOT available
 
 We disassembled the stock LK (`backup/partitions/lk.bin`). Its fastboot command table registers only:

@@ -33,3 +33,9 @@ CONFIG_USB_CONFIGFS_RNDIS=y
 CONFIG_LOCALVERSION="-tb7304x"
 # CONFIG_LOCALVERSION_AUTO is not set
 CONFIG_CMDLINE="console=tty0 clk_ignore_unused pd_ignore_unused regulator_ignore_unused maxcpus=1 ignore_loglevel"
+# Input: Goodix GT9xx touch on i2c1, SoC keypad (volume), PMIC power key
+CONFIG_INPUT_EVDEV=y
+CONFIG_INPUT_TOUCHSCREEN=y
+CONFIG_TOUCHSCREEN_GOODIX=y
+CONFIG_KEYBOARD_MT6779=y
+CONFIG_KEYBOARD_MTK_PMIC=y

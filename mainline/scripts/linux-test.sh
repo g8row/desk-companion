@@ -7,8 +7,11 @@
 #   mainline/scripts/linux-test.sh probe    # tablet in fastboot: raw protocol probe (16 B) — shows which phase stalls
 #   mainline/scripts/linux-test.sh uploads  # tablet in fastboot: RAM-only uploads 4 KB → 4 MB (fastboot stage)
 #   mainline/scripts/linux-test.sh boot [image]   # tablet in fastboot: step 1, `fastboot boot` (RAM only)
+#   mainline/scripts/linux-test.sh flash [image]  # tablet in fastboot: WRITES the recovery partition (fb_send.py, pyusb)
+#   mainline/scripts/linux-test.sh run            # tablet in fastboot: `oem reboot-recovery` (boots what `flash` wrote)
+#   mainline/scripts/linux-test.sh shell          # wait for the mainline gadget, cancel the auto-reboot (mlsh.py wait)
 #
-# Nothing here writes flash. After a stall LK is wedged until the tablet reboots (hold Power ~15 s).
+# Only `flash` writes flash. After a stall LK is wedged until the tablet reboots (hold Power ~15 s).
 # Stop any adb server first (`adb kill-server`), and nothing else should poll USB.
 set -u
 cd "$(dirname "$0")/../.."          # repo root
@@ -42,5 +45,12 @@ boot)
   ping || exit 1
   img=${2:-$OUT/boot-stock-kernel-initramfs.img}
   echo "== fastboot boot $img"; T 60 fastboot boot "$img" 2>&1; echo "exit=$?" ;;
-*) sed -n 2,12p "$0"; exit 1 ;;
+flash)
+  img=${2:-$OUT/boot-mainline.img}
+  T 120 "${PY:-python3}" -I mainline/scripts/analysis/fb_send.py "$img" flash:recovery ;;
+run)
+  T 20 "${PY:-python3}" -I mainline/scripts/analysis/fb_send.py - "oem reboot-recovery" ;;
+shell)
+  T 250 python3 -I mainline/scripts/mlsh.py wait ;;
+*) sed -n 2,16p "$0"; exit 1 ;;
 esac
