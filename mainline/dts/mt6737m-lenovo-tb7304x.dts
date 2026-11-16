@@ -115,10 +115,47 @@
  * "firmware issue" noted on the Doogee X5 Pro). The stock kernel's "mt-boot" does PSCI CPU_ON and
  * then the SPM MTCMOS power-on itself; arch/arm64/kernel/smp_mt6735.c does the same.
  */
-&cpu0 { enable-method = "mediatek,mt6735-smp"; };
-&cpu1 { enable-method = "mediatek,mt6735-smp"; };
-&cpu2 { enable-method = "mediatek,mt6735-smp"; };
-&cpu3 { enable-method = "mediatek,mt6735-smp"; };
+&cpu0 { enable-method = "mediatek,mt6735-smp"; clocks = <&apmixedsys CLK_APMIXED_ARMPLL>; cpu-supply = <&mt6328_vproc_reg>; operating-points-v2 = <&cpu_opp>; };
+&cpu1 { enable-method = "mediatek,mt6735-smp"; clocks = <&apmixedsys CLK_APMIXED_ARMPLL>; cpu-supply = <&mt6328_vproc_reg>; operating-points-v2 = <&cpu_opp>; };
+&cpu2 { enable-method = "mediatek,mt6735-smp"; clocks = <&apmixedsys CLK_APMIXED_ARMPLL>; cpu-supply = <&mt6328_vproc_reg>; operating-points-v2 = <&cpu_opp>; };
+&cpu3 { enable-method = "mediatek,mt6735-smp"; clocks = <&apmixedsys CLK_APMIXED_ARMPLL>; cpu-supply = <&mt6328_vproc_reg>; operating-points-v2 = <&cpu_opp>; };
+
+/*
+ * CPU DVFS (cpufreq-dt): ARMPLL straight, VPROC from the MT6328 (patches/0005 fixes its vsel register).
+ * Frequencies and voltages: the stock kernel's MT6737M table (1092/988/858/793/637/494/364/221 MHz at
+ * 1.25/1.21875/1.1875/1.15/1.10/1.05/1.00/0.95 V, found in the stock Image), without PTP-OD's per-chip
+ * undervolt. Only the ARMPLL /2 post-divider range is listed (VCO 1274-1976 MHz): mainline changes the PLL in
+ * place, and a post-divider change while the CPU runs from it would glitch (the stock kernel uses FHCTL
+ * hopping for that). So no 1092 MHz (needs /1) and nothing below 637 MHz (needs /4).
+ * VSRAM (LDO, 1.35 V from LK) stays above every VPROC level here.
+ */
+/ {
+	cpu_opp: opp-table-cpu {
+		compatible = "operating-points-v2";
+		opp-shared;
+
+		opp-637000000 {
+			opp-hz = /bits/ 64 <637000000>;
+			opp-microvolt = <1100000>;
+			clock-latency-ns = <50000>;
+		};
+		opp-793000000 {
+			opp-hz = /bits/ 64 <793000000>;
+			opp-microvolt = <1150000>;
+			clock-latency-ns = <50000>;
+		};
+		opp-858000000 {
+			opp-hz = /bits/ 64 <858000000>;
+			opp-microvolt = <1187500>;
+			clock-latency-ns = <50000>;
+		};
+		opp-988000000 {
+			opp-hz = /bits/ 64 <988000000>;
+			opp-microvolt = <1218750>;
+			clock-latency-ns = <50000>;
+		};
+	};
+};
 
 &uart0 {
 	status = "okay";
