@@ -54,7 +54,7 @@ for p in $M/patches/0*.patch; do   # idempotent: skip patches that are already a
 cp $M/src/pmaports/device/*/linux-postmarketos-mediatek-mt6735/config-postmarketos-mediatek-mt6735.aarch64 $O/.config
 cat $M/patches/config-tb7304x.fragment >> $O/.config
 make -C $K O=$O ARCH=arm64 olddefconfig >/dev/null
-for opt in TOUCHSCREEN_GOODIX KEYBOARD_MT6779 MODULES DRM_MEDIATEK MTK_LK_FB DRM_SIMPLEDRM FB_DEVICE STRICT_DEVMEM INITRAMFS_SOURCE USB_MUSB_GADGET USB_CONFIGFS_ECM PSTORE_RAM; do
+for opt in TOUCHSCREEN_GOODIX KEYBOARD_MT6779 MODULES DRM_MEDIATEK DRM_PANEL_NOVATEK_NT51021B MTK_MMSYS PHY_MTK_MIPI_DSI MTK_LK_FB DRM_SIMPLEDRM FB_DEVICE STRICT_DEVMEM INITRAMFS_SOURCE USB_MUSB_GADGET USB_CONFIGFS_ECM PSTORE_RAM; do
   grep -E "^(# )?CONFIG_${opt}[= ]" $O/.config || echo "   CONFIG_$opt missing"; done
 make -C $K O=$O ARCH=arm64 -j$JOBS KBUILD_BUILD_USER=tb7304 KBUILD_BUILD_HOST=mainline Image.gz mediatek/mt6737m-lenovo-tb7304x.dtb 2>&1 | grep -E "error|warning: |Kernel: |DTC" | grep -v "^  DTC" | tail -40 || true
 cp $O/.config $OUT/kernel.config

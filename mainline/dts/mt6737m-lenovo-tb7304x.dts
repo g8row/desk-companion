@@ -89,6 +89,16 @@
 	 * index 0 = KEY_VOLUMEUP, 1 = KEY_VOLUMEDOWN, single-key mode -> row 0, cols 0/1).
 	 * mt6779-keypad uses the same MEM/DEBOUNCE/SEL register layout. Not in mt6735.dtsi.
 	 */
+	/* Panel logic supply, switched by GPIO83 (stock gpio_lcd_pwr); LK leaves it on */
+	lcd_vdd: regulator-lcd-vdd {
+		compatible = "regulator-fixed";
+		regulator-name = "lcd_vdd";
+		gpio = <&pio 83 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		startup-delay-us = <20000>;
+		regulator-boot-on;
+	};
+
 	/* `echo bootloader|recovery|normal > /sys/devices/platform/rtc-boot-mode/next_boot`: LK's next boot target */
 	rtc-boot-mode {
 		compatible = "lenovo,tb7304x-rtc-boot-mode";
@@ -210,6 +220,39 @@
 	reg = <0 0x14009000 0 0x1000>;
 	interrupts = <GIC_SPI 195 IRQ_TYPE_LEVEL_LOW>;
 	iommus = <&m4u MTK_M4U_ID(0, 2)>;	/* D2 larb0: OVL0 0/1, RDMA0 2, WDMA0 3 */
+	status = "okay";
+
+	/* Minimal pipeline: RDMA0 reads the framebuffer itself and feeds DSI0 (no OVL/COLOR/.../DITHER yet) */
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		port@0 {
+			reg = <0>;
+			rdma0_in: endpoint {
+				remote-endpoint = <&mmsys_main>;
+			};
+		};
+
+		port@1 {
+			reg = <1>;
+			rdma0_out: endpoint {
+				remote-endpoint = <&dsi0_in>;
+			};
+		};
+	};
+};
+
+&mmsys {
+	port {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		mmsys_main: endpoint@0 {
+			reg = <0>;	/* CRTC_MAIN */
+			remote-endpoint = <&rdma0_in>;
+		};
+	};
 };
 
 &ovl {
@@ -229,10 +272,48 @@
 &dsi {
 	reg = <0 0x14012000 0 0x1000>;
 	interrupts = <GIC_SPI 204 IRQ_TYPE_LEVEL_LOW>;
+	status = "okay";
+
+	/delete-node/ port;
+
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		port@0 {
+			reg = <0>;
+			dsi0_in: endpoint {
+				remote-endpoint = <&rdma0_out>;
+			};
+		};
+
+		port@1 {
+			reg = <1>;
+			dsi0_out_ep: endpoint {
+				remote-endpoint = <&panel_in>;
+			};
+		};
+	};
+
+	/* NT51021B, "nt51021b_dsi_vdo_gx" in LK's atag. Backlight: DISP_PWM, left on by LK (not described yet). */
+	panel@0 {
+		compatible = "lenovo,tb7304x-nt51021b-gx";
+		reg = <0>;
+		power-supply = <&lcd_vdd>;
+		reset-gpios = <&pio 146 GPIO_ACTIVE_LOW>;
+
+		port {
+			panel_in: endpoint {
+				remote-endpoint = <&dsi0_out_ep>;
+			};
+		};
+	};
 };
 
 &disp_mutex {
+	compatible = "mediatek,mt6735m-disp-mutex", "mediatek,mt6735-disp-mutex";
 	reg = <0 0x14015000 0 0x1000>;
+	status = "okay";
 };
 
 &smi_larb0 {
@@ -245,6 +326,7 @@
 
 &mipi_tx {
 	reg = <0 0x14018000 0 0x1000>;
+	status = "okay";
 };
 
 /* D2 has three larbs; larb3 (VENC) is in the VEN domain deleted below, so it never probes and the M4U would wait. */

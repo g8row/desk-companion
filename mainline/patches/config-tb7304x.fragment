@@ -2,7 +2,9 @@
 # Keep everything built in, no modules to ship
 # CONFIG_MODULES is not set
 # Do not let mediatek-drm reprogram the display LK left running (no panel driver yet)
-# CONFIG_DRM_MEDIATEK is not set
+# Real display pipeline (RDMA0 -> DSI0 -> NT51021B). simpledrm keeps LK's framebuffer until it takes over.
+CONFIG_DRM_MEDIATEK=y
+CONFIG_DRM_PANEL_NOVATEK_NT51021B=y
 CONFIG_MTK_LK_FB=y
 CONFIG_DRM_SIMPLEDRM=y
 CONFIG_DRM_FBDEV_EMULATION=y
