@@ -263,14 +263,10 @@ cd mainline
    storage device in `/proc/partitions`.
 
 ## 4. Next steps
-Done: boot, touch, keys, SMP (see section 0).
-1. Display: fix the display addresses in the dtsi, identify the LCM, then write or port a `drm_panel` driver
-   (nt51021b / nt35521z / hx8394d init sequences are in the stock kernel and LK) and enable `DRM_MEDIATEK` with dsi0.
-2. Root filesystem on the eMMC, with `init` as a stage 1 that can fall back.
-3. Charger (SM5414 on I2C3), battery reporting, RTC, thermal.
-4. WiFi: no mainline path today (MT6625L/CONSYS). This decides whether mainline is usable as a daily OS here.
-5. Long term: a chain-loaded U-Boot (`gitlab.com/alifilhan0/u-boot`, MT6735 port, used by grandpplte) would give a
-   proper `fastboot boot`-like RAM loader without touching LK.
+Display, rootfs, cpufreq, GPU and the PocketJS kiosk are done; the live status table, measurements and the ordered
+todo list are in [`docs/mainline/STATUS.md`](../docs/mainline/STATUS.md). Long term: a chain-loaded U-Boot
+(`gitlab.com/alifilhan0/u-boot`, MT6735 port, used by grandpplte) would give a proper `fastboot boot`-like RAM loader
+without touching LK.
 
 ## Sources
 - mt6735 mainline group: https://gitlab.com/mt6735-mainline (kernel: https://gitlab.com/mt6735-mainline/linux)

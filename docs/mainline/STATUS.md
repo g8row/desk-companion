@@ -1,6 +1,6 @@
 # TB-7304X mainline Linux: status
 
-Last updated 2026-11-16. Kernel 7.0.10 (mt6735-mainline `v7.0.10-mt6735`, 046883c) plus our patches in `mainline/`.
+Last updated 2026-11-16 (kernel #21). Kernel 7.0.10 (mt6735-mainline `v7.0.10-mt6735`, 046883c) plus our patches in `mainline/`.
 The build, boot and test flow is in [`mainline/README.md`](../../mainline/README.md) and
 [`mainline/TEST-PLAN.md`](../../mainline/TEST-PLAN.md).
 
@@ -17,10 +17,10 @@ Research notes (read-only investigations of the stock firmware, mainline tree an
 | Function | Status | How / notes | Next step |
 |---|---|---|---|
 | Boot | ✅ works | `recovery` partition via LK `oem reboot-recovery`. `fb_send.py` because stock `fastboot` stalls. Cmdline ≤ 99 chars. | — |
-| CPU, 4× A53 | ✅ all 4 cores, hotplug, cpufreq 637–988 MHz | `mediatek,mt6735-smp` enable-method: PSCI CPU_ON + SPM MTCMOS (`patches/smp_mt6735.c`). cpufreq-dt on ARMPLL + MT6328 VPROC, schedutil; OPPs from the stock MT6737M table (see below) | 1092 MHz needs an ARMPLL post-divider change (FHCTL hopping or a CPU clock mux) |
-| Display | ✅ mediatek-drm | RDMA0 → DSI0 → NT51021B GX (`panel-novatek-nt51021b.c`), D2 mutex table, through the IOMMU. `fb0` = mediatekdrmfb with the kernel console on screen. (A one-off burst of 10 IOMMU faults at boot, before the first framebuffer is attached.) | Full OVL0 path for hardware planes; then GPU |
+| CPU, 4× A53 | ✅ all 4 cores, hotplug, cpufreq 1040–1196 MHz (1144/1196 = overclock, boost) | `mediatek,mt6735-smp` enable-method: PSCI CPU_ON + SPM MTCMOS (`patches/smp_mt6735.c`). cpufreq-dt on ARMPLL + MT6328 VPROC, schedutil; ARMPLL /1 only (see "cpufreq" below) | Idle below 1040 MHz needs a CPU clock mux (park on MAINPLL) to change the post-divider safely; SoC thermal sensor before trusting 1196 MHz long-term |
+| Display | ✅ mediatek-drm, 66 Hz | RDMA0 → DSI0 → NT51021B GX (`panel-novatek-nt51021b.c`), D2 mutex table, through the IOMMU. `/dev/dri/card1`; `fb0` = mediatekdrmfb with the kernel console on screen. Refresh measured 66 Hz (kmscube, vsync-locked). (A one-off burst of 10 IOMMU faults at boot, before the first framebuffer is attached.) | Full OVL0 path for hardware planes |
 | Backlight | ✅ | `pwm-backlight` on DISP_PWM, `/sys/class/backlight/backlight` (0–255, default 200) | — |
-| GPU (Mali-T720 MP1, 450 MHz) | ❌ not enabled | Panfrost supports Midgard T720; needs MFG power domain/clocks, and a KMS display for Mesa | After DRM |
+| GPU (Mali-T720 MP1, 450 MHz) | ✅ Panfrost + Mesa 24.3 | `&gpu` from mt6735.dtsi, VCORE1 as mali-supply; `/dev/dri/card0` (render). Mesa built by `mainline/gpu/build-mesa.sh` into `/opt/mesa` (EGL, GLES 2.0, GBM, kmsro). kmscube 66 fps | GPU devfreq/OPPs (runs at LK's 450 MHz); Mesa into the rootfs image |
 | Touch | ✅ works, at 1.0 s | Goodix GT9293, i2c1 @0x5d, `goodix,gt911`, IRQ GPIO10, reset GPIO62, VGP1 2.8 V. `FW_LOADER_USER_HELPER` off: its fallback for the optional `goodix_9293_cfg.bin` delayed the device to 62 s | — |
 | Buttons | ✅ works | Vol± on the SoC keypad (`mt6779-keypad`), Power on `mt6328-keys` | — |
 | USB | ✅ peripheral | Legacy CDC gadget `0525:a4aa` (ECM + ACM), 172.16.42.1, telnet, httpd | Host mode, VBUS/ID detection |
@@ -30,7 +30,7 @@ Research notes (read-only investigations of the stock firmware, mainline tree an
 | Reboot target | ✅ | `rtc-boot-mode` driver sets LK's RTC flag: mainline → fastboot / recovery (mainline) / Android directly (`linux-test.sh ml-to-*`, `tb-reboot`) | — |
 | Panic recovery | ✅ in build6 | `CONFIG_PANIC_TIMEOUT=10` (no cmdline room for `panic=10`) | — |
 | Watchdog | ✅ | `mtk_wdt` | — |
-| Charger (SM5414, i2c3 @0x49) | ❌ no driver (bus ✅) | LK leaves it charging at **CV 4.35 V**, 700 mA (450 mA input limit), auto-stop off, **safety timer off** (see below). No battery over-temp cutoff without software | Driver with a desk policy (4.10 V, 500 mA, pause > 45 °C); meanwhile a stage-2 boot script could set 4.10 V |
+| Charger (SM5414, i2c3 @0x49) | ⚠️ no driver, boot-script policy | LK programs **CV 4.35 V**, 700 mA, 450 mA input limit, **safety timer off** on every boot. `local.d/tb-charger.start` sets CV 4.10 V / 500 mA. The chip is autonomous: settings survive unplug, and charging resumes on replug (STATUS 0x22 → 0x42 unplugged → 0x02, measured). No over-temp cutoff, no charger-type detection (input stays 450 mA, which a busy tablet can exceed) | Driver: power_supply class, BC1.2 input current, JEITA pause |
 | Battery voltage/temperature | ❌ | MT6328 AUXADC (no mainline driver); NTC = `murata,ncp15xh103` equivalent | ~250-line ADC driver + `ntc_thermistor` + thermal zone |
 | RTC | ❌ | MT6328 RTC at 0x4000, mt6323-compatible; `RTC_DRV_MT6397=y` already | MFD cell + DT node (small) |
 | SoC thermal | ❌ | Same design as mt8173, different efuse layout | Low priority; PMIC/board thermistors first |
@@ -72,26 +72,59 @@ WEAKBAT unchanged) lasts until the next boot, because LK reprograms the charger 
 
 Bus numbers in stage 2: i2c-0 = i2c1 (touch), i2c-1 = i2c2 (sensors), i2c-2 = i2c3 (charger).
 
-## cpufreq (kernel #16)
-- OPPs in the DTS: 637 / 793 / 858 / 988 MHz at 1.10 / 1.15 / 1.1875 / 1.21875 V, from the stock kernel's MT6737M
-  table (`{kHz, uV/10, uV/10}` triplets at 0xfac558 in the stock Image: 1092 MHz at 1.25 V down to 221 MHz at 0.95 V).
-- All four keep ARMPLL at /2 (VCO 1274–1976 MHz). Mainline changes the PLL in place while the CPU runs from it,
-  so a post-divider change (1092 MHz at /1, < 500 MHz at /4) could glitch: left out.
+## cpufreq (kernel #21)
+- OPPs: 1040 / 1092 MHz at 1.25 V; boost (overclock, `local.d/tb-cpu.start` enables it) 1144 MHz at 1.275 V and
+  1196 MHz at 1.30 V. Voltages from the stock kernel's MT6737M table (`{kHz, uV/10, uV/10}` triplets at 0xfac558 in
+  the stock Image: 1092 MHz at 1.25 V down to 221 MHz at 0.95 V), +25/+50 mV for the overclocks.
+- ARMPLL behaviour, measured by writing ARMPLL_CON1 (0x10209204) through `/dev/mem` on the running tablet:
+  - pcw (multiplier) changes are safe at any time;
+  - post-divider /2 → /1 with the VCO moved first works; **/1 → /2 hangs the SoC** (kernels #18/#19 died this way
+    under schedutil). The stock kernel parks the CPU on MAINPLL around such changes; mainline has no CPU mux;
+  - pcw writes above ~0xb8000–0xba000 at /1 (≈1.2 GHz), and above VCO ~2 GHz at /2, are dropped; some writes
+    get dropped by timing too.
+- So every OPP is at /1; the one post-divider change is cpufreq's first step up from LK's 793 MHz. Cost: no idle
+  below 1040 MHz. `patches/0007` (PLL_POSTDIV_SAFE: move the VCO before shrinking the divider) and `0008`
+  (re-write the pcw until it reads back).
+- 1196 MHz: 4-core NEON/scalar cross-check clean (30 s at 1.30 V); a single-core loop is 21 % faster than 988 MHz.
+  The PocketJS UI barely changed with it: its frames were memory-bound (see "PocketJS on mainline").
+- Stock CPU mux: the stock kernel reads `TOP_CKMUXSEL` bits [3:2] through an ioremapped pointer, but
+  infracfg+0x0 (0x10001000) reads 0 on this chip, so the register is elsewhere. Not found yet.
 - `patches/0005`: the MT6328 regulator table had VPA's vsel register for VPROC (read 0.6 V; the real
   VPROC_CON11 = 0x58 = 1.15 V at LK's 793 MHz). `patches/0006`: the mt6735 PLLs had no `fmax`, so every
   `clk_set_rate` became 0 Hz (ARMPLL_CON1 = 0x84000000, CPU at a fraction of its clock while cpufreq said 988 MHz).
 - VSRAM (LDO, 1.35 V from LK) stays above every VPROC level.
-- Full-frame 90° rotate (PocketJS present): 110 ms naive / 19 ms tiled at 793 MHz; 102 / 15.8 / 7.6 ms (NEON) at 988.
+
+## GPU: Panfrost + Mesa
+- Kernel: `&gpu` enabled (`mediatek,mt6735-mali`, `arm,mali-t720`), mali-supply VCORE1 as on the Galaxy Grand
+  Prime+. Panfrost: id 0x720, 1 shader core, 1 L2, clock 450 MHz (LK's mfg_sel). card0 = panfrost, card1 = display.
+- Userspace: Alpine's `mesa-dri-gallium` needs ~210 MB with LLVM (rootfs has ~170 MB free), so
+  `mainline/gpu/build-mesa.sh` cross-builds Mesa 24.3.4 (Panfrost + kmsro only, no LLVM; 24.3 because later
+  Panfrost needs mesa_clc on the build host) on taos with Zig, against Alpine's aarch64 packages as sysroot.
+  17 MB in `/opt/mesa`; needs `apk add libdrm expat zstd-libs`.
+- Pitfalls hit: zig links non-PIE executables without copy relocations for musl's data (getopt loops, getenv
+  crashes) → PIE; no ELF build-id → Panfrost's disk cache crashes → `-Dshader-cache=disabled`.
+- Result: `Mali-T720 (Panfrost)`, OpenGL ES 2.0 Mesa 24.3.4; kmscube 66 fps, vsync-locked, no kernel errors.
+
+## PocketJS on mainline
+- `pocketjs-kiosk` (pocketjs `hosts/android`, static aarch64 musl) runs as the OpenRC service `pocketjs`
+  (`mainline/scripts/pocketjs-deploy.sh` builds and installs it). Display through fbdev (`mediatekdrmfb`), touch
+  Goodix, keys `mt6779-keypad` + `mtk-pmic-keys`, VT in KD_GRAPHICS. deskd over `ssh -R 7777:127.0.0.1:7777`.
+- The landscape UI is rotated 90° into the portrait panel in software (the display engine only does 0/180°).
+  Full-frame rotate: 110 ms column walk → 19 ms tiled → 7.6 ms NEON 4×4 (988 MHz).
+- Page slides: 8 fps → 33–45 (tiled, real 988 MHz after `patches/0006`) → 51–62 (NEON) → **59–62 fps with even
+  pacing** (raster in row bands on scoped threads, rotate on 2 threads, direct writes into the fb). Average
+  full-screen frame 10.3 ms. More than 2 threads gains nothing: memory-bandwidth bound.
+- In progress: DRM/KMS with two buffers and page flips at vblank (tearing, and 60 Hz pacing vs the 66 Hz panel).
 
 ## Boot time (power-on to the PocketJS UI)
-| Stage | Before | Kernel #16 |
+| Stage | Before | Kernel #17+ |
 |---|---|---|
 | Preloader + LK (`bootprof.pl_t` / `lk_t`) | 4.5 + 9.1 s | same; 5 s of LK is the unlocked "Orange State" warning |
-| Kernel to /init | 1.7 s | 1.7 s (#17 drops the RAID6 benchmark, 612 ms, and ftrace's `trace_eval_sync`, 397 ms) |
+| Kernel to /init | 1.7 s | 0.46 s (#17: no RAID6 benchmark, 612 ms, and no ftrace `trace_eval_sync`, 397 ms) |
 | Stage 1 initramfs | 7.3 s | 0.4 s (no colour test with mediatek-drm, wait for usb0 instead of sleeping) |
 | OpenRC to the kiosk | ~20 s | ~4 s (`mdev -s` was 11.3 s: `/lib/mdev/persistent-storage` on 51 block devices) |
 | Touch | 62 s | 1 s |
-| UI usable | ~77 s | ~20 s |
+| UI usable | ~77 s | ~19 s (ssh ~24 s after a reboot command) |
 
 ## Known issues
 
@@ -122,10 +155,10 @@ KP_SEL=0, debounce 0x400 (same as stock), no key bits set.
 - Patch 0002 (skip larb port config without IOMMU) may become unnecessary once the larb addresses are fixed.
 
 ## Performance expectations
-- CPU: 4× Cortex-A53, ~1.0–1.25 GHz, 1 GB LPDDR3. About a Raspberry Pi Zero 2 W / Pi 3. Fine for a terminal,
+- CPU: 4× Cortex-A53, 1.04–1.2 GHz, 1 GB LPDDR3. About a Raspberry Pi Zero 2 W / Pi 3. Fine for a terminal,
   daemons, a lightweight Wayland compositor and a custom UI; Chromium/Electron will struggle mainly for RAM.
-- No cpufreq yet: the cores run at LK's clock; no thermal throttling yet.
-- GPU: Mali-T720 MP1, small (Pi 3 class). Panfrost/Mesa give GLES 2/3, enough for 2D compositing at 600×1024.
+- cpufreq yes; no thermal throttling yet (no SoC thermal driver).
+- GPU: Mali-T720 MP1, small (Pi 3 class). Panfrost/Mesa give GLES 2.0 here (Midgard T720), enough for 2D compositing at 600×1024.
 
 ## Todo, in order
 1. ~~Fix the Android safe-mode boot loop~~ (done: Magisk boot counter, see above).
@@ -135,6 +168,8 @@ KP_SEL=0, debounce 0x400 (same as stock), no key bits set.
 5. ~~Rootfs~~ (done). Next: an HTTP proxy over `ssh -R` for `apk`, and `apk fix` to run the skipped package scripts.
 6. ~~Display: D2 DT fixes, IOMMU, NT51021B GX panel driver, D2 mutex table, mediatek-drm~~ (done). Next: the OVL0 path (hardware planes).
 7. MT6328 ADC + battery NTC + SM5414 driver with the desk charging policy.
-8. ~~Backlight~~ (done). GPU (Panfrost) next: MFG power domain/clocks, `DRM_PANFROST`, Mesa.
-9. ~~cpufreq~~ (done, up to 988 MHz). Next: 1092 MHz.
-10. WiFi: investigate CONSYS/WMT feasibility.
+8. ~~Backlight~~, ~~GPU: Panfrost + Mesa~~ (done). Next: GPU OPPs; Mesa in the rootfs image.
+9. ~~cpufreq, 1092 MHz, overclock to 1196~~ (done). Next: SoC thermal sensor + thermal zone with CPU cooling.
+10. PocketJS on DRM/KMS with page flips at vblank (in progress).
+11. WiFi: investigate CONSYS/WMT feasibility.
+12. Rootfs image rebuild with everything installed by hand so far (mdev.conf, tb-reboot, local.d scripts, pocketjs service, apk libdrm/expat/zstd-libs, gdb).
