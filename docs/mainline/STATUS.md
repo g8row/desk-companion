@@ -18,7 +18,7 @@ Research notes (read-only investigations of the stock firmware, mainline tree an
 |---|---|---|---|
 | Boot | ✅ works | `recovery` partition via LK `oem reboot-recovery`. `fb_send.py` because stock `fastboot` stalls. Cmdline ≤ 99 chars. | — |
 | CPU, 4× A53 | ✅ all 4 cores, hotplug | `mediatek,mt6735-smp` enable-method: PSCI CPU_ON + SPM MTCMOS (`patches/smp_mt6735.c`) | cpufreq (ARMPLL + PMIC VPROC); clock currently whatever LK left |
-| Display | 🟡 simpledrm on LK's framebuffer (panel: **NT51021B GX**) | `mtk-lk-fb`; `init` unbinds fbcon and sets OVL0 L3 alpha 0 (LK's orange-state overlay) | Real DRM: D2 DT fixes → mutex table → NT51021B panel driver (research-display §5) |
+| Display | 🟡 simpledrm on LK's framebuffer via a DT `simple-framebuffer` that holds the DIS power domain + MM clocks (panel: **NT51021B GX**). D2 addresses fixed in the DTS | `mtk-lk-fb`; `init` unbinds fbcon and sets OVL0 L3 alpha 0 (LK's orange-state overlay) | Real DRM: D2 DT fixes → mutex table → NT51021B panel driver (research-display §5) |
 | Backlight | 🟡 left on by LK | Stock uses DISP_PWM at 0x1100e000 (`disp_pwm`), pin probably GPIO69 | Add with the DRM work |
 | GPU (Mali-T720 MP1, 450 MHz) | ❌ not enabled | Panfrost supports Midgard T720; needs MFG power domain/clocks, and a KMS display for Mesa | After DRM |
 | Touch | ✅ works | Goodix GT9293, i2c1 @0x5d, `goodix,gt911`, IRQ GPIO10, reset GPIO62, VGP1 2.8 V | Ship the config (`goodix_9293_cfg.bin` wait ~20 s, harmless) |
@@ -27,6 +27,7 @@ Research notes (read-only investigations of the stock firmware, mainline tree an
 | eMMC | ✅ probes (50 MHz, unused) | `init` never mounts it | Rootfs (research-rootfs) |
 | Internet in stage 2 | ✅ via host | `mainline/scripts/tablet-net.sh`: `http-proxy.py` on the host's 127.0.0.1:3128 + `ssh -R`, sets the clock. apk, curl ok; busybox wget https not | — |
 | Root filesystem | ✅ Alpine 3.24.4 | ext4 image `/cache/linux/rootfs.img` (256 MB, 20 MB used), loop-mounted by stage 1 (`init`), which falls back to the initramfs after 2 failed tries or with `tb.r=0`. SSH (dropbear, key only) + telnet on 172.16.42.1 | Package installs need a host proxy (`ssh -R`), no RTC → set the date from the host |
+| Reboot target | ✅ | `rtc-boot-mode` driver sets LK's RTC flag: mainline → fastboot / recovery (mainline) / Android directly (`linux-test.sh ml-to-*`, `tb-reboot`) | — |
 | Panic recovery | ✅ in build6 | `CONFIG_PANIC_TIMEOUT=10` (no cmdline room for `panic=10`) | — |
 | Watchdog | ✅ | `mtk_wdt` | — |
 | Charger (SM5414, i2c3 @0x49) | ❌ no driver (bus ✅) | LK leaves it charging at **CV 4.35 V**, 700 mA (450 mA input limit), auto-stop off, **safety timer off** (see below). No battery over-temp cutoff without software | Driver with a desk policy (4.10 V, 500 mA, pause > 45 °C); meanwhile a stage-2 boot script could set 4.10 V |
@@ -34,7 +35,7 @@ Research notes (read-only investigations of the stock firmware, mainline tree an
 | RTC | ❌ | MT6328 RTC at 0x4000, mt6323-compatible; `RTC_DRV_MT6397=y` already | MFD cell + DT node (small) |
 | SoC thermal | ❌ | Same design as mt8173, different efuse layout | Low priority; PMIC/board thermistors first |
 | Accelerometer | ❌ no node (bus ✅) | **Bosch BMA2xx @0x18 on i2c2**, chip ID 0xFA (BMA253/255 family). MC3433 @0x4c not fitted | `bmc150-accel` + DT node (`bosch,bma255`) |
-| IOMMU (M4U) | ❌ defers | Mainline lists larb3 (VEN domain, which we delete), so the IOMMU waits forever | List only larbs 0–2; fix larb addresses (D2) |
+| IOMMU (M4U) | ✅ probes | Binds larbs 0–2 after the D2 address fix and dropping larb3. Display ports not attached yet (MMU_EN = 0) | Attach with the DRM pipeline |
 | WiFi / BT / GPS / FM | ❌ | MT6625L via CONSYS/WMT, no mainline driver | Biggest blocker for a networked desk device; USB networking meanwhile |
 | Audio, camera, modem | ❌ | — | Not planned |
 
@@ -111,7 +112,7 @@ KP_SEL=0, debounce 0x400 (same as stock), no key bits set.
 3. ~~Enable i2c2/i2c3, read SM5414 and accelerometer~~ (done, see above). Add the BMA2xx node.
 4. RTC (MT6328).
 5. ~~Rootfs~~ (done). Next: an HTTP proxy over `ssh -R` for `apk`, and `apk fix` to run the skipped package scripts.
-6. Display D2 DT fixes + IOMMU larb fix; then the NT51021B **GX** panel driver, the D2 mutex table and `DRM_MEDIATEK`.
+6. ~~Display D2 DT fixes + IOMMU larb fix~~ (done; a DT simple-framebuffer now keeps the display powered). Next: the NT51021B **GX** panel driver, the D2 mutex table and `DRM_MEDIATEK`.
 7. MT6328 ADC + battery NTC + SM5414 driver with the desk charging policy.
 8. Backlight, then GPU (Panfrost).
 9. cpufreq.

@@ -30,7 +30,17 @@ This flow is tested and boots mainline. Run each device step on its own, and che
    172.16.42.1 and touches `/tmp/stay`, which cancels the 300 s auto-reboot. Then run commands with
    `mlsh.py 'cmd'`. The host needs 172.16.42.2/24 on the `enx*` interface (dedicated NM profile, `never-default`).
    **Never `nmcli d connect`.**
-5. Back to Android: `mlsh.py 'echo 1 > /proc/sys/kernel/sysrq; echo b > /proc/sysrq-trigger'`. `reboot -f` can hang.
+5. Leaving mainline: `mainline/scripts/linux-test.sh ml-to-fastboot` goes **straight to LK fastboot**, with no
+   trip through Android. `ml-to-recovery` boots mainline again, and `ml-to-android` goes to Android. On the tablet
+   itself: `tb-reboot bootloader|recovery|android` (stage 2), or
+   `echo bootloader > /sys/devices/platform/rtc-boot-mode/next_boot` followed by sysrq `s`,`u`,`b`.
+   - How it works: `patches/mtk-rtc-boot-mode.c` sets LK's flag in the MT6328 RTC (`RTC_PDN1` at PMIC 0x402c:
+     bit 13 = fastboot, bits 4–5 = `0x10` = recovery). LK checks it at boot (confirmed in the `lk.bin`
+     disassembly) and clears it.
+   - `reboot -f` can hang, so always reboot with sysrq.
+   - From `mlsh.py`, start the reboot inside a subshell, `(setsid sh -c '...' </dev/null >/dev/null 2>&1 &)`.
+     `mlsh` appends `; echo marker`, so a bare trailing `&` is a syntax error, and a plain background job dies
+     with the telnet session.
 
 `mainline/scripts/linux-test.sh flash|run|shell` wraps steps 2–4.
 

@@ -30,6 +30,27 @@
 		ranges;
 		/* LK overwrites bootargs with the boot.img cmdline + its own additions */
 		stdout-path = "serial0:921600n8";
+
+		/*
+		 * The framebuffer LK leaves OVL0 layer 0 scanning (same address on every boot so far; mtk-lk-fb warns
+		 * if LK ever reports a different one). simpledrm holds the DIS power domain and the MM clocks LK has
+		 * running (MM_CG_CON0 0xFFFCB3FC, CON1 0xFFFFFFF0): without them the domain powers off as soon as the
+		 * SMI larbs runtime-suspend, and the screen goes black.
+		 */
+		framebuffer0: framebuffer@7f7b0000 {
+			compatible = "simple-framebuffer";
+			reg = <0 0x7f7b0000 0 (2432 * 1024)>;
+			width = <600>;
+			height = <1024>;
+			stride = <2432>;
+			format = "x8r8g8b8";
+			power-domains = <&spm MT6735_POWER_DOMAIN_DIS>;
+			clocks = <&mmsys CLK_MM_SMI_COMMON>, <&mmsys CLK_MM_SMI_LARB0>,
+				 <&mmsys CLK_MM_DISP_OVL0>, <&mmsys CLK_MM_DISP_RDMA0>,
+				 <&mmsys CLK_MM_DISP_COLOR>, <&mmsys CLK_MM_DISP_AAL>,
+				 <&mmsys CLK_MM_DISP_GAMMA>,
+				 <&mmsys CLK_MM_DSI_ENGINE>, <&mmsys CLK_MM_DSI_DIGITAL>;
+		};
 	};
 
 	/* LK rewrites this from its mblock table (1 GB minus its own reservations) */
@@ -68,6 +89,12 @@
 	 * index 0 = KEY_VOLUMEUP, 1 = KEY_VOLUMEDOWN, single-key mode -> row 0, cols 0/1).
 	 * mt6779-keypad uses the same MEM/DEBOUNCE/SEL register layout. Not in mt6735.dtsi.
 	 */
+	/* `echo bootloader|recovery|normal > /sys/devices/platform/rtc-boot-mode/next_boot`: LK's next boot target */
+	rtc-boot-mode {
+		compatible = "lenovo,tb7304x-rtc-boot-mode";
+		mediatek,pwrap = <&pwrap>;
+	};
+
 	keypad@10003000 {
 		compatible = "mediatek,mt6779-keypad";
 		reg = <0 0x10003000 0 0x1000>;
@@ -172,6 +199,61 @@
 			output-high;
 		};
 	};
+};
+
+/*
+ * D2 MMSYS (MT6735M/MT6737M): unlike the D1 layout in mt6735.dtsi there is an (absent) OVL1 slot at 0x14008000,
+ * so every block after OVL0 sits 0x1000 higher and its SPI is one higher. Confirmed on this tablet by reading the
+ * registers LK left running (docs/mainline/STATUS.md, "Display step 0"). Node names keep the D1 unit addresses.
+ */
+&disp_rdma0 {
+	reg = <0 0x14009000 0 0x1000>;
+	interrupts = <GIC_SPI 195 IRQ_TYPE_LEVEL_LOW>;
+	iommus = <&m4u MTK_M4U_ID(0, 2)>;	/* D2 larb0: OVL0 0/1, RDMA0 2, WDMA0 3 */
+};
+
+&ovl {
+	iommus = <&m4u MTK_M4U_ID(0, 0)>;
+};
+
+&color {
+	reg = <0 0x1400c000 0 0x1000>;
+	interrupts = <GIC_SPI 198 IRQ_TYPE_LEVEL_LOW>;
+};
+
+&dither {
+	reg = <0 0x14010000 0 0x1000>;
+	interrupts = <GIC_SPI 202 IRQ_TYPE_LEVEL_LOW>;
+};
+
+&dsi {
+	reg = <0 0x14012000 0 0x1000>;
+	interrupts = <GIC_SPI 204 IRQ_TYPE_LEVEL_LOW>;
+};
+
+&disp_mutex {
+	reg = <0 0x14015000 0 0x1000>;
+};
+
+&smi_larb0 {
+	reg = <0 0x14016000 0 0x1000>;
+};
+
+&smi_common {
+	reg = <0 0x14017000 0 0x1000>;
+};
+
+&mipi_tx {
+	reg = <0 0x14018000 0 0x1000>;
+};
+
+/* D2 has three larbs; larb3 (VENC) is in the VEN domain deleted below, so it never probes and the M4U would wait. */
+&smi_larb3 {
+	status = "disabled";
+};
+
+&m4u {
+	mediatek,larbs = <&smi_larb0>, <&smi_larb1>, <&smi_larb2>;
 };
 
 &spm {

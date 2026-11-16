@@ -17,6 +17,7 @@
 #include <linux/kernel.h>
 #include <linux/moduleparam.h>
 #include <linux/of.h>
+#include <linux/of_address.h>
 #include <linux/platform_data/simplefb.h>
 #include <linux/platform_device.h>
 #include <linux/unaligned.h>
@@ -146,6 +147,25 @@ static int __init mtk_lk_fb_init(void)
 
 	pr_info("lkfb: registering simple-framebuffer @0x%llx %ux%u stride=%u fmt=%s\n",
 		(u64)res.start, pdata.width, pdata.height, pdata.stride, pdata.format);
+
+	/*
+	 * A DT simple-framebuffer (with power-domains/clocks so the display stays powered once the SMI larbs and
+	 * IOMMU manage runtime PM) takes precedence: then only check that it matches what LK reports.
+	 */
+	{
+		struct device_node *np = of_find_compatible_node(NULL, NULL, "simple-framebuffer");
+		struct resource dtres;
+
+		if (np && of_device_is_available(np)) {
+			if (!of_address_to_resource(np, 0, &dtres) && dtres.start != res.start)
+				pr_warn("lkfb: DT simple-framebuffer at %pa but LK scans out 0x%llx: DT node is stale!\n",
+					&dtres.start, (u64)res.start);
+			pr_info("lkfb: DT simple-framebuffer present (%pOF), not registering another\n", np);
+			of_node_put(np);
+			return 0;
+		}
+		of_node_put(np);
+	}
 
 	pdev = platform_device_register_resndata(NULL, "simple-framebuffer", 0,
 						 &res, 1, &pdata, sizeof(pdata));

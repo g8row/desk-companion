@@ -129,7 +129,7 @@ done ) &
 	sleep 5
 done ) &
 # ---- 3b. display watcher (tb.dispwatch=0 turns it off) --------------------
-# Addresses from the STOCK dtb (mainline mt6735.dtsi has RDMA0/DSI0/MUTEX at the wrong offsets for this chip).
+# D2 addresses (this chip): RDMA0 0x14009000, DSI0 0x14012000, MUTEX 0x14015000, larb0 0x14016000. mt6735.dtsi is D1.
 # Interrupt status registers are cleared after each read, so each line shows the events of the last second.
 # frames: OVL INTSTA bit1 / RDMA bit2 = frame done; RDMA bit4 = FIFO underflow.
 DISPWATCH=1
@@ -142,7 +142,7 @@ if [ "$DISPWATCH" != 0 ]; then ( r() { devmem $1 32; }
 		dsi_int=$(r 0x1401200c)
 		line="t=$(cut -d' ' -f1 /proc/uptime) ovl sta=$ovl_sta int=$ovl_int src=$(r 0x1400702c) l0=$(r 0x14007f40) dbg=$(r 0x14007240)"
 		line="$line rdma int=$rdma_int con=$(r 0x14009010) st=$(r 0x14009030) dsi int=$dsi_int dbg=$(r 0x14012148)/$(r 0x1401214c)"
-		line="$line cg=$(r 0x14000100)/$(r 0x14000110) larb0=$(r 0x14015004) smi=$(r 0x14016004)"
+		line="$line cg=$(r 0x14000100)/$(r 0x14000110) mutex_int=$(r 0x14015004) larb0=$(r 0x14016004) mmu_en=$(r 0x14016fc0)"
 		echo "$line" >> /www/disp.log
 		echo "[disp] $line" > /dev/kmsg
 		i=$((i + 1)); [ $i -lt 180 ] && sleep 1 || sleep 10

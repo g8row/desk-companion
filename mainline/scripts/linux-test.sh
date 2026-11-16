@@ -12,6 +12,8 @@
 #   mainline/scripts/linux-test.sh shell          # wait for the mainline gadget, cancel the auto-reboot (mlsh.py wait)
 #   mainline/scripts/linux-test.sh to-fastboot    # Android -> LK fastboot, safely (see below)
 #   mainline/scripts/linux-test.sh to-recovery    # Android -> recovery (= mainline once flashed), safely
+#   mainline/scripts/linux-test.sh ml-to-fastboot # running mainline (either stage) -> LK fastboot directly
+#   mainline/scripts/linux-test.sh ml-to-android  # running mainline -> Android
 #
 # ALWAYS leave Android with to-fastboot / to-recovery, never a bare `adb reboot ...`: Magisk counts every boot that
 # does not reach sys.boot_completed and enters safe mode after 2 (all modules disabled). Without tb7304x_strip,
@@ -73,6 +75,14 @@ run)
   T 20 "${PY:-python3}" -I mainline/scripts/analysis/fb_send.py - "oem reboot-recovery" ;;
 shell)
   T 250 python3 -I mainline/scripts/mlsh.py wait ;;
+ml-to-fastboot|ml-to-android|ml-to-recovery)
+  # Set LK's RTC boot flag, then reboot from a detached subshell: mlsh appends "; echo marker", so a bare
+  # trailing "&" would be a syntax error, and a plain background job dies with the telnet session.
+  m=${1#ml-to-}; [ "$m" = fastboot ] && m=bootloader; [ "$m" = android ] && m=normal
+  F=/sys/devices/platform/rtc-boot-mode/next_boot
+  T 15 python3 -I mainline/scripts/mlsh.py "echo $m > $F; echo next boot: \$(cat $F)" \
+    "(setsid sh -c 'sleep 2; sync; echo 1 > /proc/sys/kernel/sysrq; echo s > /proc/sysrq-trigger; sleep 1; echo u > /proc/sysrq-trigger; sleep 1; echo b > /proc/sysrq-trigger' </dev/null >/dev/null 2>&1 &)"
+  ;;
 to-fastboot|to-recovery)
   adb_leave_android "$( [ "$1" = to-fastboot ] && echo bootloader || echo recovery )" ;;
 *) sed -n 2,24p "$0"; exit 1 ;;

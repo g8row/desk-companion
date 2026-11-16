@@ -11,3 +11,7 @@ fi
 cp "$M/dts/mt6737m-lenovo-tb7304x.dts" "$K/arch/arm64/boot/dts/mediatek/"
 grep -q tb7304x "$K/arch/arm64/boot/dts/mediatek/Makefile" || \
 	sed -i '/mt6735p-doogee-x5pro.dtb/a dtb-$(CONFIG_ARCH_MEDIATEK) += mt6737m-lenovo-tb7304x.dtb' "$K/arch/arm64/boot/dts/mediatek/Makefile"
+# RTC boot-mode flags for LK (`next_boot` = bootloader / recovery / normal), see mtk-rtc-boot-mode.c
+cp "$M/patches/mtk-rtc-boot-mode.c" "$K/drivers/soc/mediatek/mtk-rtc-boot-mode.c"
+grep -q mtk-rtc-boot-mode "$K/drivers/soc/mediatek/Makefile" || \
+	echo 'obj-$(CONFIG_ARCH_MEDIATEK) += mtk-rtc-boot-mode.o' >> "$K/drivers/soc/mediatek/Makefile"
