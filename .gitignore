@@ -31,3 +31,4 @@ tools/apks/
 tools/magisk/
 mainline/stock/lk.strings
 tools/bootscreens/out/
+__pycache__/
