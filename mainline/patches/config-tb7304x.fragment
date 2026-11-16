@@ -50,3 +50,7 @@ CONFIG_PANIC_TIMEOUT=10
 # 397 ms of the 1.7 s before /init. Nothing here uses RAID6 (it comes in with btrfs) or tracing.
 # CONFIG_RAID6_PQ_BENCHMARK is not set
 # CONFIG_FTRACE is not set
+# SoC thermal (patches/0009): AUXADC channel 11 + efuse calibration
+CONFIG_MEDIATEK_MT6577_AUXADC=y
+CONFIG_NVMEM_MTK_EFUSE=y
+CONFIG_MTK_SOC_THERMAL=y
