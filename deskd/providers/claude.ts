@@ -16,6 +16,11 @@ export type SessionState = "working" | "waiting" | "done" | "idle";
 export interface ToolCall {
   id: string;
   tool: string;
+  /** Raw tool name + a plain-language sentence for the "now" card. */
+  raw: string;
+  act: string;
+  /** Second line under the sentence: "$ bun test", "Edit · claude.ts". */
+  sub: string;
   summary: string;
   at: number;
   ms?: number;
@@ -41,6 +46,21 @@ export interface Session {
   permission?: { tool: string; summary: string; at: number };
   subagents: number;
   transcript?: string;
+  /** A multiple-choice question Claude is asking (AskUserQuestion input). */
+  question?: Question[];
+  /** A plan waiting for approval (ExitPlanMode). */
+  plan?: string;
+  turnStart?: number;
+  turnEnd?: number;
+  /** Files edited/written since the last prompt. */
+  changed: string[];
+}
+
+export interface Question {
+  q: string;
+  header: string;
+  multi: boolean;
+  options: { label: string; desc: string }[];
 }
 
 const sessions = new Map<string, Session>();
@@ -89,6 +109,75 @@ export function summarizeTool(tool: string, input: any): string {
   }
   for (const v of Object.values(i)) if (typeof v === "string" && v.trim()) return clip(v, 70);
   return "";
+}
+
+const cap = (s: string) => (s ? s[0]!.toUpperCase() + s.slice(1) : s);
+
+/** The tool call as a sentence ("Editing claude.ts") for the tablet's "now" card. */
+export function activity(tool: string, input: any, summary: string): string {
+  const i = input && typeof input === "object" ? input : {};
+  switch (tool) {
+    case "Bash":
+      return cap(clip(i.description, 70)) || "Running a command";
+    case "Read":
+      return `Reading ${summary}`;
+    case "Edit":
+    case "MultiEdit":
+    case "NotebookEdit":
+      return `Editing ${summary}`;
+    case "Write":
+      return `Writing ${summary}`;
+    case "Grep":
+      return `Searching for ${clip(i.pattern, 40)}`;
+    case "Glob":
+      return "Finding files";
+    case "WebFetch":
+      return `Reading ${summary}`;
+    case "WebSearch":
+      return "Searching the web";
+    case "Task":
+    case "Agent":
+      return `Running an agent: ${clip(i.description, 50)}`;
+    case "TodoWrite":
+      return "Updating its task list";
+    case "AskUserQuestion":
+      return "Asking you a question";
+    case "ExitPlanMode":
+      return "Presenting a plan";
+  }
+  return `Using ${toolName(tool)}`;
+}
+
+function subLine(raw: string, tool: string, input: any, summary: string): string {
+  if (raw === "Bash" && typeof input?.command === "string") return `$ ${clip(input.command, 80)}`;
+  return `${tool}${summary ? ` · ${summary}` : ""}`;
+}
+
+/** AskUserQuestion input → what the tablet needs (clipped; answers go back by index). */
+export function questionsOf(input: any): Question[] {
+  const qs = Array.isArray(input?.questions) ? input.questions : [];
+  return qs.slice(0, 4).map((q: any) => ({
+    q: clip(q?.question, 200),
+    header: clip(q?.header, 24),
+    multi: q?.multiSelect === true,
+    options: (Array.isArray(q?.options) ? q.options : []).slice(0, 4).map((o: any) => ({ label: clip(o?.label, 60), desc: clip(o?.description, 100) })),
+  }));
+}
+
+/** Markdown → plain text for the tablet (keeps paragraphs and bullets). */
+export function plain(md: string, max = 3000): string {
+  return md
+    .replace(/\r/g, "")
+    .replace(/```[\w-]*\n?/g, "")
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    .replace(/`([^`\n]+)`/g, "$1")
+    .replace(/^#{1,6}\s*/gm, "")
+    .replace(/^(\s*)[-*]\s+/gm, "$1• ")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim()
+    .slice(0, max);
 }
 
 /** mcp__server__tool → server:tool, so the tablet's narrow columns fit. */
@@ -140,6 +229,7 @@ export function onHookEvent(ev: Record<string, any>, now = Date.now()): void {
     failCount: 0,
     byTool: {},
     subagents: 0,
+    changed: [],
   };
   if (cwd) {
     s.cwd = cwd;
@@ -161,18 +251,26 @@ export function onHookEvent(ev: Record<string, any>, now = Date.now()): void {
       setState(s, "working", now, "");
       s.detail = clip(ev.prompt) || "thinking";
       s.permission = undefined;
+      s.question = undefined;
+      s.plan = undefined;
+      s.turnStart = now;
+      s.turnEnd = undefined;
+      s.changed = [];
       s.promptCount++;
-      s.prompts.unshift({ text: clip(ev.prompt, 160), at: now });
+      s.prompts.unshift({ text: clip(ev.prompt, 300), at: now });
       s.prompts.length = Math.min(s.prompts.length, MAX_PROMPTS);
       break;
     case "PreToolUse": {
       closeOpen(s, now);
       setState(s, "working", now, "");
-      const summary = summarizeTool(String(ev.tool_name ?? ""), ev.tool_input);
+      const raw = String(ev.tool_name ?? "");
+      const summary = summarizeTool(raw, ev.tool_input);
       s.detail = summary ? `${tool}: ${summary}` : tool;
       s.toolCount++;
       s.byTool[tool] = (s.byTool[tool] ?? 0) + 1;
-      s.tools.unshift({ id: String(ev.tool_use_id ?? `${now}`), tool, summary, at: now });
+      s.tools.unshift({ id: String(ev.tool_use_id ?? `${now}`), tool, raw, act: activity(raw, ev.tool_input, summary), sub: subLine(raw, tool, ev.tool_input, summary), summary, at: now });
+      if (/^(Edit|MultiEdit|Write|NotebookEdit)$/.test(raw) && summary && !s.changed.includes(summary)) s.changed.push(summary);
+      noteAsk(s, raw, ev.tool_input, now);
       s.tools.length = Math.min(s.tools.length, MAX_TOOLS);
       break;
     }
@@ -194,13 +292,16 @@ export function onHookEvent(ev: Record<string, any>, now = Date.now()): void {
       if (failed) s.failCount++;
       if (s.state === "waiting") setState(s, "working", now, "");
       s.permission = undefined;
+      s.question = undefined;
+      s.plan = undefined;
       break;
     }
     case "PermissionRequest": {
       const summary = summarizeTool(String(ev.tool_name ?? ""), ev.tool_input);
       s.permission = { tool, summary, at: now };
       s.detail = `allow ${tool}${summary ? `: ${summary}` : ""}?`;
-      setState(s, "waiting", now, s.detail);
+      // questions/plans: the PermissionRequest input carries the injected plan text
+      if (!noteAsk(s, String(ev.tool_name ?? ""), ev.tool_input, now)) setState(s, "waiting", now, s.detail);
       break;
     }
     case "Notification": {
@@ -227,10 +328,29 @@ export function onHookEvent(ev: Record<string, any>, now = Date.now()): void {
       closeOpen(s, now);
       setState(s, "done", now, "");
       s.permission = undefined;
+      s.question = undefined;
+      s.plan = undefined;
+      s.turnEnd = now;
       s.detail = "finished";
       break;
   }
   sessions.set(id, s);
+}
+
+/** AskUserQuestion / ExitPlanMode need you even without the permission gate:
+ *  keep what they ask so the tablet can show it. Returns true if it was one. */
+function noteAsk(s: Session, raw: string, input: any, now: number): boolean {
+  if (raw === "AskUserQuestion") {
+    const q = questionsOf(input);
+    if (q.length) s.question = q;
+    s.detail = "asks you a question";
+  } else if (raw === "ExitPlanMode") {
+    const plan = typeof input?.plan === "string" ? input.plan : "";
+    if (plan) s.plan = plain(plan, 4000);
+    s.detail = "plan ready for approval";
+  } else return false;
+  setState(s, "waiting", now, s.detail);
+  return true;
 }
 
 /** The tablet answered a held PermissionRequest: the tool now runs (allow) or
@@ -239,8 +359,10 @@ export function permissionDecided(sessionId: string): void {
   const s = sessions.get(sessionId);
   if (!s) return;
   s.permission = undefined;
+  s.question = undefined;
+  s.plan = undefined;
   if (s.state === "waiting") s.state = "working";
-  s.detail = "permission answered on the tablet";
+  s.detail = "answered on the tablet";
 }
 
 /** Pull new transcript bytes for every live session (cheap, incremental). */
@@ -279,7 +401,11 @@ const hhmm = (t: number) => {
 };
 
 /** The tablet-facing snapshot. Everything pre-formatted: the tablet only lays out strings. */
-export function claudeState(now = Date.now(), pending?: { id: string; session: string; tool: string; summary: string; expires: number } | null) {
+type Held = { id: string; session: string; tool: string; toolRaw?: string; input?: any; summary: string; expires: number };
+
+const KIND: Record<string, string> = { AskUserQuestion: "question", ExitPlanMode: "plan" };
+
+export function claudeState(now = Date.now(), pending?: Held | null, held: Held[] = pending ? [pending] : []) {
   for (const [id, s] of sessions)
     if (now - s.updated > STALE_MS) {
       sessions.delete(id);
@@ -322,6 +448,21 @@ export function claudeState(now = Date.now(), pending?: { id: string; session: s
         // past 200k the session must be on a 1M-context model
         contextPct: t?.context ? Math.min(100, Math.round((t.context / (t.context > 200_000 ? 1_000_000 : 200_000)) * 100)) : 0,
         last: clip(t?.lastText ?? "", 220),
+        // ---- conversation layout ----
+        prompt: s.prompts[0]?.text ?? "",
+        reply: plain(t?.lastText ?? ""),
+        now: nowCard(s),
+        run: running(s, now),
+        steps: s.tools
+          .filter((c) => c.ms !== undefined)
+          .slice(0, 3)
+          .map((c) => ({ t: `${c.tool} ${c.summary}`.trim(), fail: c.ok === false && !c.est })),
+        ctx: t?.context ? `${kfmt(t.context)} / ${t.context > 200_000 ? "1M" : "200k"}` : "",
+        took: s.turnStart !== undefined && s.turnEnd !== undefined ? ago(s.turnEnd - s.turnStart) : "",
+        changed: s.changed.slice(-4).reverse(),
+        question: s.question ?? null,
+        plan: s.plan ?? "",
+        held: heldFor(s.id, held, now),
       };
     });
   const counts = { waiting: 0, working: 0, done: 0, idle: 0 } as Record<SessionState, number>;
@@ -336,10 +477,40 @@ export function claudeState(now = Date.now(), pending?: { id: string; session: s
           id: pending.id,
           session: sessions.get(pending.session)?.name ?? "session",
           tool: pending.tool,
+          kind: KIND[pending.toolRaw ?? ""] ?? "permission",
           summary: pending.summary,
           left: Math.max(0, Math.ceil((pending.expires - now) / 1000)),
         }
       : null,
+  };
+}
+
+function nowCard(s: Session): { text: string; sub: string } {
+  const cur = s.tools[0];
+  if (s.state === "working" && cur && cur.ms === undefined) return { text: cur.act || cur.tool, sub: cur.sub };
+  if (s.state === "working") return { text: s.detail === "compacting context" ? "Compacting context" : "Thinking", sub: s.detail === "compacting context" ? "frees room · back shortly" : "" };
+  if (s.state === "waiting") return { text: cap(s.detail), sub: "" };
+  if (s.state === "done") return { text: "Finished", sub: "" };
+  return { text: "Idle", sub: "" };
+}
+
+function running(s: Session, now: number): string {
+  const cur = s.tools[0];
+  if (s.state === "working" && cur && cur.ms === undefined) return ago(now - cur.at);
+  return ago(now - s.updated);
+}
+
+function heldFor(id: string, held: Held[], now: number) {
+  const p = held.find((h) => h.session === id);
+  if (!p) return null;
+  const input = p.input ?? {};
+  return {
+    id: p.id,
+    kind: KIND[p.toolRaw ?? ""] ?? "permission",
+    tool: p.tool,
+    command: clip(typeof input.command === "string" ? input.command : p.summary, 400),
+    why: clip(typeof input.description === "string" ? input.description : "", 120),
+    left: Math.max(0, Math.ceil((p.expires - now) / 1000)),
   };
 }
 

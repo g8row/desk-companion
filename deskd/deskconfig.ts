@@ -20,7 +20,13 @@ export const PANES = {
 } as const;
 export type PaneId = keyof typeof PANES;
 
-export const COLORS = ["blue", "violet", "emerald", "amber", "rose", "zinc"] as const;
+export const COLORS = ["blue", "violet", "emerald", "amber", "rose", "latte", "zinc"] as const;
+/** Icon names the tablet bakes (pocketjs/apps/desk/icons/gen.ts). An unknown
+ *  name is dropped here; the tablet would fall back to the label anyway. */
+export const ICONS: readonly string[] = [
+  "mic", "mic-off", "vol-up", "vol-down", "terminal", "spark", "screenshot", "timer", "lock", "display",
+  "cup", "play", "pause", "next", "prev", "link", "grid", "code", "bolt", "dot",
+];
 export type TileColor = (typeof COLORS)[number];
 
 export const ACCENTS: Record<string, string> = {
@@ -46,6 +52,18 @@ export interface Tile {
   color: TileColor;
   /** Static subtitle; builtins with a live subtitle (mic) override it. */
   sub?: string;
+  /** Icon name (see ICONS). 1×1 tiles without a subtitle show only this. */
+  icon?: string;
+  /** Icon while the live state is "on" (mic → mic-off). */
+  iconOn?: string;
+  /** Span in the tablet's 4×3 grid (cells). */
+  w?: number;
+  h?: number;
+  /** Consecutive tiles with the same group render as one split pill. */
+  group?: string;
+  /** Always filled with the tile colour (else only while "on"). */
+  fill?: boolean;
+  shape?: "circle";
   action: TileAction;
 }
 
@@ -73,12 +91,10 @@ export function defaultConfig(): DeskConfig {
     version: 1,
     panes: ["home", "claude", "pulse", "deck", "music", "board", "focus", "system"],
     accent: ACCENTS.sky!,
-    tiles: defaultTiles.map((t) => ({
-      id: t.id,
-      label: t.label,
-      color: t.color,
-      action: { type: "builtin", id: t.id } as TileAction,
-    })),
+    tiles: defaultTiles.map((t) => {
+      const { sub: _sub, ...rest } = t;
+      return { ...rest, action: { type: "builtin", id: t.id } as TileAction };
+    }),
     claude: { flash: true, sound: false, approvals: true, approvalTimeoutSec: 10, editor: "Visual Studio Code" },
     focus: { minutes: 25 },
   };
@@ -86,6 +102,7 @@ export function defaultConfig(): DeskConfig {
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
 const str = (v: unknown, max = 400) => (typeof v === "string" ? v.slice(0, max) : "");
+const span = (v: unknown, max: number) => (Number.isInteger(v) ? Math.max(1, Math.min(max, v as number)) : 1);
 const slug = (s: string) =>
   s
     .toLowerCase()
@@ -136,6 +153,13 @@ export function normalizeConfig(raw: unknown): DeskConfig {
       label,
       color: COLORS.includes(t.color) ? t.color : "zinc",
       ...(str(t.sub, 24) ? { sub: str(t.sub, 24) } : {}),
+      ...(ICONS.includes(t.icon) ? { icon: t.icon } : {}),
+      ...(ICONS.includes(t.iconOn) ? { iconOn: t.iconOn } : {}),
+      ...(span(t.w, 4) > 1 ? { w: span(t.w, 4) } : {}),
+      ...(span(t.h, 3) > 1 ? { h: span(t.h, 3) } : {}),
+      ...(str(t.group, 24).trim() ? { group: str(t.group, 24).trim() } : {}),
+      ...(t.fill === true ? { fill: true } : {}),
+      ...(t.shape === "circle" ? { shape: "circle" as const } : {}),
       action,
     });
     if (tiles.length >= 12) break;

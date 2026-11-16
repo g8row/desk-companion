@@ -13,10 +13,10 @@
 import { $, type Socket } from "bun";
 import { watch } from "node:fs";
 import { join } from "node:path";
-import { actions, builtinInfo, builtinSub } from "./config.ts";
-import { ACCENTS, COLORS, CONFIG_PATH, PANES, layoutState, loadConfig, normalizeConfig, saveConfig, watchConfig, type DeskConfig } from "./deskconfig.ts";
+import { actions, builtinInfo, builtinState, readMacState } from "./config.ts";
+import { ACCENTS, COLORS, CONFIG_PATH, ICONS, type Tile, PANES, layoutState, loadConfig, normalizeConfig, saveConfig, watchConfig, type DeskConfig } from "./deskconfig.ts";
 import { runAction } from "./runner.ts";
-import { currentPending, decideById, dropSession, hold, hookResponse } from "./gate.ts";
+import { allPending, currentPending, decideById, dropSession, findPending, holdFull, hookResponse, tabletDecision } from "./gate.ts";
 import { scanUsage, usageState } from "./providers/usage.ts";
 import { focusAction, focusState, focusTick, newFocus, type Focus } from "./providers/focus.ts";
 import { bundleHash, encode, LineSplitter, type FromTablet, type ToTablet } from "./protocol.ts";
@@ -178,16 +178,34 @@ const claudeActions: Record<string, (s: { cwd: string; id: string }) => Promise<
   "claude.focus": () => $`open -a Claude`.quiet().nothrow(),
 };
 
+/** A tile tap: focus.* builtins drive deskd's own timer; the rest run on the Mac. */
+async function runTile(t: Tile): Promise<{ ok: boolean; error?: string }> {
+  if (t.action.type === "builtin" && t.action.id.startsWith("focus.")) {
+    focus = focusAction(focus, t.action.id, undefined, cfg.focus.minutes);
+    setState("focus", focusState(focus));
+    return { ok: true };
+  }
+  return runAction(t.action, actions);
+}
+
 async function runTabletAction(id: string, args: any): Promise<void> {
   const tile = cfg.tiles.find((t) => t.id === id);
   if (tile) {
-    const r = await runAction(tile.action, actions);
+    const r = await runTile(tile);
     if (!r.ok) log(`tile ${id} failed: ${r.error}`);
+    refreshDeck().catch(() => {}); // show the new state (caffeine, mic…) now, not in 5 s
     return;
   }
-  if (id === "claude.permit") {
-    const ok = decideById(String(args?.id ?? ""), args?.allow ? "allow" : "deny");
-    log(`permission ${args?.id} → ${args?.allow ? "allow" : "deny"}${ok ? "" : " (stale)"}`);
+  if (id === "claude.permit" || id === "claude.answer") {
+    const p = findPending(String(args?.id ?? ""));
+    if (!p) {
+      log(`permission ${args?.id} stale`);
+      pushClaude();
+      return;
+    }
+    const { d, extra } = tabletDecision(p, args);
+    decideById(p.id, d, extra);
+    log(`permission ${p.id} ${p.toolRaw} → ${d}${extra?.updatedPermissions ? " +rule" : ""}${args?.answers ? " (answered)" : ""}`);
     pushClaude();
     return;
   }
@@ -276,7 +294,7 @@ const tabletReady = () => [...clients].some((c) => c.ready);
 // so the ~5 KB claude snapshot is only re-sent when something real changed —
 // parsing + reconciling it every second cost the tablet a few ms per push.
 function pushClaude() {
-  const c = claudeState(Date.now(), currentPending());
+  const c = claudeState(Date.now(), currentPending(), allPending());
   const ago: Record<string, string> = {};
   for (const s of c.sessions as { id: string; ago?: string }[]) {
     ago[s.id] = s.ago ?? "";
@@ -284,8 +302,19 @@ function pushClaude() {
   }
   const left = c.pending?.left ?? null;
   if (c.pending) delete (c.pending as { left?: number }).left;
+  // per-session countdowns + running-tool timers tick here too
+  const held: Record<string, number> = {};
+  const run: Record<string, string> = {};
+  for (const s of c.sessions as { id: string; held?: { left?: number }; run?: string }[]) {
+    if (s.held) {
+      held[s.id] = s.held.left ?? 0;
+      delete s.held.left;
+    }
+    run[s.id] = s.run ?? "";
+    delete s.run;
+  }
   setState("claude", c);
-  setState("claudeTick", { ago, left });
+  setState("claudeTick", { ago, left, held, run });
 }
 
 function applyConfig(next: DeskConfig, why: string) {
@@ -317,6 +346,7 @@ async function api(req: Request, url: URL): Promise<Response> {
     return Response.json({
       panes: PANES,
       colors: COLORS,
+      icons: ICONS,
       accents: ACCENTS,
       builtins: builtinInfo,
       platform: process.platform,
@@ -335,7 +365,7 @@ async function api(req: Request, url: URL): Promise<Response> {
   if (path === "/tile/test" && req.method === "POST") {
     const t = normalizeConfig({ tiles: [await req.json()] }).tiles[0];
     if (!t) return Response.json({ ok: false, error: "invalid tile" }, { status: 400 });
-    return Response.json(await runAction(t.action, actions));
+    return Response.json(await runTile(t));
   }
   if (path === "/nav" && req.method === "POST") {
     const { pane } = (await req.json()) as { pane?: string };
@@ -373,16 +403,27 @@ Bun.serve({
       onHookEvent(ev);
       pushClaude();
       if (!cfg.claude.approvals || !tabletReady()) return new Response("");
-      const d = await hold(ev, cfg.claude.approvalTimeoutSec * 1000, pushClaude);
+      // questions and plans take longer to read than a yes/no
+      const slow = ev.tool_name === "AskUserQuestion" || ev.tool_name === "ExitPlanMode";
+      const ms = slow ? Math.max(cfg.claude.approvalTimeoutSec, 50) * 1000 : cfg.claude.approvalTimeoutSec * 1000;
+      const { d, extra } = await holdFull(ev, ms, pushClaude);
       log(`permission ${ev.tool_name} → ${d}`);
       if (d !== "timeout") {
         permissionDecided(String(ev.session_id ?? ""));
         pushClaude();
       }
-      return new Response(hookResponse(d), { headers: { "content-type": "application/json" } });
+      return new Response(hookResponse(d, extra), { headers: { "content-type": "application/json" } });
     }
     if (url.pathname === "/health") return Response.json({ clients: clients.size, bundle: bundle?.hash });
     if (url.pathname.startsWith("/api/")) return api(req, url);
+    // the tablet's baked deck icons, for the studio's preview
+    const icon = /^\/icons\/([a-z-]+-(?:32|48)[ld]\.svg)$/.exec(url.pathname);
+    if (icon) {
+      const f = Bun.file(join(APP_DIR, "icons", icon[1]!));
+      return (await f.exists())
+        ? new Response(f, { headers: { "content-type": MIME.svg!, "cache-control": "max-age=3600" } })
+        : new Response("not found", { status: 404 });
+    }
     if (url.pathname === "/" || url.pathname === "/ui" || url.pathname.startsWith("/ui/")) {
       const rel = url.pathname === "/" || url.pathname === "/ui" || url.pathname === "/ui/" ? "index.html" : url.pathname.slice(4);
       if (rel.includes("..")) return new Response("no", { status: 400 });
@@ -426,13 +467,22 @@ async function refreshMusic() {
 
 const KIND: Record<string, string> = { builtin: "action", shell: "shell", app: "app", url: "link", applescript: "script", shortcut: "shortcut" };
 async function refreshDeck() {
-  const list = await Promise.all(
-    cfg.tiles.map(async (t) => {
-      const live = t.action.type === "builtin" ? builtinSub[t.action.id] : undefined;
-      const sub = live ? await live().catch(() => "") : t.sub;
-      return { id: t.id, label: t.label, color: t.color, sub, kind: KIND[t.action.type] ?? "action" };
-    }),
-  );
+  const mac = await readMacState().catch(() => null);
+  const waiting = (claudeState(Date.now(), currentPending()).sessions as { state?: string }[]).filter((x) => x.state === "waiting").length;
+  const list = cfg.tiles.map((t) => {
+    const b = t.action.type === "builtin" ? t.action.id : "";
+    const live = mac && builtinState[b] ? builtinState[b](mac) : {};
+    if (b === "open.claude" && waiting > 0) Object.assign(live, { sub: `${waiting} waiting`, on: true });
+    const { action: _a, ...look } = t;
+    return {
+      ...look,
+      ...live,
+      sub: live.sub ?? t.sub,
+      kind: KIND[t.action.type] ?? "action",
+      // the tablet reads desk.focus itself: it ticks every second, the deck every 5
+      ...(b.startsWith("focus.") ? { live: "focus" } : {}),
+    };
+  });
   setState("deck", { tiles: list });
 }
 

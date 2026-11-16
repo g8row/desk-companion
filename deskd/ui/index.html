@@ -38,14 +38,30 @@
   <section class="sec mark" id="deck">
     <p class="eyebrow">02 · deck</p>
     <h2>tiles</h2>
-    <p class="sub">Up to 12 tiles (the tablet shows 3 per row). Each runs on this computer when tapped.</p>
-    <div class="deckgrid" id="tiles"></div>
+    <p class="sub">Up to 12 tiles, packed in order into the tablet's 4×3 grid. Tiles in a row that share a group become one split pill; a column holding only a full-height pill becomes a narrow rail. Each runs on this computer when tapped. Click a tile to edit it.</p>
+    <div class="screen" id="tiles" role="group" aria-label="deck preview"></div>
+    <div class="deckbar"><button class="btn sm" id="addtile">+ add tile</button><span class="sub" id="dropped"></span></div>
     <div class="editor card" id="editor" hidden>
       <div class="row between"><h3 id="edtitle">tile</h3><button class="btn ghost" id="edclose">close</button></div>
       <div class="form">
         <label>label <input id="f-label" maxlength="24"></label>
         <label>subtitle <input id="f-sub" maxlength="24" placeholder="optional"></label>
         <label>color <span class="swatches" id="f-colors"></span></label>
+        <div class="form three">
+          <label>icon <select id="f-icon"></select></label>
+          <label>icon when on <select id="f-iconon"></select></label>
+          <label>size (cells)
+            <select id="f-size">
+              <option value="1x1">1 × 1</option><option value="2x1">2 wide</option><option value="3x1">3 wide</option>
+              <option value="1x2">2 tall</option><option value="1x3">3 tall (rail)</option><option value="2x2">2 × 2</option>
+            </select>
+          </label>
+          <label>group <input id="f-group" maxlength="24" placeholder="none — e.g. volume"></label>
+        </div>
+        <div class="row">
+          <label class="check"><input type="checkbox" id="f-fill"> always filled with the colour</label>
+          <label class="check"><input type="checkbox" id="f-circle"> round (circle)</label>
+        </div>
         <label>action
           <select id="f-type">
             <option value="builtin">built-in</option>

@@ -41,6 +41,25 @@ describe("desk config", () => {
     expect(c.claude.sound).toBe(false);
     expect(() => normalizeConfig([])).toThrow();
   });
+  test("tile layout fields: kept when valid, clamped or dropped when not", () => {
+    const c = normalizeConfig({
+      tiles: [
+        { label: "A", icon: "cup", iconOn: "nope", w: 2, h: 9, group: " g ", fill: true, shape: "circle", action: { type: "shell", cmd: "x" } },
+        { label: "B", icon: "nope", w: 1.5, h: 1, fill: "yes", shape: "star", action: { type: "shell", cmd: "x" } },
+      ],
+    });
+    const [a, b] = c.tiles;
+    expect([a?.icon, a?.iconOn, a?.w, a?.h, a?.group, a?.fill, a?.shape]).toEqual(["cup", undefined, 2, 3, "g", true, "circle"]);
+    expect(b).toEqual({ id: "b", label: "B", color: "zinc", action: { type: "shell", cmd: "x" } });
+  });
+  test("default deck is the rail: volume pill first, caffeine last", () => {
+    const t = defaultConfig().tiles;
+    expect(t.slice(0, 2).map((x) => [x.id, x.group])).toEqual([["vol.up", "volume"], ["vol.down", "volume"]]);
+    expect(t[0]?.h).toBe(3);
+    expect(t.at(-1)?.id).toBe("caffeine.toggle");
+    expect(t.every((x) => x.icon)).toBe(true);
+    expect(normalizeConfig(defaultConfig())).toEqual(defaultConfig()); // defaults survive normalize
+  });
   test("empty pane list falls back to defaults", () => {
     expect(normalizeConfig({ panes: [] }).panes).toEqual(defaultConfig().panes);
   });
