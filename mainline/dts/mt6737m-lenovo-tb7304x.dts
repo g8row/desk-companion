@@ -144,6 +144,21 @@
 	};
 };
 
+/*
+ * Sensors (stock: MC3433 accelerometer @0x4c, or a BMA2xx @0x18 as second source; SX9310 @0x28 and A96T316 @0x20
+ * SAR sensors). No device nodes yet: enabled for i2c-dev probing (docs/mainline/research-power.md).
+ */
+&i2c2 {
+	status = "okay";
+	clock-frequency = <100000>;
+};
+
+/* SM5414 charger @0x49. No driver yet; LK programs and enables it on every boot. Bus enabled for i2c-dev reads. */
+&i2c3 {
+	status = "okay";
+	clock-frequency = <100000>;
+};
+
 &pio {
 	touch_pins: touch-pins {
 		pins-int {

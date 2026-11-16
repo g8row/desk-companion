@@ -25,14 +25,15 @@ Research notes (read-only investigations of the stock firmware, mainline tree an
 | Buttons | ✅ works | Vol± on the SoC keypad (`mt6779-keypad`), Power on `mt6328-keys` | — |
 | USB | ✅ peripheral | Legacy CDC gadget `0525:a4aa` (ECM + ACM), 172.16.42.1, telnet, httpd | Host mode, VBUS/ID detection |
 | eMMC | ✅ probes (50 MHz, unused) | `init` never mounts it | Rootfs (research-rootfs) |
+| Internet in stage 2 | ✅ via host | `mainline/scripts/tablet-net.sh`: `http-proxy.py` on the host's 127.0.0.1:3128 + `ssh -R`, sets the clock. apk, curl ok; busybox wget https not | — |
 | Root filesystem | ✅ Alpine 3.24.4 | ext4 image `/cache/linux/rootfs.img` (256 MB, 20 MB used), loop-mounted by stage 1 (`init`), which falls back to the initramfs after 2 failed tries or with `tb.r=0`. SSH (dropbear, key only) + telnet on 172.16.42.1 | Package installs need a host proxy (`ssh -R`), no RTC → set the date from the host |
 | Panic recovery | ✅ in build6 | `CONFIG_PANIC_TIMEOUT=10` (no cmdline room for `panic=10`) | — |
 | Watchdog | ✅ | `mtk_wdt` | — |
-| Charger (SM5414, i2c3 @0x49) | ❌ no driver | LK enables charging at every boot, probably 4.35 V; continues under Linux. No battery over-temp cutoff without software | Enable i2c3, read LK's registers; then a driver with a desk policy (4.10 V, 500 mA, pause > 45 °C) |
+| Charger (SM5414, i2c3 @0x49) | ❌ no driver (bus ✅) | LK leaves it charging at **CV 4.35 V**, 700 mA (450 mA input limit), auto-stop off, **safety timer off** (see below). No battery over-temp cutoff without software | Driver with a desk policy (4.10 V, 500 mA, pause > 45 °C); meanwhile a stage-2 boot script could set 4.10 V |
 | Battery voltage/temperature | ❌ | MT6328 AUXADC (no mainline driver); NTC = `murata,ncp15xh103` equivalent | ~250-line ADC driver + `ntc_thermistor` + thermal zone |
 | RTC | ❌ | MT6328 RTC at 0x4000, mt6323-compatible; `RTC_DRV_MT6397=y` already | MFD cell + DT node (small) |
 | SoC thermal | ❌ | Same design as mt8173, different efuse layout | Low priority; PMIC/board thermistors first |
-| Accelerometer | ❌ | MC3433 @0x4c or BMA2xx @0x18 on i2c2 | Probe i2c2 to see which is fitted |
+| Accelerometer | ❌ no node (bus ✅) | **Bosch BMA2xx @0x18 on i2c2**, chip ID 0xFA (BMA253/255 family). MC3433 @0x4c not fitted | `bmc150-accel` + DT node (`bosch,bma255`) |
 | IOMMU (M4U) | ❌ defers | Mainline lists larb3 (VEN domain, which we delete), so the IOMMU waits forever | List only larbs 0–2; fix larb addresses (D2) |
 | WiFi / BT / GPS / FM | ❌ | MT6625L via CONSYS/WMT, no mainline driver | Biggest blocker for a networked desk device; USB networking meanwhile |
 | Audio, camera, modem | ❌ | — | Not planned |
@@ -49,6 +50,26 @@ Read with devmem from Alpine while LK's picture was up. Confirms research-displa
 - larb0 MMU_EN (`0x14016fc0`) = 0: LK scans out with physical addresses.
 - DISP_PWM `0x1100e000` EN = 1, `+0x14` = `0x03FF03FF`.
 - The GPIO125 level could not be read (it isn't requested in debugfs); `lcmname` makes it unnecessary.
+
+## SM5414 state left by LK (read 2026-11-16, i2c-2 = i2c3 @0x49, read-only)
+| reg | value | decode |
+|---|---|---|
+| 0x00–0x02 INT1–3 | 0x7C 0x25 0x0E | latched events (read-clear): UVLO, VBUSINOK, AICL, VBUSLIMIT, BATOVP; WEAKBAT, CHGRSTF, TOPOFF |
+| 0x06 STATUS | 0x22 | TOPOFF + BATDET: battery present, in top-off (near full) |
+| 0x07 CTRL | 0x42 | ENCOMPARATOR, CHGEN = 1 |
+| 0x08 VBUSCTRL | 0x07 | input limit 450 mA |
+| 0x09 CHGCTRL1 | 0x27 | AICL threshold 4.5 V, AICL on, AUTOSTOP off, precharge 450 mA |
+| 0x0A CHGCTRL2 | 0x0C | fast charge 700 mA |
+| 0x0B CHGCTRL3 | 0xAC | **BATREG 4.35 V**, WEAKBAT 3.6 V |
+| 0x0C CHGCTRL4 | 0x0D | top-off current 150 mA, DISLIMIT 5 |
+| 0x0D CHGCTRL5 | 0x0F | **FASTTIMER disabled**, top-off timer 45 min |
+| 0x0E | 0x43 | chip ID / present |
+
+So under mainline the battery is held at 4.35 V indefinitely, with no timer and no temperature cutoff. That is fine for
+sessions, but not for a permanently plugged-in desk device. The stopgap `i2cset -y 2 0x49 0x0b 0x0c` (BATREG 4.10 V,
+WEAKBAT unchanged) lasts until the next boot, because LK reprograms the charger every time.
+
+Bus numbers in stage 2: i2c-0 = i2c1 (touch), i2c-1 = i2c2 (sensors), i2c-2 = i2c3 (charger).
 
 ## Known issues
 
@@ -87,7 +108,7 @@ KP_SEL=0, debounce 0x400 (same as stock), no key bits set.
 ## Todo, in order
 1. ~~Fix the Android safe-mode boot loop~~ (done: Magisk boot counter, see above).
 2. ~~Panic timeout~~ (in build7). The clk_summary lockup left nothing in pstore; avoid reading `clk_summary`.
-3. Enable i2c2/i2c3 without devices; read SM5414 registers and the accelerometer IDs.
+3. ~~Enable i2c2/i2c3, read SM5414 and accelerometer~~ (done, see above). Add the BMA2xx node.
 4. RTC (MT6328).
 5. ~~Rootfs~~ (done). Next: an HTTP proxy over `ssh -R` for `apk`, and `apk fix` to run the skipped package scripts.
 6. Display D2 DT fixes + IOMMU larb fix; then the NT51021B **GX** panel driver, the D2 mutex table and `DRM_MEDIATEK`.
