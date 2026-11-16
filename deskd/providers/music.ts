@@ -1,4 +1,4 @@
-// Apple Music via AppleScript. Never launches Music: only reads it when running.
+// Apple Music via AppleScript (macOS; Linux uses MPRIS, providers/mpris.ts). Never launches Music: only reads it when running.
 // Album art: exported once per track, scaled to 128×128 with `sips`, decoded
 // from BMP to RGBA here (the tablet's core wants pow2 RGBA8 textures).
 

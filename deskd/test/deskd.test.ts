@@ -21,7 +21,7 @@ describe("protocol", () => {
 });
 
 describe("music", () => {
-  test("the AppleScript compiles (no reserved-word variables)", async () => {
+  test.skipIf(process.platform !== "darwin")("the AppleScript compiles (no reserved-word variables)", async () => {
     const r = await $`osacompile -e ${READ} -o /dev/null`.quiet().nothrow();
     expect(r.stderr.toString()).toBe("");
     expect(r.exitCode).toBe(0);

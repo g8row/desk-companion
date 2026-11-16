@@ -9,9 +9,9 @@ import { join } from "node:path";
 import { tiles as defaultTiles } from "./config.ts";
 
 export const PANES = {
-  home: "clock, now playing, claude + mac at a glance",
+  home: "clock, now playing, claude + computer at a glance",
   deck: "tappable action tiles",
-  music: "apple music: art, wave, transport",
+  music: "now playing (apple music / mpris): art, wave, transport",
   claude: "claude code sessions, detail, timeline, approvals",
   pulse: "claude usage today: ascii token field + hourly bars",
   board: "ops board: cell grid of every live number",
@@ -75,12 +75,12 @@ export interface DeskConfig {
   claude: {
     /** Flash the tablet when a session needs you. */
     flash: boolean;
-    /** Also play a quiet system sound on the Mac. */
+    /** Also play a quiet system sound on the computer. */
     sound: boolean;
     /** Hold permission prompts for a tablet allow/deny before falling back. */
     approvals: boolean;
     approvalTimeoutSec: number;
-    /** App used by "open in editor". */
+    /** App used by "open in editor" (macOS app name, or on Linux a command such as code / zed). */
     editor: string;
   };
   focus: { minutes: number };

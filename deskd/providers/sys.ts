@@ -1,5 +1,5 @@
 import os from "node:os";
-import { $ } from "bun";
+import { host } from "../platform/index.ts";
 
 let prev = os.cpus().map((c) => c.times);
 
@@ -18,11 +18,5 @@ export function cpuPercent(): number {
   return total > 0 ? Math.round(100 * (1 - idle / total)) : 0;
 }
 
-/** Used memory % like Activity Monitor's "memory used" (app + wired + compressed). */
-export async function memPercent(): Promise<number> {
-  const out = (await $`vm_stat`.quiet().nothrow()).stdout.toString();
-  const page = Number(/page size of (\d+)/.exec(out)?.[1] ?? 16384);
-  const get = (label: string) => Number(new RegExp(`${label}:\\s+(\\d+)`).exec(out)?.[1] ?? 0) * page;
-  const used = get("Anonymous pages") - get("Pages purgeable") + get("Pages wired down") + get("Pages occupied by compressor");
-  return Math.max(0, Math.min(100, Math.round((100 * used) / os.totalmem())));
-}
+/** Used memory %: Activity Monitor's "memory used" on macOS, MemTotal − MemAvailable on Linux. */
+export const memPercent = (): Promise<number> => host.memPercent().catch(() => 0);

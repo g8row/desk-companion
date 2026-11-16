@@ -1,7 +1,8 @@
-// The tablet's own vitals, read over adb (works in both Android and kiosk mode
-// because adbd is native): battery, free RAM, uptime, CPU clock, Wi-Fi IP.
+// The tablet's own vitals: battery, free RAM, uptime, CPU clock, Wi-Fi IP.
+// Android (and Android kiosk mode, adbd is native) is read over adb; mainline
+// Alpine over the ssh connection deskd keeps for its tunnel (transport.ts).
 
-import { $ } from "bun";
+import { tabletShell, tabletVia } from "../transport.ts";
 
 export interface TabletState {
   battery?: number;
@@ -11,7 +12,7 @@ export interface TabletState {
   uptime?: string;
   cpuMhz?: number;
   wifi?: string;
-  mode?: "android" | "kiosk";
+  mode?: "android" | "kiosk" | "mainline";
 }
 
 // `dumpsys battery` is a binder call into system_server, so main.ts polls this
@@ -24,6 +25,17 @@ const SCRIPT = [
   "cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq | sed 's/^/freq: /'",
   "ip -4 addr show wlan0 2>/dev/null | grep -o 'inet [0-9.]*'",
   "getprop init.svc.zygote | sed 's/^/zygote: /'",
+].join("; ");
+
+// Mainline Linux (busybox sh): battery from power_supply when a driver exposes
+// one; "os:" marks the mode.
+const LINUX_SCRIPT = [
+  "for b in /sys/class/power_supply/*; do [ \"$(cat $b/type 2>/dev/null)\" = Battery ] || continue; sed 's/^/cap: /' $b/capacity; sed 's/^/chg: /' $b/status; break; done 2>/dev/null",
+  "grep -E 'MemTotal|MemAvailable' /proc/meminfo",
+  "cat /proc/uptime",
+  "sed 's/^/freq: /' /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq 2>/dev/null",
+  "ip -4 addr show wlan0 2>/dev/null | grep -o 'inet [0-9.]*'",
+  "echo os: linux",
 ].join("; ");
 
 export function parseTablet(out: string): TabletState {
@@ -42,12 +54,11 @@ export function parseTablet(out: string): TabletState {
     uptime: h !== undefined ? `${h}h ${m}m` : undefined,
     cpuMhz: (() => { const v = num(/freq: (\d+)/); return v ? Math.round(v / 1000) : undefined; })(),
     wifi: /inet ([0-9.]+)/.exec(out)?.[1],
-    mode: /zygote: running/.test(out) ? "android" : "kiosk",
+    mode: /^os: linux/m.test(out) ? "mainline" : /zygote: running/.test(out) ? "android" : "kiosk",
   };
 }
 
 export async function readTablet(): Promise<TabletState | null> {
-  const r = await $`adb shell ${SCRIPT}`.quiet().nothrow();
-  if (r.exitCode !== 0 && r.stdout.length === 0) return null;
-  return parseTablet(r.stdout.toString());
+  const r = await tabletShell(tabletVia() === "ssh" ? LINUX_SCRIPT : SCRIPT);
+  return r ? parseTablet(r.out) : null;
 }

@@ -1,6 +1,7 @@
-// deskd — the Mac half of the TB-7304X desk companion.
+// deskd — the computer half of the TB-7304X desk companion (macOS or Linux;
+// OS-specific bits live in platform/, tablet transports in transport.ts).
 //
-//   tablet (PocketJS host, link.rs) ──TCP 127.0.0.1:7777 over `adb reverse`──▶ deskd
+//   tablet (PocketJS host, link.rs) ──TCP 127.0.0.1:7777 over `adb reverse` or `ssh -R`──▶ deskd
 //   Claude Code hooks ──HTTP POST 127.0.0.1:7778/claude──▶ deskd
 //
 // Responsibilities: keep the adb tunnel up, push provider state, run tapped
@@ -13,7 +14,9 @@
 import { $, type Socket } from "bun";
 import { watch } from "node:fs";
 import { join } from "node:path";
-import { actions, builtinInfo, builtinState, readMacState } from "./config.ts";
+import { actions, builtinInfo, builtinState, readHostState } from "./config.ts";
+import { host } from "./platform/index.ts";
+import { closeTransports, keepAdbReverse, keepSshTunnel, tabletScreenshot, tabletVia } from "./transport.ts";
 import { ACCENTS, COLORS, CONFIG_PATH, ICONS, type Tile, PANES, layoutState, loadConfig, normalizeConfig, saveConfig, watchConfig, type DeskConfig } from "./deskconfig.ts";
 import { runAction } from "./runner.ts";
 import { allPending, currentPending, decideById, dropSession, findPending, holdFull, hookResponse, tabletDecision } from "./gate.ts";
@@ -22,7 +25,6 @@ import { focusAction, focusState, focusTick, newFocus, type Focus } from "./prov
 import { bundleHash, encode, LineSplitter, type FromTablet, type ToTablet } from "./protocol.ts";
 import { clockState } from "./providers/clock.ts";
 import { cpuPercent, memPercent } from "./providers/sys.ts";
-import { readArtwork, readMusic } from "./providers/music.ts";
 import { claudeState, getSession, lastMessage, onAlert, onHookEvent, permissionDecided, pollTranscripts } from "./providers/claude.ts";
 import { readTablet } from "./providers/tablet.ts";
 
@@ -101,7 +103,7 @@ let bundle: Bundle | null = null;
 
 async function build(): Promise<Bundle | null> {
   const t0 = performance.now();
-  const r = await $`bun pocket compile --target android --manifest ${APP_MANIFEST} --project-root .`
+  const r = await $`${process.execPath} pocket compile --target android --manifest ${APP_MANIFEST} --project-root .`
     .cwd(POCKETJS)
     .quiet()
     .nothrow();
@@ -156,26 +158,18 @@ function watchApp() {
 
 // ---- actions -------------------------------------------------------------------
 
-const osaQ = (s: string) => s.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
-
 /** Session-scoped Claude actions; args = { session: id }. */
-const claudeActions: Record<string, (s: { cwd: string; id: string }) => Promise<unknown>> = {
-  "claude.terminal": (s) => $`open -a Terminal ${s.cwd}`.quiet().nothrow(),
-  "claude.editor": async (s) => {
-    const r = await $`open -a ${cfg.claude.editor} ${s.cwd}`.quiet().nothrow();
-    if (r.exitCode !== 0) await $`open ${s.cwd}`.quiet().nothrow(); // editor missing → Finder
-  },
-  "claude.finder": (s) => $`open ${s.cwd}`.quiet().nothrow(),
+const claudeActions: Record<string, (s: { cwd: string; id: string; name: string }) => Promise<unknown>> = {
+  "claude.terminal": (s) => host.openTerminal(s.cwd),
+  "claude.editor": (s) => host.openEditor(s.cwd, cfg.claude.editor),
+  "claude.finder": (s) => host.openFolder(s.cwd),
   "claude.copy": async (s) => {
     const text = lastMessage(s.id);
     if (!text) return;
-    const p = Bun.spawn(["pbcopy"], { stdin: "pipe" });
-    p.stdin.write(text);
-    p.stdin.end();
-    await p.exited;
-    await $`osascript -e ${`display notification "${osaQ(text.slice(0, 120))}" with title "Copied from ${osaQ(getSession(s.id)?.name ?? "Claude")}"`}`.quiet().nothrow();
+    await host.copy(text);
+    await host.notify(`Copied from ${getSession(s.id)?.name ?? "Claude"}`, text.slice(0, 120));
   },
-  "claude.focus": () => $`open -a Claude`.quiet().nothrow(),
+  "claude.focus": (s) => host.focusClaude(s.cwd, s.name),
 };
 
 /** A tile tap: focus.* builtins drive deskd's own timer; the rest run on the Mac. */
@@ -350,7 +344,9 @@ async function api(req: Request, url: URL): Promise<Response> {
       accents: ACCENTS,
       builtins: builtinInfo,
       platform: process.platform,
+      host: host.name,
       tablet: tabletReady(),
+      via: tabletVia(),
     });
   if (path === "/state") {
     const out: Record<string, unknown> = {};
@@ -358,9 +354,9 @@ async function api(req: Request, url: URL): Promise<Response> {
     return Response.json(out);
   }
   if (path === "/screenshot") {
-    const r = await $`adb exec-out screencap -p`.quiet().nothrow();
-    if (r.exitCode !== 0 || r.stdout.length < 100) return new Response("no tablet", { status: 503 });
-    return new Response(r.stdout, { headers: { "content-type": "image/png", "cache-control": "no-store" } });
+    const png = await tabletScreenshot().catch(() => null);
+    if (!png) return new Response("no tablet", { status: 503 });
+    return new Response(new Blob([png as Uint8Array<ArrayBuffer>]), { headers: { "content-type": "image/png", "cache-control": "no-store" } });
   }
   if (path === "/tile/test" && req.method === "POST") {
     const t = normalizeConfig({ tiles: [await req.json()] }).tiles[0];
@@ -440,34 +436,22 @@ Bun.serve({
   },
 });
 
-// ---- adb reverse keeper -----------------------------------------------------------
-
-async function keepAdbReverse() {
-  const devs = (await $`adb devices`.quiet().nothrow()).stdout.toString();
-  if (!/\tdevice$/m.test(devs)) return;
-  const list = (await $`adb reverse --list`.quiet().nothrow()).stdout.toString();
-  if (!list.includes(`tcp:${PORT}`)) {
-    const r = await $`adb reverse tcp:${PORT} tcp:${PORT}`.quiet().nothrow();
-    log(r.exitCode === 0 ? `adb reverse tcp:${PORT} applied` : `adb reverse failed: ${r.stderr}`);
-  }
-}
-
 // ---- providers -----------------------------------------------------------------------
 
 let lastTrack: string | undefined;
 async function refreshMusic() {
-  const m = await readMusic();
+  const m = await host.music.read();
   setState("music", m);
   if (m.trackId && m.trackId !== lastTrack) {
     lastTrack = m.trackId;
-    const art = await readArtwork(256);
+    const art = await host.music.artwork(256);
     if (art) setBlob("music.art", 256, 256, art);
   }
 }
 
 const KIND: Record<string, string> = { builtin: "action", shell: "shell", app: "app", url: "link", applescript: "script", shortcut: "shortcut" };
 async function refreshDeck() {
-  const mac = await readMacState().catch(() => null);
+  const mac = await readHostState();
   const waiting = (claudeState(Date.now(), currentPending()).sessions as { state?: string }[]).filter((x) => x.state === "waiting").length;
   const list = cfg.tiles.map((t) => {
     const b = t.action.type === "builtin" ? t.action.id : "";
@@ -492,14 +476,14 @@ async function refreshFast() {
 
 onAlert((a) => {
   log(`claude alert: ${a.name} — ${a.reason}`);
-  if (cfg.claude.sound && process.platform === "darwin")
-    $`afplay -v 0.25 /System/Library/Sounds/Glass.aiff`.quiet().nothrow();
+  if (cfg.claude.sound) host.sound().catch(() => {});
 });
 
 async function main() {
   bundle = process.env.DESKD_NO_WATCH ? await loadDist() : await build();
   for (const c of clients) syncBundle(c); // tablets that connected mid-build
   if (!process.env.DESKD_NO_WATCH) watchApp();
+  log(`deskd on ${host.name}`);
   log(`deskd listening on 127.0.0.1:${PORT} (tablet) and :${HOOK_PORT} (hooks, config UI at http://127.0.0.1:${HOOK_PORT}/)`);
   const loaded = loadConfig();
   if (loaded.error) log(`config: ${loaded.error} — using defaults`);
@@ -521,10 +505,10 @@ async function main() {
     const [f, finished] = focusTick(focus);
     focus = f;
     setState("focus", focusState(focus));
-    if (finished && process.platform === "darwin")
-      $`osascript -e ${'display notification "Time is up — take a break." with title "Desk focus"'}`.quiet().nothrow();
+    if (finished) host.notify("Desk focus", "Time is up — take a break.").catch(() => {});
   }, 1000);
-  setInterval(() => keepAdbReverse().catch(() => {}), 3000);
+  setInterval(() => keepAdbReverse(PORT, log).catch(() => {}), 3000);
+  setInterval(() => keepSshTunnel(PORT, log).catch(() => {}), 3000);
   setInterval(async () => {
     const t = await readTablet().catch(() => null);
     if (t) setState("tablet", t);
@@ -537,7 +521,15 @@ async function main() {
   scanUsage()
     .then(() => setState("usage", usageState()))
     .catch(() => {});
-  await Promise.all([refreshFast(), keepAdbReverse()]);
+  await Promise.all([refreshFast(), keepAdbReverse(PORT, log), keepSshTunnel(PORT, log)]);
+  // a tablet found on the first pass is worth its vitals right away
+  if (tabletVia()) readTablet().then((t) => t && setState("tablet", t)).catch(() => {});
 }
+
+for (const sig of ["SIGINT", "SIGTERM"] as const)
+  process.on(sig, () => {
+    closeTransports();
+    process.exit(0);
+  });
 
 await main();

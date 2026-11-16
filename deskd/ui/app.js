@@ -272,6 +272,8 @@ function openEditor() {
   $("f-group").value = t.group || "";
   $("f-fill").checked = !!t.fill;
   $("f-circle").checked = t.shape === "circle";
+  // AppleScript / Shortcuts only run on macOS: offer them there (or when a tile already uses one)
+  for (const o of $("f-type").options) o.hidden = meta.platform !== "darwin" && (o.value === "applescript" || o.value === "shortcut") && o.value !== t.action.type;
   $("f-builtin").innerHTML = Object.entries(meta.builtins).map(([k, v]) => `<option value="${k}">${k} — ${v}</option>`).join("");
   syncActionFields();
   $("edresult").textContent = "";
@@ -381,7 +383,7 @@ async function shot() {
     shotUrl = URL.createObjectURL(b);
     $("screen").src = shotUrl;
   } catch {
-    $("noshot").textContent = "tablet not reachable over adb";
+    $("noshot").textContent = "tablet not reachable over adb or ssh";
   }
 }
 $("shot").onclick = shot;
@@ -390,7 +392,8 @@ async function status() {
   try {
     const m = await (await api("/meta")).json();
     $("tabdot").className = m.tablet ? "dot on" : "dot";
-    $("tabstate").textContent = m.tablet ? "tablet connected" : "tablet offline";
+    $("tabstate").textContent = m.tablet ? `tablet connected${m.via ? ` (${m.via})` : ""}` : "tablet offline";
+    $("tabstate").title = m.host || "";
   } catch {
     $("tabstate").textContent = "deskd unreachable";
   }
@@ -410,6 +413,10 @@ function render() {
 
 (async () => {
   meta = await (await api("/meta")).json();
+  if (meta.platform !== "darwin") {
+    VALUE.shell[2] = "notify-send hello";
+    VALUE.app = ["application (name, .desktop id or command)", "name", "Firefox"];
+  }
   const r = await (await api("/config")).json();
   cfg = r.config;
   saved = JSON.stringify(cfg);

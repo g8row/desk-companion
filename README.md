@@ -37,7 +37,7 @@ The panes and deck tiles are configured in **Desk Studio**, a small web app that
       ▲ HTTP POST from Claude Code hooks
 ```
 
-- **[deskd/](deskd/README.md)**: the Mac daemon (state providers, tile actions, hot reload, Claude hooks, Desk Studio).
+- **[deskd/](deskd/README.md)**: the daemon on the Mac or Linux PC (state providers, tile actions, hot reload, Claude hooks, Desk Studio).
 - **[pocketjs](https://github.com/g8row/pocketjs/tree/android-host)** (git submodule, branch `android-host`) contains:
   - `hosts/android`: the Android host and the `pocketjs-kiosk` framebuffer binary;
   - `apps/desk`: the Desk app itself.
