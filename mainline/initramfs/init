@@ -40,7 +40,9 @@ for v in /sys/class/vtconsole/vtcon*; do
 done
 # LK leaves OVL0 layer 3 on top of the framebuffer with the "orange state" warning. Disabling the layer
 # (SRC_CON bit 3) stalls OVL until reset, so make it transparent instead: constant alpha 0 in L3_CON.
-if [ $(( $(devmem 0x1400702c 32) & 8 )) -ne 0 ]; then
+# Only while LK's OVL0 pipeline is what's on screen (lkfb/simpledrm); mediatek-drm doesn't use OVL0.
+if [ "$(cat /sys/class/graphics/fb0/name 2>/dev/null)" != mediatekdrmfb ] &&
+   [ $(( $(devmem 0x1400702c 32) & 8 )) -ne 0 ]; then
 	devmem 0x14007090 32 $(( $(devmem 0x14007090 32) & ~0xff ))
 	log "OVL0 L3 (LK overlay) alpha set to 0"
 fi
@@ -48,6 +50,13 @@ paint ff0000; sleep 2
 paint 00ff00; sleep 2
 paint 0000ff; sleep 1
 log "paint done (fb0: $([ -e /dev/fb0 ] && echo yes || echo no))"
+# mediatek-drm scans fb0 for real: give the screen back to the kernel console after the paint.
+if [ "$(cat /sys/class/graphics/fb0/name 2>/dev/null)" = mediatekdrmfb ]; then
+	for v in /sys/class/vtconsole/vtcon*; do
+		grep -q "frame buffer" $v/name 2>/dev/null && echo 1 > $v/bind
+	done
+	log "display: mediatek-drm, console on screen"
+fi
 
 # ---- 2. USB gadget --------------------------------------------------------
 gadget_configfs() {

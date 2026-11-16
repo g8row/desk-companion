@@ -148,6 +148,18 @@ static int __init mtk_lk_fb_init(void)
 	pr_info("lkfb: registering simple-framebuffer @0x%llx %ux%u stride=%u fmt=%s\n",
 		(u64)res.start, pdata.width, pdata.height, pdata.stride, pdata.format);
 
+	/* The real display driver (mediatek-drm on DSI0) owns the panel: LK's framebuffer will not be scanned. */
+	{
+		struct device_node *np = of_find_compatible_node(NULL, NULL, "mediatek,mt6735-dsi");
+		bool dsi = np && of_device_is_available(np);
+
+		of_node_put(np);
+		if (dsi) {
+			pr_info("lkfb: DSI0 is enabled in DT (mediatek-drm drives the panel), not registering\n");
+			return 0;
+		}
+	}
+
 	/*
 	 * A DT simple-framebuffer (with power-domains/clocks so the display stays powered once the SMI larbs and
 	 * IOMMU manage runtime PM) takes precedence: then only check that it matches what LK reports.

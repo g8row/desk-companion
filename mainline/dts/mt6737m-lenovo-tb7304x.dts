@@ -30,27 +30,6 @@
 		ranges;
 		/* LK overwrites bootargs with the boot.img cmdline + its own additions */
 		stdout-path = "serial0:921600n8";
-
-		/*
-		 * The framebuffer LK leaves OVL0 layer 0 scanning (same address on every boot so far; mtk-lk-fb warns
-		 * if LK ever reports a different one). simpledrm holds the DIS power domain and the MM clocks LK has
-		 * running (MM_CG_CON0 0xFFFCB3FC, CON1 0xFFFFFFF0): without them the domain powers off as soon as the
-		 * SMI larbs runtime-suspend, and the screen goes black.
-		 */
-		framebuffer0: framebuffer@7f7b0000 {
-			compatible = "simple-framebuffer";
-			reg = <0 0x7f7b0000 0 (2432 * 1024)>;
-			width = <600>;
-			height = <1024>;
-			stride = <2432>;
-			format = "x8r8g8b8";
-			power-domains = <&spm MT6735_POWER_DOMAIN_DIS>;
-			clocks = <&mmsys CLK_MM_SMI_COMMON>, <&mmsys CLK_MM_SMI_LARB0>,
-				 <&mmsys CLK_MM_DISP_OVL0>, <&mmsys CLK_MM_DISP_RDMA0>,
-				 <&mmsys CLK_MM_DISP_COLOR>, <&mmsys CLK_MM_DISP_AAL>,
-				 <&mmsys CLK_MM_DISP_GAMMA>,
-				 <&mmsys CLK_MM_DSI_ENGINE>, <&mmsys CLK_MM_DSI_DIGITAL>;
-		};
 	};
 
 	/* LK rewrites this from its mblock table (1 GB minus its own reservations) */
@@ -89,6 +68,18 @@
 	 * index 0 = KEY_VOLUMEUP, 1 = KEY_VOLUMEDOWN, single-key mode -> row 0, cols 0/1).
 	 * mt6779-keypad uses the same MEM/DEBOUNCE/SEL register layout. Not in mt6735.dtsi.
 	 */
+	/*
+	 * Backlight: the display PWM (0x1100e000), which LK leaves at 100 % (CON_1 = 0x03ff03ff). Its output pin
+	 * (probably GPIO69) is left muxed by LK.
+	 */
+	backlight: backlight {
+		compatible = "pwm-backlight";
+		pwms = <&disp_pwm 0 1000000>;
+		brightness-levels = <0 255>;
+		num-interpolated-steps = <255>;
+		default-brightness-level = <200>;
+	};
+
 	/* Panel logic supply, switched by GPIO83 (stock gpio_lcd_pwr); LK leaves it on */
 	lcd_vdd: regulator-lcd-vdd {
 		compatible = "regulator-fixed";
@@ -295,12 +286,13 @@
 		};
 	};
 
-	/* NT51021B, "nt51021b_dsi_vdo_gx" in LK's atag. Backlight: DISP_PWM, left on by LK (not described yet). */
+	/* NT51021B, "nt51021b_dsi_vdo_gx" in LK's atag */
 	panel@0 {
 		compatible = "lenovo,tb7304x-nt51021b-gx";
 		reg = <0>;
 		power-supply = <&lcd_vdd>;
 		reset-gpios = <&pio 146 GPIO_ACTIVE_LOW>;
+		backlight = <&backlight>;
 
 		port {
 			panel_in: endpoint {
@@ -322,6 +314,10 @@
 
 &smi_common {
 	reg = <0 0x14017000 0 0x1000>;
+};
+
+&disp_pwm {
+	status = "okay";
 };
 
 &mipi_tx {

@@ -18,8 +18,8 @@ Research notes (read-only investigations of the stock firmware, mainline tree an
 |---|---|---|---|
 | Boot | ✅ works | `recovery` partition via LK `oem reboot-recovery`. `fb_send.py` because stock `fastboot` stalls. Cmdline ≤ 99 chars. | — |
 | CPU, 4× A53 | ✅ all 4 cores, hotplug | `mediatek,mt6735-smp` enable-method: PSCI CPU_ON + SPM MTCMOS (`patches/smp_mt6735.c`) | cpufreq (ARMPLL + PMIC VPROC); clock currently whatever LK left |
-| Display | 🟡 simpledrm on LK's framebuffer via a DT `simple-framebuffer` that holds the DIS power domain + MM clocks (panel: **NT51021B GX**). D2 addresses fixed in the DTS | `mtk-lk-fb`; `init` unbinds fbcon and sets OVL0 L3 alpha 0 (LK's orange-state overlay) | Real DRM: D2 DT fixes → mutex table → NT51021B panel driver (research-display §5) |
-| Backlight | 🟡 left on by LK | Stock uses DISP_PWM at 0x1100e000 (`disp_pwm`), pin probably GPIO69 | Add with the DRM work |
+| Display | ✅ mediatek-drm | RDMA0 → DSI0 → NT51021B GX (`panel-novatek-nt51021b.c`), D2 mutex table, through the IOMMU. `fb0` = mediatekdrmfb with the kernel console on screen. (A one-off burst of 10 IOMMU faults at boot, before the first framebuffer is attached.) | Full OVL0 path for hardware planes; then GPU |
+| Backlight | ✅ | `pwm-backlight` on DISP_PWM, `/sys/class/backlight/backlight` (0–255, default 200) | — |
 | GPU (Mali-T720 MP1, 450 MHz) | ❌ not enabled | Panfrost supports Midgard T720; needs MFG power domain/clocks, and a KMS display for Mesa | After DRM |
 | Touch | ✅ works | Goodix GT9293, i2c1 @0x5d, `goodix,gt911`, IRQ GPIO10, reset GPIO62, VGP1 2.8 V | Ship the config (`goodix_9293_cfg.bin` wait ~20 s, harmless) |
 | Buttons | ✅ works | Vol± on the SoC keypad (`mt6779-keypad`), Power on `mt6328-keys` | — |
@@ -112,8 +112,8 @@ KP_SEL=0, debounce 0x400 (same as stock), no key bits set.
 3. ~~Enable i2c2/i2c3, read SM5414 and accelerometer~~ (done, see above). Add the BMA2xx node.
 4. RTC (MT6328).
 5. ~~Rootfs~~ (done). Next: an HTTP proxy over `ssh -R` for `apk`, and `apk fix` to run the skipped package scripts.
-6. ~~Display D2 DT fixes + IOMMU larb fix~~ (done; a DT simple-framebuffer now keeps the display powered). Next: the NT51021B **GX** panel driver, the D2 mutex table and `DRM_MEDIATEK`.
+6. ~~Display: D2 DT fixes, IOMMU, NT51021B GX panel driver, D2 mutex table, mediatek-drm~~ (done). Next: the OVL0 path (hardware planes).
 7. MT6328 ADC + battery NTC + SM5414 driver with the desk charging policy.
-8. Backlight, then GPU (Panfrost).
+8. ~~Backlight~~ (done). GPU (Panfrost) next: MFG power domain/clocks, `DRM_PANFROST`, Mesa.
 9. cpufreq.
 10. WiFi: investigate CONSYS/WMT feasibility.
