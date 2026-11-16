@@ -1,6 +1,6 @@
 # TB-7304X mainline Linux: status
 
-Last updated 2026-11-16 (kernel #21). Kernel 7.0.10 (mt6735-mainline `v7.0.10-mt6735`, 046883c) plus our patches in `mainline/`.
+Last updated 2026-11-16 (kernel #22 on the tablet, #23 built). Kernel 7.0.10 (mt6735-mainline `v7.0.10-mt6735`, 046883c) plus our patches in `mainline/`.
 The build, boot and test flow is in [`mainline/README.md`](../../mainline/README.md) and
 [`mainline/TEST-PLAN.md`](../../mainline/TEST-PLAN.md).
 
@@ -11,6 +11,7 @@ Research notes (read-only investigations of the stock firmware, mainline tree an
 | Display: D2 address map, panel (NT51021B DJ/GX), DRM bring-up plan | [research-display.md](research-display.md) |
 | Charger SM5414, battery ADC, RTC, thermal, I2C inventory, accelerometer | [research-power.md](research-power.md) |
 | Root filesystem on the eMMC (Alpine in an image on `cache`) | [research-rootfs.md](research-rootfs.md) |
+| WiFi/BT: MT6625L via CONSYS, prior art and plan | [research-wifi.md](research-wifi.md) |
 
 ## Device functionality
 
@@ -33,10 +34,10 @@ Research notes (read-only investigations of the stock firmware, mainline tree an
 | Charger (SM5414, i2c3 @0x49) | ⚠️ no driver, boot-script policy | LK programs **CV 4.35 V**, 700 mA, 450 mA input limit, **safety timer off** on every boot. `local.d/tb-charger.start` sets CV 4.10 V / 500 mA. The chip is autonomous: settings survive unplug, and charging resumes on replug (STATUS 0x22 → 0x42 unplugged → 0x02, measured). No over-temp cutoff, no charger-type detection (input stays 450 mA, which a busy tablet can exceed) | Driver: power_supply class, BC1.2 input current, JEITA pause |
 | Battery voltage/temperature | ❌ | MT6328 AUXADC (no mainline driver); NTC = `murata,ncp15xh103` equivalent | ~250-line ADC driver + `ntc_thermistor` + thermal zone |
 | RTC | ❌ | MT6328 RTC at 0x4000, mt6323-compatible; `RTC_DRV_MT6397=y` already | MFD cell + DT node (small) |
-| SoC thermal | ❌ | Same design as mt8173, different efuse layout | Low priority; PMIC/board thermistors first |
+| SoC thermal | 🔧 kernel #23 built, not tested | `patches/0009`: `mediatek,mt6735-thermal` in auxadc_thermal.c, MT8173 data with 3 banks (CPU TS_MCU3, SoC+GPU TS_MCU1, LTE TS_MCU2). DT: AUXADC @0x11001000, efuse @0x10206000 (calibration cell 0x19c, 12 bytes), thermal @0x1100b000, zone `cpu-thermal` (passive 85 °C → CPU cooling, critical 110 °C). On #22 AUXADC and efuse bind; the thermal driver itself was missing (`CONFIG_MTK_SOC_THERMAL`, added for #23) | Flash #23, check `/sys/class/thermal/thermal_zone0/temp` against a warm/cold tablet |
 | Accelerometer | ❌ no node (bus ✅) | **Bosch BMA2xx @0x18 on i2c2**, chip ID 0xFA (BMA253/255 family). MC3433 @0x4c not fitted | `bmc150-accel` + DT node (`bosch,bma255`) |
 | IOMMU (M4U) | ✅ probes | Binds larbs 0–2 after the D2 address fix and dropping larb3. Display ports not attached yet (MMU_EN = 0) | Attach with the DRM pipeline |
-| WiFi / BT / GPS / FM | ❌ | MT6625L via CONSYS/WMT, no mainline driver | Biggest blocker for a networked desk device; USB networking meanwhile |
+| WiFi / BT / GPS / FM | ❌ | MT6625L via CONSYS/WMT, no mainline driver. Prior art: frank-w's BPI-R2 kernel carried MediaTek's WMT/wlan_gen2 port up to 5.15 (see research-wifi.md) | Forward-port that to 7.0 with the MT6735 CONSYS platform layer; weeks |
 | Audio, camera, modem | ❌ | — | Not planned |
 
 ## Display step 0 (LK state, read 2026-11-16)
@@ -114,7 +115,12 @@ Bus numbers in stage 2: i2c-0 = i2c1 (touch), i2c-1 = i2c2 (sensors), i2c-2 = i2
 - Page slides: 8 fps → 33–45 (tiled, real 988 MHz after `patches/0006`) → 51–62 (NEON) → **59–62 fps with even
   pacing** (raster in row bands on scoped threads, rotate on 2 threads, direct writes into the fb). Average
   full-screen frame 10.3 ms. More than 2 threads gains nothing: memory-bandwidth bound.
-- In progress: DRM/KMS with two buffers and page flips at vblank (tearing, and 60 Hz pacing vs the 66 Hz panel).
+- DRM/KMS scanout (pocketjs 9db560b, default; `POCKETJS_DISPLAY=fb` for fbdev): card1, two dumb buffers, page
+  flip at vblank, buffer reused only after its flip completes, console CRTC restored on exit. Swipes: 60 frames/s
+  steady, rotate+present ~7.5 ms, no tearing. Still to do: pace the loop by the flip event (it runs on the 60 Hz
+  timer, so it renders 60 of the panel's 66 refreshes); write straight into the dumb buffer if its mapping allows.
+- Tools: `/usr/local/sbin/swipe /dev/input/event2 l|r N gap_ms` injects swipes; `POCKETJS_STATS=1|2` per-second /
+  per-frame stats; `mainline/scripts/tb.sh` (ssh) and `fb2png.py` (fbdev dumps only, not DRM buffers).
 
 ## Boot time (power-on to the PocketJS UI)
 | Stage | Before | Kernel #17+ |
@@ -160,6 +166,15 @@ KP_SEL=0, debounce 0x400 (same as stock), no key bits set.
 - cpufreq yes; no thermal throttling yet (no SoC thermal driver).
 - GPU: Mali-T720 MP1, small (Pi 3 class). Panfrost/Mesa give GLES 2.0 here (Midgard T720), enough for 2D compositing at 600×1024.
 
+## Tablet state at the end of 2026-11-16
+- Kernel #22 in `recovery` (thermal driver not built in; #23 is taos `mainline/out/boot-mainline.img`, sha256
+  bcbfda96…). PocketJS service running the DRM build. Installed by hand on the rootfs, not in the image yet:
+  `/opt/pocketjs`, `/opt/mesa`, `/usr/local/sbin/{peek,poke,swipe,tb-reboot}`, `/etc/mdev.conf`,
+  `local.d/{tb-charger,tb-cpu}.start`, OpenRC `pocketjs`, apk `libdrm expat zstd-libs gdb`.
+- Android exits must use `mainline/scripts/linux-test.sh to-recovery` (Magisk boot counter). If a new kernel does
+  not come up, LK falls back to Android: write a known-good image to recovery with `su -c dd` from adb, then
+  `to-recovery` (done twice on 2026-11-16 with #17).
+
 ## Todo, in order
 1. ~~Fix the Android safe-mode boot loop~~ (done: Magisk boot counter, see above).
 2. ~~Panic timeout~~ (in build7). The clk_summary lockup left nothing in pstore; avoid reading `clk_summary`.
@@ -169,7 +184,7 @@ KP_SEL=0, debounce 0x400 (same as stock), no key bits set.
 6. ~~Display: D2 DT fixes, IOMMU, NT51021B GX panel driver, D2 mutex table, mediatek-drm~~ (done). Next: the OVL0 path (hardware planes).
 7. MT6328 ADC + battery NTC + SM5414 driver with the desk charging policy.
 8. ~~Backlight~~, ~~GPU: Panfrost + Mesa~~ (done). Next: GPU OPPs; Mesa in the rootfs image.
-9. ~~cpufreq, 1092 MHz, overclock to 1196~~ (done). Next: SoC thermal sensor + thermal zone with CPU cooling.
-10. PocketJS on DRM/KMS with page flips at vblank (in progress).
-11. WiFi: investigate CONSYS/WMT feasibility.
+9. ~~cpufreq, 1092 MHz, overclock to 1196~~ (done). SoC thermal: flash and verify kernel #23.
+10. ~~PocketJS on DRM/KMS with page flips at vblank~~ (done). Next: pace by the flip event (66 fps).
+11. WiFi: forward-port frank-w's 5.15 WMT/wlan_gen2 + MT6735 CONSYS layer (research-wifi.md).
 12. Rootfs image rebuild with everything installed by hand so far (mdev.conf, tb-reboot, local.d scripts, pocketjs service, apk libdrm/expat/zstd-libs, gdb).
