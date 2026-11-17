@@ -17,6 +17,6 @@ depend() {
 
 start_pre() {
 	[ -x "$command" ] || { eerror "$command missing (run pocketjs-deploy.sh)"; return 1; }
-	export POCKETJS_POWER POCKETJS_LINK
+	export POCKETJS_POWER POCKETJS_LINK POCKETJS_TOUCH_MASK POCKETJS_TOUCH_STALE_MS POCKETJS_TOUCH_LEARN
 	: > "$output_log"
 }

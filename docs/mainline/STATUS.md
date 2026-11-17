@@ -126,6 +126,27 @@ Bus numbers in stage 2: i2c-0 = i2c1 (touch), i2c-1 = i2c2 (sensors), i2c-2 = i2
 - Tools: `/usr/local/sbin/swipe /dev/input/event2 l|r N gap_ms` injects swipes; `POCKETJS_STATS=1|2` per-second /
   per-frame stats; `mainline/scripts/tb.sh` (ssh) and `fb2png.py` (fbdev dumps only, not DRM buffers).
 
+## Cracked glass: phantom touches (2026-11-17)
+- Measured with nobody touching (`/tmp/tlog.py` on the tablet, raw Goodix slots): phantom contacts come in bursts.
+  First ~1.4/s, 96% starting in panel x 370-470, y 0-125 (landscape left edge, logical x 0-62, y 65-115), plus one
+  spot at (7, 118). An hour later a storm of 10-20/s along a line at panel x ≈ 500-530, the full panel length
+  (landscape: a strip just under the nav, logical y ≈ 40-55), then nothing at all. Mostly 15-250 ms and stationary;
+  some stick for minutes (one held at (497, 32) for > 30 s).
+- The framework follows ONE primary contact until it lifts, and a tap fired on lift with no time limit: a stuck
+  phantom blocked every real touch (taps on the nav did nothing), and a long phantom hold could press a button.
+- Fixes, all in the kiosk host / framework (pocketjs `hosts/android/src/kiosk.rs`, `framework/src/input.ts`), set in
+  `/etc/conf.d/pocketjs`:
+  - `POCKETJS_TOUCH_MASK`: contacts that START in fixed rects are dropped for their whole life.
+  - `POCKETJS_TOUCH_LEARN=1`: 40 px cells that keep producing stationary contacts (score >= 10, 60 s decay) are
+    masked until they fall below 2; the moving crack areas are learned at run time. Logged as `touch: cell ...`.
+  - `POCKETJS_TOUCH_STALE_MS=3000`: a contact held still for 3 s is hidden until it lifts (`touch: retired ...`).
+  - Desk app: `configureTouch({ tapMaxFrames: 60 })`, a press held over 1 s fires nothing.
+- Verified: with a stuck phantom present, injected taps on all 8 nav cells switched panes (`/tmp/tap.py`).
+  Not yet seen live: the learner during a storm (the storm ended before the deploy).
+- UI rule of thumb: keep tap targets off the landscape left edge (x < 64, y 60-120) and the strip under the nav
+  (y 35-60); the nav bar itself is clean. Possible real fix: drop the broken sensor channels from the GT9293
+  config (`Sensor_CH`/`Driver_CH` maps); risky, not tried.
+
 ## Boot time (power-on to the PocketJS UI)
 | Stage | Before | Kernel #17+ |
 |---|---|---|
