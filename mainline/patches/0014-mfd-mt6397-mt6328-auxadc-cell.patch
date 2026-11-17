@@ -1,0 +1,17 @@
+mfd: mt6397: add the MT6328 AUXADC cell (TB-7304X)
+
+Instantiates drivers/iio/adc/mt6328-auxadc.c (patches/0013). Applies after patches/0012.
+
+diff --git a/drivers/mfd/mt6397-core.c b/drivers/mfd/mt6397-core.c
+--- a/drivers/mfd/mt6397-core.c
++++ b/drivers/mfd/mt6397-core.c
+@@ -171,6 +171,9 @@
+ 		.num_resources = ARRAY_SIZE(mt6328_rtc_resources),
+ 		.resources = mt6328_rtc_resources,
+ 		.of_compatible = "mediatek,mt6328-rtc"
++	}, {
++		.name = "mt6328-auxadc",
++		.of_compatible = "mediatek,mt6328-auxadc"
+ 	},
+ };
+ 
