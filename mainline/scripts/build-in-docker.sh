@@ -71,9 +71,17 @@ for p in $M/patches/0*.patch; do   # idempotent: skip patches that are already a
 cp $M/src/pmaports/device/*/linux-postmarketos-mediatek-mt6735/config-postmarketos-mediatek-mt6735.aarch64 $O/.config
 cat $M/patches/config-tb7304x.fragment >> $O/.config
 make -C $K O=$O ARCH=arm64 olddefconfig >/dev/null
-for opt in TOUCHSCREEN_GOODIX KEYBOARD_MT6779 MODULES DRM_MEDIATEK DRM_PANEL_NOVATEK_NT51021B MTK_MMSYS PHY_MTK_MIPI_DSI MTK_LK_FB DRM_SIMPLEDRM FB_DEVICE STRICT_DEVMEM INITRAMFS_SOURCE USB_MUSB_GADGET USB_CONFIGFS_ECM PSTORE_RAM; do
+for opt in TOUCHSCREEN_GOODIX KEYBOARD_MT6779 MODULES MTK_COMBO MTK_COMBO_WIFI MTK_BTIF DRM_MEDIATEK DRM_PANEL_NOVATEK_NT51021B MTK_MMSYS PHY_MTK_MIPI_DSI MTK_LK_FB DRM_SIMPLEDRM FB_DEVICE STRICT_DEVMEM INITRAMFS_SOURCE USB_MUSB_GADGET USB_CONFIGFS_ECM PSTORE_RAM; do
   grep -E "^(# )?CONFIG_${opt}[= ]" $O/.config || echo "   CONFIG_$opt missing"; done
-make -C $K O=$O ARCH=arm64 -j$JOBS KBUILD_BUILD_USER=tb7304 KBUILD_BUILD_HOST=mainline Image.gz mediatek/mt6737m-lenovo-tb7304x.dtb 2>&1 | grep -E "error|warning: |Kernel: |DTC" | grep -v "^  DTC" | tail -40 || true
+# The full log goes to out/kernel-build.log. A failed build must stop here: before, the errors were only filtered
+# out of the output and the previous Image was packaged as if nothing had happened.
+if ! make -C $K O=$O ARCH=arm64 -j$JOBS KBUILD_BUILD_USER=tb7304 KBUILD_BUILD_HOST=mainline Image.gz \
+	mediatek/mt6737m-lenovo-tb7304x.dtb > $OUT/kernel-build.log 2>&1; then
+  grep -E "error|Error [0-9]" $OUT/kernel-build.log | head -40
+  echo "== kernel build FAILED (out/kernel-build.log)"; exit 1
+fi
+grep -E "Kernel: |warning: " $OUT/kernel-build.log | grep -v "drivers/misc/mediatek/" | tail -20 || true
+echo "   $(grep -c "drivers/misc/mediatek/.*warning: " $OUT/kernel-build.log || true) warnings in the vendor WiFi driver (drivers/misc/mediatek, see the log)"
 cp $O/.config $OUT/kernel.config
 cp $O/arch/arm64/boot/dts/mediatek/mt6737m-lenovo-tb7304x.dtb $OUT/
 python3 - <<PY
@@ -85,6 +93,13 @@ assert 0x40080000+isz < 0x43000000, 'kernel would overlap ATF reserved memory'
 assert len(img) <= 0x1c00000, 'LK gunzip limit is 0x1c00000 (28 MiB) of decompressed Image (lk.bin @0x41e1f5c8)'
 print('   LK gunzip limit 0x1c00000: %d bytes headroom'%(0x1c00000-len(img)))
 PY
+
+echo "== 2b. WiFi userspace (wcn-tools: wmt_loader, stp_uart_launcher; static)"
+make -s -C $M/wcn-tools -B CC=${CROSS_COMPILE:-}gcc
+${STRIP} -o $OUT/wmt_loader $M/wcn-tools/wmt_loader
+${STRIP} -o $OUT/stp_uart_launcher $M/wcn-tools/stp_uart_launcher
+rm -f $M/wcn-tools/wmt_loader $M/wcn-tools/stp_uart_launcher
+ls -la $OUT/wmt_loader $OUT/stp_uart_launcher
 
 echo "== 3. boot images"
 cat $O/arch/arm64/boot/Image.gz $OUT/mt6737m-lenovo-tb7304x.dtb > /build/Image.gz-dtb

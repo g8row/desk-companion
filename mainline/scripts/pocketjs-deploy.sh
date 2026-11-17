@@ -6,6 +6,8 @@
 # so the binary is static and needs nothing from Alpine.
 # Env: TAB=root@172.16.42.1, NO_BUILD=1 (push what is already built), NO_START=1.
 set -euo pipefail
+# macOS tar would add AppleDouble ._* files for files with extended attributes; harmless elsewhere
+export COPYFILE_DISABLE=1
 HERE=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(cd "$HERE/../../pocketjs" && pwd)
 OVL=$(cd "$HERE/../rootfs/overlay" && pwd)

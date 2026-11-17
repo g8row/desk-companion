@@ -33,7 +33,10 @@ Driver: `mainline/wcn` (frank-w 5.15 tree + `conn_soc/mt6735`, ported to 7.0; hi
 kernel by `patches/0011-wcn-mediatek.sh`, built in (`CONFIG_MTK_COMBO*`, `MTK_BTIF`, `NL80211_TESTMODE`).
 Userspace: `mainline/wcn-tools` (BPI-R2's `wmt_loader` + `stp_uart_launcher`, static).
 
-On the tablet (files in place: `/etc/firmware/{WMT_SOC.cfg,ROMv2_lm_patch_1_*_hdr.bin,WIFI_RAM_CODE_6735}`,
+Short form: `mainline/scripts/wifi-deploy.sh` on the host (firmware, NVRAM, tools, `wifi-up`, hash-checked), then
+`wifi-up <ssid> <password>` on the tablet (`wifi-up off` to stop). `iw` and `wpa_supplicant` from apk.
+
+By hand, on the tablet (files in place: `/etc/firmware/{WMT_SOC.cfg,ROMv2_lm_patch_1_*_hdr.bin,WIFI_RAM_CODE_6735}`,
 `WIFI_RAM_CODE -> WIFI_RAM_CODE_6735`, `/etc/firmware/nvram/{WIFI,WIFI_CUSTOM}`):
 ```
 wmt_loader                                   # chip id 0x335, registers /dev/stpwmt and /dev/wmtWifi
@@ -65,7 +68,7 @@ Problems found on the way (all fixed in the tree):
 - **vmalloc buffers handed to dma_map_single()** (RX/TX coalescing buffers, firmware download): rejected since 5.x,
   oops on unmap. `ahb.c` bounces them through two 128 KiB coherent buffers.
 - `netdev->dev_addr` written directly (const since 5.17): `eth_hw_addr_set()`.
-- `build-in-docker.sh` ignores compile errors and packages the previous Image: check the log for `error:`.
+- `build-in-docker.sh` ignored compile errors and packaged the previous Image (fixed: it stops now).
 - A crash leaves zero-length files behind (ext4 delalloc): `sync` after copying firmware/tools.
 
 Not done: RF clock buffer (CONSYS_CLOCK_BUF_CTRL; the clock is evidently running), EMI MPU, the fbdev

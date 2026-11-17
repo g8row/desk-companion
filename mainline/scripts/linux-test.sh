@@ -31,7 +31,7 @@
 # Only `flash` writes flash. After a stall LK is wedged until the tablet reboots (hold Power ~15 s).
 # Stop any adb server first (`adb kill-server`), and nothing else should poll USB.
 set -u
-cd "$(dirname "$0")/../.."          # repo root
+cd "$(dirname "$0")/../.." || exit 1          # repo root
 REL=mainline-test-1
 OUT=mainline/out
 # Hard timeout. GNU `timeout` on Linux hosts; macOS has none, so fall back to perl's alarm (exit 124 like timeout).
@@ -65,7 +65,8 @@ case "${1:-}" in
 fetch)
   mkdir -p "$OUT"
   gh release download "$REL" -R g8row/desk-companion -D "$OUT" --clobber
-  (cd "$OUT" && sha256sum -c SHA256SUMS) ;;
+  # sha256sum: Linux, macOS 15+; shasum (perl): older macOS
+  (cd "$OUT" && if command -v sha256sum >/dev/null; then sha256sum -c SHA256SUMS; else shasum -a 256 -c SHA256SUMS; fi) ;;
 probe)
   adb kill-server 2>/dev/null
   ping || exit 1

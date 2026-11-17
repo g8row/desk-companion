@@ -197,7 +197,23 @@ Fastboot product string: `HQ8735B_TB_N`.
 | `scripts/Dockerfile`, `scripts/build.sh`, `scripts/build-in-docker.sh` | Reproducible build (OrbStack/Docker, Debian trixie arm64, native gcc 14.2, Debian `mkbootimg` 34.0.5, busybox-static 1.37.0). |
 | `scripts/analysis/*.py` | LK disassembly helpers: string references and Thumb disassembly with string annotation. |
 | `stock/` | Stock kernel, `Image`, `stock.dtb`/`stock.dts`, `lk.strings` (all extracted from backups). |
-| `out/` | Build outputs plus `SHA256SUMS`, `kernel.config`, `build.log`, LK disassembly excerpts. |
+| `wcn/`, `patches/0011-wcn-mediatek.sh` | MediaTek CONSYS WiFi driver (WMT/STP/BTIF + wlan_gen2), copied into the kernel as `drivers/misc/mediatek`. Origin in `wcn/README.md`, bring-up in docs/mainline/research-wifi.md. |
+| `wcn-tools/` | `wmt_loader`, `stp_uart_launcher` (built static into `out/`). |
+| `rootfs/overlay/usr/local/sbin/wifi-up` | On the tablet: radio on, optional join + DHCP, `wifi-up off`. |
+| `out/` | Build outputs plus `SHA256SUMS`, `kernel.config`, `kernel-build.log`, LK disassembly excerpts. |
+
+Host scripts (`scripts/`, macOS and Linux; heavy work runs in Docker):
+
+| Script | Purpose |
+|---|---|
+| `build.sh [kernel\|wcn]` | Everything in `out/` incl. U-Boot and `boot-mainline-uboot.img`; `kernel` skips U-Boot; `wcn` compiles only the WiFi driver. Stops on compile errors (`out/kernel-build.log`). |
+| `tb.sh ['cmd']` | ssh to the running tablet (USB network), `/usr/local/sbin` in PATH. |
+| `ramboot.sh [image]` | RAM-boot through U-Boot fastboot, nothing written; waits for ssh. |
+| `wifi-deploy.sh` | WiFi firmware, NVRAM (from `backup/`, never committed), tools and `wifi-up` to the tablet, hash-verified. |
+| `tablet-net.sh` | Internet for `apk` on the tablet through a proxy on the host. |
+| `pocketjs-deploy.sh` | Build and install the PocketJS kiosk. |
+| `linux-test.sh`, `fbusb` | LK fastboot / Android transitions (`fbusb` needs libusb: Homebrew or the distro). |
+| `tb-gpt.py` | Build and check the dual-boot GPT. |
 
 The DTS (`dts/mt6737m-lenovo-tb7304x.dts`):
 - 4 CPUs with `enable-method = "mediatek,mt6735-smp"`
@@ -242,13 +258,16 @@ but not bit-for-bit: build timestamps and the kernel build number change.
 ### Rebuild
 ```sh
 cd mainline
-./scripts/build.sh          # ~5 min cold on M-series (10 cores), ~1 min incremental; output in out/build.log
+./scripts/build.sh          # ~5 min cold on M-series (10 cores), ~1 min incremental; log in out/kernel-build.log
 ```
+Hosts: macOS (OrbStack or Docker Desktop, native arm64) or Linux with Docker (x86_64 cross-compiles; `taos` is
+one). Both verified 2026-11-17. The stock partition backups must be in `../backup/partitions` (mounted as `/stock`).
 `build.sh`:
 - builds the `tb7304-build` image
 - clones the kernel and pmaports if they are missing
-- uses the Docker volume `tb7304-kbuild` for kernel objects
+- uses the Docker volume `tb7304-kbuild` for kernel objects (and `tb7304-ubuild` for U-Boot)
 - re-checks the stock repack and the size limits
+- clones U-Boot at the pin in `u-boot/build-uboot.sh` if `src/u-boot` is missing
 
 ## 3. Honest list of unknowns / risks
 1. **`fastboot boot`**: almost certainly unsupported (see above). The flash-recovery route is untested. We assume, but did
