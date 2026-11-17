@@ -1,9 +1,11 @@
 #!/bin/sh
 # Safety net, same rules as stage 1:
 #  - 60 s after reaching userspace the boot counts as good (stage 1 gives up on the rootfs after 2 bad ones).
-#  - Reboot (back to Android) after tb.autoreboot= seconds (default 300) unless /tmp/stay or /run/stay exists.
-#    /etc/tb-autoreboot overrides it; 0 turns it off. sysrq s,u,b because `reboot -f` can hang on this kernel.
-T=300
+#  - Optional timed return to Android: tb.autoreboot=<s> on the cmdline or a number in /etc/tb-autoreboot.
+#    Default 0 (off): Linux is the default OS since U-Boot sits in `boot` (docs/mainline/plan-dualboot.md).
+#    /tmp/stay or /run/stay pauses it. The reboot sets LK's one-shot RTC recovery flag (Android in `recovery`);
+#    a plain reboot would come back to Linux. sysrq s,u,b because `reboot -f` can hang on this kernel.
+T=0
 for a in $(cat /proc/cmdline); do case "$a" in tb.autoreboot=*) T=${a#tb.autoreboot=} ;; esac; done
 [ -f /etc/tb-autoreboot ] && T=$(cat /etc/tb-autoreboot)
 (
@@ -14,7 +16,8 @@ for a in $(cat /proc/cmdline); do case "$a" in tb.autoreboot=*) T=${a#tb.autoreb
 		sleep 5; t=$((t + 5))
 		{ [ -e /tmp/stay ] || [ -e /run/stay ]; } && continue
 		if [ $t -ge "$T" ]; then
-			logger -t tb7304 "autoreboot after ${t}s"
+			logger -t tb7304 "autoreboot after ${t}s, to Android"
+			echo recovery > /sys/devices/platform/rtc-boot-mode/next_boot
 			echo 1 > /proc/sys/kernel/sysrq
 			echo s > /proc/sysrq-trigger; sleep 1; echo u > /proc/sysrq-trigger; sleep 1
 			echo b > /proc/sysrq-trigger

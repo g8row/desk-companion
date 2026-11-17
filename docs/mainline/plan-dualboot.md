@@ -1,6 +1,6 @@
 # TB-7304X dual boot: the decided design (Linux by default, Android one step away)
 
-**Date:** 2026-11-17. **Status:** decided. **Live layout since 2026-11-17 12:46: U-Boot in `boot`, Android in `recovery`** (T3 passed). Repartitioning not started.
+**Date:** 2026-11-17. **Status:** decided. **Live layout since 2026-11-17 12:46: U-Boot in `boot`, Android in `recovery`** (T3 passed). **Linux boots by default since 13:16** (T4 passed). Repartitioning not started.
 **Supersedes:** the U-Boot placement, ledger location, GUI actions and rootfs sections of
 [plan-boot-recovery.md](../../plan-boot-recovery.md), and the long-term layout of [research-rootfs.md](research-rootfs.md).
 **Evidence:** [research-lk-bootflow.md](research-lk-bootflow.md) (stock LK, disassembled, with addresses).
@@ -165,7 +165,7 @@ recovery, para).
 | Mode fix (`tbandroid` sets `/firmware/android/mode`) | same | ✅ Android `rtc`, `ro.boot.mode=normal`, Magisk OK (sha256 `672f2f9a…`) |
 | T2 Vol+ menu → Recovery with padded U-Boot | same | pending (needs hands) |
 | **T3** padded U-Boot in `boot`, Android in `recovery` | swap (done 12:46, both verified with `cmp`) | ✅ T3a: 1.5 GB read, then `adb reboot` → Android from `recovery`, `mode=normal`, Magisk + encryption OK. ✅ T3b: power off, then Power on → U-Boot → Android normal (seen by the user) |
-| T4 Linux by default from `boot` (`fastboot boot`, then the cache image) | swap | pending |
+| **T4** Linux by default (interim: `boot.cmd` default `linux`, image `/cache/linux/boot-mainline-uboot.img`; U-Boot `19d6778a…`) | swap | ✅ (2026-11-17 13:00–13:34) RAM boot via U-Boot `fastboot boot`: no "Kernel image misaligned", `memory@78000000` reserved, `mtk_wdt` takes over. Plain reboot from Android → **Linux** (gadget 16 s after reset). Linux reboot → Linux. `linux-test.sh ml-to-android` → Android (`rtc`/`recovery`, 32 s). `to-linux` → Linux. Stage-1 fallback (`bootcount=2`): stage 1 holds, auto-reboots after 300 s with the RTC flag → Android. Charger/alarm boots (LK bootmode 7/8/9) are routed to Android by `boot.cmd` (not re-tested since that change). |
 | T5 charger plugged while off (KPOC) | swap | ✅ Power-off with USB attached → LK charger mode → U-Boot → Android `kpoc_charger` from `recovery`. The screen is off at first (the charger blanks it). A short press on Power shows the battery animation (display resume, `bootlogo_show_charging`, backlight 150; confirmed by the user). It charges (CC 650 mA), and a long press on Power boots normally. |
 | T6 Magisk direct-install target with Android in `recovery` | swap | pending |
 
@@ -173,14 +173,23 @@ recovery, para).
 
 | Want | Do | Path |
 |---|---|---|
-| Android, normal mode (default today: no `boot-target` file) | power on, `adb reboot` | LK → U-Boot → `tbandroid` from `recovery` |
+| **Linux (default since T4, no `boot-target` file)** | power on, `adb reboot`, Linux `tb-reboot linux`, host `linux-test.sh to-linux` | LK → U-Boot → `bootm` of `/cache/linux/boot-mainline-uboot.img` |
+| Android, one-shot (next plain reboot is Linux again) | Linux `tb-reboot android`, host `linux-test.sh ml-to-android`, `adb reboot recovery` | LK RTC flag → `recovery` directly, `ro.boot.mode=recovery` |
+| Android, normal mode, persistent | Linux `tb-reboot android-normal` (`target=android`). Back to Linux: `linux-test.sh to-linux` from Android. | LK → U-Boot → `tbandroid` from `recovery` |
+| Charger plugged in while off / RTC alarm | automatic | LK → U-Boot → Android (charging UI / alarm) |
 | U-Boot fastboot (`fastboot boot <img>`) | `echo target=fastboot > /cache/linux/boot-target`, reboot. Leave with `fastboot reboot`; remove the file afterwards. | LK → U-Boot |
-| Linux from `/cache/linux/boot-mainline-uboot.img` | `target=linux` in `boot-target` | LK → U-Boot → `bootm` |
-| Android **without U-Boot** (escape) | `adb reboot recovery`, LK `oem reboot-recovery`, `tb-reboot recovery`, or Vol+ menu → Recovery | LK → `recovery`, `ro.boot.mode=recovery` |
+| Android **without U-Boot** (escape) | LK `oem reboot-recovery`, or Vol+ menu → Recovery | LK → `recovery`, `ro.boot.mode=recovery` |
 | LK fastboot (`fbusb … flash:`) | `adb reboot bootloader` or Vol+ menu → Fastboot | LK |
 
-`mainline/scripts/linux-test.sh` and `tb-reboot` still assume the old layout, where `recovery` meant Linux. Their
-`recovery` targets now reach Android. Update them in T4.
+Linux safety nets in this layout:
+- Stage 2 `tb-autoreboot` is **off by default** (`tb.autoreboot=` or `/etc/tb-autoreboot` to enable). It still marks
+  the boot good after 60 s.
+- Stage 1, when it gives up on the root filesystem (2 failed tries, `tb.r=0`, no image), reboots to Android after
+  300 s with the RTC flag.
+- **Gap until `tbstate`:** a kernel that panics before stage 1 reboots into Linux again, because U-Boot can't count
+  attempts yet. Escape: Vol+ → Recovery, or let the 10 s panic timeout loop while you hold Vol+.
+- `linux-test.sh flash` now needs an explicit partition. `recovery` (Android) requires `YES=1`; `boot` must pass
+  `lk_image_check.py`. On macOS the script uses a perl timeout (no GNU `timeout`).
 
 Known U-Boot bug: **`fastboot continue` resets the tablet** (preloader within 2 s) instead of booting Android.
 Use `fastboot reboot` until it's fixed.

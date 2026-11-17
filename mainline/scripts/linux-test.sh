@@ -7,13 +7,18 @@
 #   mainline/scripts/linux-test.sh probe    # tablet in fastboot: raw protocol probe (16 B) — shows which phase stalls
 #   mainline/scripts/linux-test.sh uploads  # tablet in fastboot: RAM-only uploads 4 KB → 4 MB (fastboot stage)
 #   mainline/scripts/linux-test.sh boot [image]   # tablet in fastboot: step 1, `fastboot boot` (RAM only)
-#   mainline/scripts/linux-test.sh flash [image]  # tablet in fastboot: WRITES the recovery partition (fb_send.py, pyusb)
-#   mainline/scripts/linux-test.sh run            # tablet in fastboot: `oem reboot-recovery` (boots what `flash` wrote)
+# Layout since 2026-11-17: `boot` = U-Boot (boots Linux by default), `recovery` = Android + Magisk
+# (docs/mainline/plan-dualboot.md, "How to reach each target").
+#   mainline/scripts/linux-test.sh flash <image> <boot|recovery>  # LK fastboot: WRITES a partition (fb_send.py).
+#                                                 # recovery holds ANDROID now: needs YES=1. boot must pass lk_image_check.
+#   mainline/scripts/linux-test.sh run            # LK fastboot: `oem reboot-recovery` = Android from `recovery`
 #   mainline/scripts/linux-test.sh shell          # wait for the mainline gadget, cancel the auto-reboot (mlsh.py wait)
 #   mainline/scripts/linux-test.sh to-fastboot    # Android -> LK fastboot, safely (see below)
-#   mainline/scripts/linux-test.sh to-recovery    # Android -> recovery (= mainline once flashed), safely
+#   mainline/scripts/linux-test.sh to-linux       # Android -> Linux (plain reboot via U-Boot; removes boot-target)
+#   mainline/scripts/linux-test.sh to-uboot       # Android -> U-Boot fastboot (target=fastboot; `fastboot boot <img>`)
 #   mainline/scripts/linux-test.sh ml-to-fastboot # running mainline (either stage) -> LK fastboot directly
-#   mainline/scripts/linux-test.sh ml-to-android  # running mainline -> Android
+#   mainline/scripts/linux-test.sh ml-to-android  # running mainline -> Android (LK one-shot RTC flag -> `recovery`)
+#   mainline/scripts/linux-test.sh ml-to-linux    # running mainline -> plain reboot -> Linux again
 #
 # ALWAYS leave Android with to-fastboot / to-recovery, never a bare `adb reboot ...`: Magisk counts every boot that
 # does not reach sys.boot_completed and enters safe mode after 2 (all modules disabled). Without tb7304x_strip,
@@ -26,7 +31,10 @@ set -u
 cd "$(dirname "$0")/../.."          # repo root
 REL=mainline-test-1
 OUT=mainline/out
-T() { local s=$1; shift; timeout -k 2 "$s" "$@"; local r=$?; [ $r = 124 ] && echo "*** TIMEOUT after ${s}s: $*"; return $r; }
+# Hard timeout. GNU `timeout` on Linux hosts; macOS has none, so fall back to perl's alarm (exit 124 like timeout).
+if command -v timeout >/dev/null; then tmo() { timeout -k 2 "$@"; }
+else tmo() { perl -e '$s = shift; $p = fork // die; if (!$p) { exec @ARGV or exit 127 } $SIG{ALRM} = sub { kill "KILL", $p; exit 124 }; alarm $s; waitpid $p, 0; exit($? & 127 ? 128 + ($? & 127) : $? >> 8)' "$@"; }; fi
+T() { local s=$1; shift; tmo "$s" "$@"; local r=$?; [ $r = 124 ] && echo "*** TIMEOUT after ${s}s: $*"; return $r; }
 
 # Wait for Android to finish booting, zero Magisk's boot-loop counter, then `adb reboot $1`.
 adb_leave_android() {
@@ -39,7 +47,7 @@ adb_leave_android() {
   T 20 adb shell "su -c \"magisk --sqlite \\\"UPDATE settings SET value=0 WHERE key='bootloop'\\\"\"" ||
     echo "!! could not reset Magisk's bootloop counter"
   T 20 adb shell "su -c \"magisk --sqlite 'SELECT value FROM settings WHERE key=\\\"bootloop\\\"'\"" 
-  T 20 adb reboot "$1"
+  T 20 adb reboot ${1:+"$1"}
 }
 
 ping() { echo "== ping"; T 5 fastboot getvar version 2>&1; }
@@ -69,21 +77,34 @@ boot)
   img=${2:-$OUT/boot-stock-kernel-initramfs.img}
   echo "== fastboot boot $img"; T 60 fastboot boot "$img" 2>&1; echo "exit=$?" ;;
 flash)
-  img=${2:-$OUT/boot-mainline.img}
-  T 120 "${PY:-python3}" -I mainline/scripts/analysis/fb_send.py "$img" flash:recovery ;;
+  img=${2:?flash <image> <boot|recovery>}; part=${3:?flash <image> <boot|recovery>}
+  case "$part" in
+  recovery) [ "${YES:-}" = 1 ] || { echo "recovery holds Android + Magisk (plan-dualboot.md). Set YES=1 to overwrite it."; exit 1; } ;;
+  boot) python3 -I mainline/scripts/analysis/lk_image_check.py "$img" || { echo "LK would not boot $img reliably"; exit 1; } ;;
+  *) echo "only boot or recovery"; exit 1 ;;
+  esac
+  T 120 "${PY:-python3}" -I mainline/scripts/analysis/fb_send.py "$img" "flash:$part" ;;
 run)
   T 20 "${PY:-python3}" -I mainline/scripts/analysis/fb_send.py - "oem reboot-recovery" ;;
 shell)
   T 250 python3 -I mainline/scripts/mlsh.py wait ;;
-ml-to-fastboot|ml-to-android|ml-to-recovery)
+ml-to-fastboot|ml-to-android|ml-to-recovery|ml-to-linux)
   # Set LK's RTC boot flag, then reboot from a detached subshell: mlsh appends "; echo marker", so a bare
   # trailing "&" would be a syntax error, and a plain background job dies with the telnet session.
-  m=${1#ml-to-}; [ "$m" = fastboot ] && m=bootloader; [ "$m" = android ] && m=normal
+  # android/recovery = LK's RTC recovery flag (Android lives in `recovery`); linux = plain reboot (U-Boot default)
+  m=${1#ml-to-}; [ "$m" = fastboot ] && m=bootloader; [ "$m" = android ] && m=recovery; [ "$m" = linux ] && m=normal
   F=/sys/devices/platform/rtc-boot-mode/next_boot
   T 15 python3 -I mainline/scripts/mlsh.py "echo $m > $F; echo next boot: \$(cat $F)" \
     "(setsid sh -c 'sleep 2; sync; echo 1 > /proc/sys/kernel/sysrq; echo s > /proc/sysrq-trigger; sleep 1; echo u > /proc/sysrq-trigger; sleep 1; echo b > /proc/sysrq-trigger' </dev/null >/dev/null 2>&1 &)"
   ;;
-to-fastboot|to-recovery)
-  adb_leave_android "$( [ "$1" = to-fastboot ] && echo bootloader || echo recovery )" ;;
+to-fastboot)
+  adb_leave_android bootloader ;;
+to-linux|to-uboot)
+  T 30 adb wait-for-device || exit 1
+  if [ "$1" = to-uboot ]; then c='echo target=fastboot > /cache/linux/boot-target'; else c='rm -f /cache/linux/boot-target'; fi
+  T 20 adb shell "su -c '$c; sync; cat /cache/linux/boot-target 2>/dev/null || echo boot-target: none'" || exit 1
+  adb_leave_android "" ;;
+to-recovery)
+  echo "to-recovery would only reach Android again (recovery holds Android). Use to-linux or to-uboot."; exit 1 ;;
 *) sed -n 2,24p "$0"; exit 1 ;;
 esac

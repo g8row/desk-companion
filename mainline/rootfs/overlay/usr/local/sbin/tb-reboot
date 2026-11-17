@@ -1,12 +1,28 @@
 #!/bin/sh
-# tb-reboot [bootloader|recovery|android]: reboot the TB-7304X into LK fastboot, the recovery partition (= mainline),
-# or Android (default). Sets LK's RTC boot flag (mtk-rtc-boot-mode), syncs, and reboots with sysrq because
-# `reboot -f` can hang on this kernel.
+# tb-reboot [linux|android|android-normal|uboot|bootloader]   (layout: U-Boot in `boot`, Android in `recovery`;
+# docs/mainline/plan-dualboot.md "How to reach each target")
+#   linux           plain reboot: LK -> U-Boot -> Linux (the default). Clears a leftover boot-target file.
+#   android         one-shot: LK's RTC recovery flag -> LK starts Android from `recovery` directly (no U-Boot;
+#                   Android runs with ro.boot.mode=recovery). The next plain reboot is Linux again. (default)
+#   android-normal  persistent: target=android in /cache/linux/boot-target -> U-Boot starts Android in normal mode
+#                   on every boot until the file is removed (from Android: `rm /cache/linux/boot-target`, reboot).
+#   uboot           persistent: target=fastboot -> U-Boot fastboot (`fastboot boot <img>`; leave with
+#                   `fastboot reboot` after removing the file, never `fastboot continue`).
+#   bootloader      one-shot: LK's RTC fastboot flag -> LK fastboot (scripts/fbusb).
+# Syncs and reboots with sysrq because `reboot -f` can hang on this kernel.
 M=${1:-android}
 F=/sys/devices/platform/rtc-boot-mode/next_boot
+BT=/mnt/cache/linux/boot-target
 [ -w $F ] || { echo "no $F (kernel without mtk-rtc-boot-mode)" >&2; exit 1; }
-echo "$M" > $F || exit 1
-echo "next boot: $(cat $F)"
+case "$M" in
+linux)          rm -f $BT; echo normal > $F ;;
+android)        echo recovery > $F ;;
+android-normal) echo target=android > $BT && echo normal > $F ;;
+uboot)          echo target=fastboot > $BT && echo normal > $F ;;
+bootloader|fastboot) echo bootloader > $F ;;
+*) echo "usage: tb-reboot [linux|android|android-normal|uboot|bootloader]" >&2; exit 2 ;;
+esac || exit 1
+echo "next boot: $M (RTC: $(cat $F), boot-target: $(cat $BT 2>/dev/null || echo none))"
 sync
 echo 1 > /proc/sys/kernel/sysrq
 echo s > /proc/sysrq-trigger; sleep 1

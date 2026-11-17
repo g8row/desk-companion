@@ -2,8 +2,10 @@
 # TB-7304X sign-of-life initramfs. Works on the mainline kernel and on the stock 3.18 kernel.
 #  - paints the screen red -> green -> blue (fb0, else /dev/mem at LK's fb_base)
 #  - USB gadget: CDC-ACM serial shell + CDC-ECM ethernet 172.16.42.1 (telnet, http with dmesg)
-#  - self-reboots after tb.autoreboot=<s> seconds (default 300) unless /tmp/stay exists,
-#    so the tablet returns to Android with nobody touching it.
+#  - self-reboots after tb.autoreboot=<s> seconds (default 300) unless /tmp/stay exists, so the tablet returns to
+#    Android with nobody touching it. Only reached when stage 2 is not started (tb.r=0, 2 failed tries, no rootfs).
+#    Linux is the default boot target (U-Boot in `boot`), so the reboot sets LK's one-shot RTC recovery flag:
+#    LK then starts Android from `recovery` directly (docs/mainline/plan-dualboot.md §1).
 /bin/busybox mkdir -p /bin /sbin /usr/bin /usr/sbin /proc /sys /dev /tmp /run /www
 /bin/busybox --install -s
 export PATH=/bin:/sbin:/usr/bin:/usr/sbin
@@ -209,13 +211,15 @@ try_rootfs() {
 }
 try_rootfs
 
-# ---- 4. self-reboot back to Android ---------------------------------------
+# ---- 4. self-reboot to Android (RTC recovery flag; a plain reboot would come back to Linux) ----
 t=0
 while true; do
 	sleep 5; t=$((t + 5))
 	if [ -e /tmp/stay ]; then continue; fi
 	if [ "$AUTOREBOOT" -gt 0 ] && [ $t -ge "$AUTOREBOOT" ]; then
-		log "autoreboot after ${t}s"
+		log "autoreboot after ${t}s, to Android (RTC recovery flag)"
+		echo recovery > /sys/devices/platform/rtc-boot-mode/next_boot 2>/dev/null ||
+			log "no rtc-boot-mode: this reboot comes back to Linux"
 		sync
 		# fallback first: open the watchdog and never pet it (resets in ~10-30 s if reboot hangs)
 		( exec 3>/dev/watchdog; sleep 600 ) 2>/dev/null &
