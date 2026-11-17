@@ -44,6 +44,18 @@ Relevant options in the current `.config`:
 
 ## 1. Charger: SM5414 on I2C3 @0x49
 
+**Implemented 2026-11-17** (`mainline/patches/sm5414_charger.c`, STATUS.md). Measured on the device, differing from
+the plan below:
+- LK leaves VBUSLIMIT at 450 mA. That is about what the running tablet draws, so the battery got ~0 mA (fuel gauge)
+  while STATUS said TOPOFF. The driver sets 1 A; the battery then takes the full 440-500 mA.
+- STATUS.TOPOFF is set for the whole CV phase (seen at 440 mA), not only at the end: "full" also needs the current
+  below the top-off threshold.
+- Clearing CTRL.CHGEN stops charging and leaves the system on VBUS (battery ~0 mA), so the driver uses the bit and
+  does not touch the nCHGEN pin. The pins are left as LK set them; the driver polls instead of using nINT.
+- Battery current: the PMIC fuel gauge (FGADC_CON0/CON7, current mode, R_FG 10 mOhm), not ISENSE-BATSNS:
+  ISENSE stays on the charger's system rail (it did not move when charging stopped while BATSNS relaxed 47 mV).
+- Safety timer left off (LK's setting): CV 4.10 V plus the temperature gate cover the long-term risks.
+
 ### Verification
 - Stock DTB node `i2c@1100f000/sm5414@49 { compatible = "sm,sm5414"; ... }`. It is the only device on i2c3.
 - The stock kernel was built with `charging_hw_sm5414.c` and contains `[CHG_SM5414]` messages,

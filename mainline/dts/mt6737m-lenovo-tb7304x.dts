@@ -204,11 +204,29 @@
 		#io-channel-cells = <0>;
 	};
 
-	/* battery voltage (BATSNS) as a power supply; capacity is left to userspace (no fuel gauge) */
+	/*
+	 * The cell, for the SM5414 driver (it registers the "battery" supply). Design values from the stock
+	 * bat_meter/bat_comm DT: Q_max 3515 mAh at 25 C, 0 % at 3.4 V, 4.35 V-class (stock CV 4.35 V), internal
+	 * resistance ~150 mOhm (r_profile_t2). Charging limits are the desk policy (research-power.md §1): CV 4.10 V
+	 * (about 80 %), 500 mA, between 0 and 45 C (stock: 0-50 C). OCV table: stock battery_profile_t2 (25 C) at 5 %.
+	 */
 	battery: battery {
-		compatible = "adc-battery";
-		io-channels = <&pmic_adc 0>;
-		io-channel-names = "voltage";
+		compatible = "simple-battery";
+		device-chemistry = "lithium-ion-polymer";
+		charge-full-design-microamp-hours = <3500000>;
+		voltage-min-design-microvolt = <3400000>;
+		voltage-max-design-microvolt = <4350000>;
+		constant-charge-voltage-max-microvolt = <4100000>;
+		constant-charge-current-max-microamp = <500000>;
+		charge-term-current-microamp = <150000>;
+		factory-internal-resistance-micro-ohms = <150000>;
+		operating-range-celsius = <0 45>;
+		ocv-capacity-celsius = <25>;
+		ocv-capacity-table-0 = <4333000 100 4271000 95 4215000 90 4162000 85 4108000 80
+					4068000 75 3998000 70 3965000 65 3916000 60 3876000 55
+					3847000 50 3823000 45 3806000 40 3790000 35 3776000 30
+					3754000 25 3741000 20 3716000 15 3692000 10 3668000 5
+					3400000 0>;
 	};
 
 	wifi: wifi@180f0000 {
@@ -309,10 +327,15 @@
 		compatible = "mediatek,mt6328-rtc", "mediatek,mt6323-rtc";
 	};
 
-	/* PMIC AUXADC (patches/0013, 0014): 0 battery (BATSNS), 2 charger input (VCDT), 3 battery NTC (BATON) */
+	/*
+	 * PMIC AUXADC (patches/0013, 0014). io-channels index the driver's channel array: 0 battery (BATSNS),
+	 * 2 charger input (VCDT), 3 battery NTC (BATON), 7 battery current from the fuel gauge (R_FG: stock
+	 * r_fg_value = 10 mOhm).
+	 */
 	pmic_adc: adc {
 		compatible = "mediatek,mt6328-auxadc";
 		#io-channel-cells = <1>;
+		mediatek,fg-sense-resistor-micro-ohms = <10000>;
 	};
 };
 
@@ -374,10 +397,24 @@
 	};
 };
 
-/* SM5414 charger @0x49. No driver yet; LK programs and enables it on every boot. Bus enabled for i2c-dev reads. */
+/*
+ * SM5414 charger @0x49 (patches/sm5414_charger.c). LK programs it and enables charging on every boot; the driver
+ * then applies the battery node's limits, a 1 A input limit (AICL at 4.5 V protects weak sources) and the
+ * temperature gate. The pins (nCHGEN GPIO124, nSHDN GPIO63, nINT GPIO68) are left as LK set them: the driver
+ * uses the CHGEN register bit and polls.
+ */
 &i2c3 {
 	status = "okay";
 	clock-frequency = <100000>;
+
+	charger@49 {
+		compatible = "siliconmitus,sm5414";
+		reg = <0x49>;
+		monitored-battery = <&battery>;
+		input-current-limit-microamp = <1000000>;
+		io-channels = <&pmic_adc 0>, <&pmic_adc 7>;
+		io-channel-names = "vbat", "ibat";
+	};
 };
 
 &pio {
