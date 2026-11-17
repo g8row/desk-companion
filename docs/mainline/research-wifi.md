@@ -33,6 +33,11 @@ Driver: `mainline/wcn` (frank-w 5.15 tree + `conn_soc/mt6735`, ported to 7.0; hi
 kernel by `patches/0011-wcn-mediatek.sh`, built in (`CONFIG_MTK_COMBO*`, `MTK_BTIF`, `NL80211_TESTMODE`).
 Userspace: `mainline/wcn-tools` (BPI-R2's `wmt_loader` + `stp_uart_launcher`, static).
 
+Installed (2026-11-17): the kernel in `tbkern_a`, `iw`/`wpa_supplicant`/`wifi-up`/the OpenRC `wifi` service in the
+root image. At boot `wifi` runs `wifi-up join` in the background when `/data/wifi/wpa_supplicant.conf` exists
+(`wifi-up save <ssid> <password>` writes it, hashed PSK only), otherwise just powers the radio. The firmware and NVRAM
+are not in the image (proprietary, per device): `wifi-deploy.sh` once; `tb-install.sh rootfs` carries them over.
+
 Short form: `mainline/scripts/wifi-deploy.sh` on the host (firmware, NVRAM, tools, `wifi-up`, hash-checked), then
 `wifi-up <ssid> <password>` on the tablet (`wifi-up off` to stop). `iw` and `wpa_supplicant` from apk.
 

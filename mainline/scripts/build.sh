@@ -1,8 +1,7 @@
 #!/bin/sh
 # Host entry point (macOS with OrbStack/Docker Desktop, or Linux with Docker). Reproduces everything in mainline/out/:
 # initramfs, kernel, boot images, WiFi userspace, U-Boot and boot-mainline-uboot.img (what U-Boot boots).
-#   mainline/scripts/build.sh            everything
-#   mainline/scripts/build.sh kernel     skip U-Boot
+#   mainline/scripts/build.sh            everything (U-Boot is incremental and repackages the kernel: always run it)
 #   mainline/scripts/build.sh wcn        compile only the WiFi driver (fast check after editing mainline/wcn)
 set -e
 M=$(cd "$(dirname "$0")/.." && pwd)
@@ -13,7 +12,6 @@ docker build -t tb7304-build -f "$M/scripts/Dockerfile" "$M/scripts"
 docker volume create tb7304-kbuild >/dev/null
 if [ "${1:-}" = wcn ]; then exec docker run --rm -v "$M":/m -v tb7304-kbuild:/kout tb7304-build bash /m/scripts/wcn-build.sh; fi
 docker run --rm -v "$M":/m -v tb7304-kbuild:/kout -v "$M/../backup/partitions":/stock:ro tb7304-build bash /m/scripts/build-in-docker.sh
-[ "${1:-}" = kernel ] && exit 0
 PIN=$(sed -n 's/^PIN=//p' "$M/u-boot/build-uboot.sh")
 [ -d "$M/src/u-boot" ] || git clone https://gitlab.com/mt6735-mainline/u-boot.git "$M/src/u-boot"
 [ "$(git -C "$M/src/u-boot" rev-parse HEAD)" = "$PIN" ] || git -C "$M/src/u-boot" -c advice.detachedHead=false checkout -q "$PIN"

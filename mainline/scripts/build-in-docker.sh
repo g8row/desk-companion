@@ -101,6 +101,13 @@ ${STRIP} -o $OUT/stp_uart_launcher $M/wcn-tools/stp_uart_launcher
 rm -f $M/wcn-tools/wmt_loader $M/wcn-tools/stp_uart_launcher
 ls -la $OUT/wmt_loader $OUT/stp_uart_launcher
 
+echo "== 2c. stage-2 tools (peek, poke, swipe; bbdeb = the static busybox, for devmem)"
+for t in peek poke swipe; do
+  $CC -static -O2 -Wall -Wextra -o $OUT/$t $M/rootfs/tools/$t.c && $STRIP $OUT/$t
+done
+cp $BUSYBOX $OUT/bbdeb
+ls -la $OUT/peek $OUT/poke $OUT/swipe $OUT/bbdeb $OUT/tbstate
+
 echo "== 3. boot images"
 cat $O/arch/arm64/boot/Image.gz $OUT/mt6737m-lenovo-tb7304x.dtb > /build/Image.gz-dtb
 # LK keeps only ~99 chars of the image cmdline (the rest is cut off: "...regulator_ignore_unused maxc" on the first boot).

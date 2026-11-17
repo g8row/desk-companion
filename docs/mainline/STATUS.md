@@ -30,8 +30,8 @@ Research notes (read-only investigations of the stock firmware, mainline tree an
 | Buttons | ✅ works | Vol± on the SoC keypad (`mt6779-keypad`), Power on `mt6328-keys` | — |
 | USB | ✅ peripheral | Legacy CDC gadget `0525:a4aa` (ECM + ACM), 172.16.42.1, telnet, httpd | Host mode, VBUS/ID detection |
 | eMMC | ✅ probes (50 MHz, unused) | `init` never mounts it | Rootfs (research-rootfs) |
-| Internet in stage 2 | ✅ via host | `mainline/scripts/tablet-net.sh`: `http-proxy.py` on the host's 127.0.0.1:3128 + `ssh -R`, sets the clock. apk, curl ok; busybox wget https not | — |
-| Root filesystem | ✅ Alpine 3.24.4 | **`tbroot_a` (mmcblk0p28, ext4, 2 GiB)**, checked with `e2fsck -p` and mounted by stage 1; `/data` = `tbdata` (2.5 GiB). The old loop image `/cache/linux/rootfs.img` is the fallback (slot `cache`); stage 1 stays in the initramfs with `tb.r=0` or `tb.slot=rescue`. SSH (dropbear, key only) + telnet on 172.16.42.1 | Package installs need a host proxy (`ssh -R`), no RTC → set the date from the host |
+| Internet / time | ✅ WiFi, or via host | WiFi joins at boot (`wifi` service, saved networks in `/data/wifi`). Without WiFi: `mainline/scripts/tablet-net.sh` (`http-proxy.py` on the host + `ssh -R`, `/etc/profile.d/tb-proxy.sh`, sets the clock). Clock: busybox `ntpd` (pool.ntp.org) once WiFi is up, `swclock` restores the last shutdown time at boot (no RTC driver). | MT6328 RTC |
+| Root filesystem | ✅ Alpine 3.24.4, built image | **`tbroot_a` (mmcblk0p28, ext4, 2 GiB)**, checked with `e2fsck -p` and mounted by stage 1; `/data` = `tbdata`. Built by `rootfs/build-rootfs.sh` (packages, overlay, tools from `out/`, Mesa) and installed by `scripts/tb-install.sh rootfs` (from a RAM boot; backs up the old root, keeps `/opt/pocketjs`, `/etc/firmware`, host keys). Installed 2026-11-17. Fallback: the old loop image `/cache/linux/rootfs.img` (slot `cache`, RAM boots) | — |
 | Reboot target | ✅ | `tb-reboot android|linux|android-direct|default-android|default-linux|uboot|bootloader` (boot record via `tbstate`, or LK's RTC flag via `rtc-boot-mode`); host side `linux-test.sh ml-to-*` / `to-linux` / `to-uboot` / `state` | — |
 | Panic recovery | ✅ in build6 | `CONFIG_PANIC_TIMEOUT=10` (no cmdline room for `panic=10`) | — |
 | Watchdog | ✅ | `mtk_wdt` | — |
@@ -41,7 +41,7 @@ Research notes (read-only investigations of the stock firmware, mainline tree an
 | SoC thermal | 🔧 kernel #23 built, not tested | `patches/0009`: `mediatek,mt6735-thermal` in auxadc_thermal.c, MT8173 data with 3 banks (CPU TS_MCU3, SoC+GPU TS_MCU1, LTE TS_MCU2). DT: AUXADC @0x11001000, efuse @0x10206000 (calibration cell 0x19c, 12 bytes), thermal @0x1100b000, zone `cpu-thermal` (passive 85 °C → CPU cooling, critical 110 °C). On #22 AUXADC and efuse bind; the thermal driver itself was missing (`CONFIG_MTK_SOC_THERMAL`, added for #23) | Flash #23, check `/sys/class/thermal/thermal_zone0/temp` against a warm/cold tablet |
 | Accelerometer | ❌ no node (bus ✅) | **Bosch BMA2xx @0x18 on i2c2**, chip ID 0xFA (BMA253/255 family). MC3433 @0x4c not fitted | `bmc150-accel` + DT node (`bosch,bma255`) |
 | IOMMU (M4U) | ✅ probes | Binds larbs 0–2 after the D2 address fix and dropping larb3. Display ports not attached yet (MMU_EN = 0) | Attach with the DRM pipeline |
-| WiFi | ✅ works (manual) | MT6625L via CONSYS: MediaTek's WMT/STP/BTIF + wlan_gen2 (frank-w's 5.15 tree + MT6735 BSP platform layer, ported to 7.0, built in: `mainline/wcn`, patches/0011). `wmt_loader`, `stp_uart_launcher -p /etc/firmware`, `echo 1 > /dev/wmtWifi` → `mt6625_0`, NVRAM MAC, 2.4 GHz only (the board's NVRAM disables 5 GHz, as on stock); WPA2 (CCMP) with wpa_supplicant + udhcpc, internet over WiFi (2026-11-17, RAM boot). `scripts/wifi-deploy.sh` + `wifi-up`, research-wifi.md | Kernel into the slot; rootfs: firmware + tools + OpenRC service, rename to wlan0, BT/GPS/FM |
+| WiFi | ✅ at boot, 2.4 GHz | MT6625L via CONSYS: MediaTek WMT/STP/BTIF + wlan_gen2 (frank-w 5.15 + MT6735 BSP platform layer, ported to 7.0, built in: `mainline/wcn`, patches/0011). Installed in `tbkern_a` 2026-11-17. OpenRC `wifi` → `wifi-up join` (`/data/wifi/wpa_supplicant.conf`, `wifi-up save <ssid> <psk>`). Firmware/NVRAM: `scripts/wifi-deploy.sh`. The board is 2.4 GHz only (NVRAM). research-wifi.md | BT; rename to wlan0 |
 | Audio, camera, modem | ❌ | — | Not planned |
 
 ## Display step 0 (LK state, read 2026-11-16)
@@ -245,11 +245,11 @@ tested escape. Details, matrix and plan: [handoff-uboot-2026-11-17.md](handoff-u
 2. ~~Panic timeout~~ (in build7). The clk_summary lockup left nothing in pstore; avoid reading `clk_summary`.
 3. ~~Enable i2c2/i2c3, read SM5414 and accelerometer~~ (done, see above). Add the BMA2xx node.
 4. RTC (MT6328).
-5. ~~Rootfs~~ (done). Next: an HTTP proxy over `ssh -R` for `apk`, and `apk fix` to run the skipped package scripts.
+5. ~~Rootfs~~, ~~proxy for apk~~, ~~image with everything installed by hand~~ (done). Next: `apk fix` for the skipped package scripts.
 6. ~~Display: D2 DT fixes, IOMMU, NT51021B GX panel driver, D2 mutex table, mediatek-drm~~ (done). Next: the OVL0 path (hardware planes).
 7. MT6328 ADC + battery NTC + SM5414 driver with the desk charging policy.
 8. ~~Backlight~~, ~~GPU: Panfrost + Mesa~~ (done). Next: GPU OPPs; Mesa in the rootfs image.
 9. ~~cpufreq, 1092 MHz, overclock to 1196~~ (done). SoC thermal: flash and verify kernel #23.
 10. ~~PocketJS on DRM/KMS with page flips at vblank~~ (done). Next: pace by the flip event (66 fps).
-11. WiFi: works (`scripts/wifi-deploy.sh`, then `wifi-up <ssid> <psk>` on the tablet; 2.4 GHz only). Next: kernel into the slot, rootfs packages (iw, wpa_supplicant), an OpenRC service, where to keep the network config.
-12. Rootfs image rebuild with everything installed by hand so far (mdev.conf, tb-reboot, local.d scripts, pocketjs service, apk libdrm/expat/zstd-libs, gdb).
+11. ~~WiFi~~ (done, at boot, research-wifi.md). ~~Time over WiFi (ntpd, swclock)~~ (done). Next: BT, RTC.
+12. ~~Rootfs image rebuild with everything installed by hand~~ (done 2026-11-17: `build-rootfs.sh` + `tb-install.sh`; peek/poke/swipe now built from `rootfs/tools/`). A/B updates: not for now.

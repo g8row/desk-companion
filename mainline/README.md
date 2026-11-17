@@ -206,10 +206,12 @@ Host scripts (`scripts/`, macOS and Linux; heavy work runs in Docker):
 
 | Script | Purpose |
 |---|---|
-| `build.sh [kernel\|wcn]` | Everything in `out/` incl. U-Boot and `boot-mainline-uboot.img`; `kernel` skips U-Boot; `wcn` compiles only the WiFi driver. Stops on compile errors (`out/kernel-build.log`). |
+| `build.sh [wcn]` | Everything in `out/` incl. U-Boot and `boot-mainline-uboot.img`; `wcn` compiles only the WiFi driver. Stops on compile errors (`out/kernel-build.log`). |
 | `tb.sh ['cmd']` | ssh to the running tablet (USB network), `/usr/local/sbin` in PATH. |
 | `ramboot.sh [image]` | RAM-boot through U-Boot fastboot, nothing written; waits for ssh. |
 | `wifi-deploy.sh` | WiFi firmware, NVRAM (from `backup/`, never committed), tools and `wifi-up` to the tablet, hash-verified. |
+| `tb-install.sh kernel\|rootfs` | Write `boot-mainline-uboot.img` to `tbkern_a` / `rootfs/out/rootfs.img` to `tbroot_a` (verified; rootfs from a RAM boot, old root backed up to `backup/`, PocketJS/firmware/host keys kept). |
+| `../rootfs/build-rootfs.sh <key>` | Alpine root image: packages, overlay, tools from `out/`, Mesa (`gpu/out/mesa-opt.tar.gz`). |
 | `tablet-net.sh` | Internet for `apk` on the tablet through a proxy on the host. |
 | `pocketjs-deploy.sh` | Build and install the PocketJS kiosk. |
 | `linux-test.sh`, `fbusb` | LK fastboot / Android transitions (`fbusb` needs libusb: Homebrew or the distro). |

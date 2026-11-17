@@ -5,13 +5,24 @@
 #
 #   sh mainline/rootfs/build-rootfs.sh <ssh-public-key> [out-dir]     -> out-dir/rootfs.img (+ .sha256)
 #
-# The image goes into Android's cache filesystem as /cache/linux/rootfs.img (see TEST-PLAN.md).
+# Contents: Alpine + PKGS, the overlay, the tools from mainline/out (scripts/build.sh: tbstate, peek, poke, swipe,
+# bbdeb/devmem, wmt_loader, stp_uart_launcher) and, when present, Mesa (MESA=, default gpu/out/mesa-opt.tar.gz).
+# Not in the image: the WiFi firmware/NVRAM (proprietary, per device: scripts/wifi-deploy.sh), PocketJS
+# (scripts/pocketjs-deploy.sh), saved WiFi networks (/data/wifi). Install: scripts/rootfs-install.sh.
 set -eu
 HERE=$(cd "$(dirname "$0")" && pwd)
 KEY=${1:?usage: build-rootfs.sh <ssh-public-key> [out-dir]}
 OUT=$(mkdir -p "${2:-$HERE/out}" && cd "${2:-$HERE/out}" && pwd)
-ALPINE=3.24 V=3.24.4 SIZE=${SIZE:-256M}
-PKGS="alpine-base busybox-extras dropbear dropbear-scp e2fsprogs nano htop evtest i2c-tools"
+BIN=$(cd "$HERE/../out" && pwd)
+MESA=${MESA:-$HERE/../gpu/out/mesa-opt.tar.gz}
+ALPINE=3.24 V=3.24.4 SIZE=${SIZE:-512M}
+# curl gdb: debugging; libdrm expat zstd-libs zlib: Mesa (/opt/mesa) and the PocketJS kiosk; iw wpa_supplicant: WiFi
+PKGS="alpine-base busybox-extras dropbear dropbear-scp e2fsprogs e2fsprogs-extra nano htop evtest i2c-tools curl gdb musl-utils"
+PKGS="$PKGS libdrm expat zstd-libs zlib iw wpa_supplicant"
+TOOLS="tbstate peek poke swipe wmt_loader stp_uart_launcher bbdeb"
+for t in $TOOLS; do [ -x "$BIN/$t" ] || { echo "missing $BIN/$t (run mainline/scripts/build.sh)"; exit 1; }; done
+mkdir -p "$OUT/tools" && for t in $TOOLS; do cp "$BIN/$t" "$OUT/tools/"; done
+if [ -f "$MESA" ]; then cp "$MESA" "$OUT/mesa-opt.tar.gz"; else echo "note: no $MESA, image without /opt/mesa"; rm -f "$OUT/mesa-opt.tar.gz"; fi
 cp "$KEY" "$OUT/authorized_keys"
 
 docker run --rm -v "$HERE/overlay:/overlay:ro" -v "$OUT:/out" alpine:$ALPINE sh -euc "
@@ -21,13 +32,19 @@ docker run --rm -v "$HERE/overlay:/overlay:ro" -v "$OUT:/out" alpine:$ALPINE sh 
   wget -q \$U/\$F \$U/\$F.sha256
   sha256sum -c \$F.sha256
   tar xzf \$F -C \$R
-  cp -a /overlay/. \$R/ && chown -R 0:0 \$R/etc
+  cp -a /overlay/. \$R/ && chown -R 0:0 \$R/etc \$R/usr/local
   apk --root \$R --arch aarch64 --no-scripts --no-cache add $PKGS
+  for p in $PKGS; do apk --root \$R info -e \$p >/dev/null || { echo \"package \$p not installed\"; exit 1; }; done
+  for t in $TOOLS; do install -m 755 /out/tools/\$t \$R/usr/local/sbin/; done
+  mkdir -p \$R/usr/local/bin && mv \$R/usr/local/sbin/bbdeb \$R/usr/local/bin/ && ln -sf bbdeb \$R/usr/local/bin/devmem
+  [ -f /out/mesa-opt.tar.gz ] && mkdir -p \$R/opt && tar -xzf /out/mesa-opt.tar.gz -C \$R/opt --no-same-owner
+  [ -x \$R/etc/init.d/ntpd ] && [ -x \$R/etc/init.d/swclock ] || { echo 'ntpd/swclock init scripts missing'; exit 1; }
   # what the skipped install scripts and setup-alpine would do
   for a in telnetd telnet ftpd ftpget ftpput httpd inetd tftp tftpd udhcpd dnsd fakeidentd; do ln -sf /bin/busybox-extras \$R/usr/sbin/\$a; done
   for s in devfs dmesg mdev; do ln -sf /etc/init.d/\$s \$R/etc/runlevels/sysinit/; done
-  for s in hostname bootmisc sysctl syslog networking urandom; do ln -sf /etc/init.d/\$s \$R/etc/runlevels/boot/; done
-  for s in dropbear local; do ln -sf /etc/init.d/\$s \$R/etc/runlevels/default/; done
+  # swclock: no RTC driver, restore the last shutdown time; ntpd (busybox, pool.ntp.org) sets it once WiFi is up
+  for s in hostname bootmisc sysctl syslog networking urandom swclock; do ln -sf /etc/init.d/\$s \$R/etc/runlevels/boot/; done
+  for s in dropbear local wifi ntpd pocketjs; do ln -sf /etc/init.d/\$s \$R/etc/runlevels/default/; done
   for s in killprocs savecache; do ln -sf /etc/init.d/\$s \$R/etc/runlevels/shutdown/; done
   mkdir -p \$R/root/.ssh \$R/mnt/cache; chmod 700 \$R/root/.ssh
   install -m 600 /out/authorized_keys \$R/root/.ssh/authorized_keys
@@ -40,5 +57,5 @@ docker run --rm -v "$HERE/overlay:/overlay:ro" -v "$OUT:/out" alpine:$ALPINE sh 
   cd /out && sha256sum rootfs.img > rootfs.img.sha256 && cat rootfs.img.sha256
   du -sh \$R
 "
-rm -f "$OUT/authorized_keys"
+rm -rf "$OUT/authorized_keys" "$OUT/tools" "$OUT/mesa-opt.tar.gz"
 ls -la "$OUT"
