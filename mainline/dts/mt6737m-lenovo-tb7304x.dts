@@ -52,6 +52,18 @@
 			pmsg-size = <0x00010000>;
 		};
 
+		/*
+		 * Protected by the boot firmware (EMI MPU, set before LK hands over): non-secure writes are dropped and
+		 * reads return 0. Measured on the tablet with scripts/analysis/memtest.c on 2026-11-17: exactly
+		 * 0x5e700000..0x5fffffff, the same on every boot, everything else in System RAM clean. Without this node
+		 * the page allocator hands these pages out and their contents silently become zeros (busybox crashed
+		 * once a large copy pushed the page cache into it).
+		 */
+		memory@5e700000 {
+			reg = <0x0 0x5e700000 0x0 0x01900000>;
+			no-map;
+		};
+
 		/* MTK ram_console + minirdump areas used by LK/stock kernel: leave untouched */
 		memory@43f00000 {
 			reg = <0x0 0x43f00000 0x0 0x00010000>;

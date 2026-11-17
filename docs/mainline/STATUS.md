@@ -21,7 +21,7 @@ Research notes (read-only investigations of the stock firmware, mainline tree an
 
 | Function | Status | How / notes | Next step |
 |---|---|---|---|
-| Boot | ✅ works | `recovery` partition via LK `oem reboot-recovery`. `fb_send.py` / `scripts/fbusb` because stock `fastboot` stalls. Cmdline ≤ 99 chars. Since 2026-11-17 `recovery` holds **U-Boot** (padded image `672f2f9a…`), which RAM-boots Linux (`fastboot boot`, no cmdline limit) or boots Android in normal mode. The "LK normal-path loop" was our image: kernel area < 512 KiB, so LK used a leftover DTB (research-lk-bootflow.md). Fixed and tested: T0 reproduced, T1 passes. Check every LK-bootable image with `scripts/analysis/lk_image_check.py` | **Dual boot live:** `boot` = U-Boot, `recovery` = Android. **Power-on and plain reboots boot Linux** (from `/cache/linux/boot-mainline-uboot.img`). Android: `tb-reboot android` (one-shot, normal mode) or `default-android`. Charger/alarm boots go to Android. **Boot record + U-Boot boot counter:** 3 Linux boots that never reach `healthy` → Android (crash-tested, T7). `linux-test.sh state` shows the record. **Boot menu** in stage 1 (3 s; double-tap or Vol±/Power; ghost touches from the cracked glass are filtered; T8). `fastboot continue` fixed (patch 0002). Next: repartition (plan-dualboot.md §6) |
+| Boot | ✅ works | `recovery` partition via LK `oem reboot-recovery`. `fb_send.py` / `scripts/fbusb` because stock `fastboot` stalls. Cmdline ≤ 99 chars. Since 2026-11-17 `recovery` holds **U-Boot** (padded image `672f2f9a…`), which RAM-boots Linux (`fastboot boot`, no cmdline limit) or boots Android in normal mode. The "LK normal-path loop" was our image: kernel area < 512 KiB, so LK used a leftover DTB (research-lk-bootflow.md). Fixed and tested: T0 reproduced, T1 passes. Check every LK-bootable image with `scripts/analysis/lk_image_check.py` | **Dual boot live:** `boot` = U-Boot, `recovery` = Android. **Power-on and plain reboots boot Linux** from the raw slot `tbkern_a` (fallback `/cache/linux/boot-mainline-uboot.img`; `tbrescue` after 3 unhealthy boots, then Android; T9). Android: `tb-reboot android` (one-shot, normal mode) or `default-android`. Charger/alarm boots go to Android. **Boot record + U-Boot boot counter:** 3 Linux boots that never reach `healthy` → Android (crash-tested, T7). `linux-test.sh state` shows the record. **Boot menu** in stage 1 (3 s; double-tap or Vol±/Power; ghost touches from the cracked glass are filtered; T8). `fastboot continue` fixed (patch 0002). Repartitioned (§6 done). Next: an updater for the inactive slot (§7) |
 | CPU, 4× A53 | ✅ all 4 cores, hotplug, cpufreq 1040–1196 MHz (1144/1196 = overclock, boost) | `mediatek,mt6735-smp` enable-method: PSCI CPU_ON + SPM MTCMOS (`patches/smp_mt6735.c`). cpufreq-dt on ARMPLL + MT6328 VPROC, schedutil; ARMPLL /1 only (see "cpufreq" below) | Idle below 1040 MHz needs a CPU clock mux (park on MAINPLL) to change the post-divider safely; SoC thermal sensor before trusting 1196 MHz long-term |
 | Display | ✅ mediatek-drm, 66 Hz | RDMA0 → DSI0 → NT51021B GX (`panel-novatek-nt51021b.c`), D2 mutex table, through the IOMMU. `/dev/dri/card1`; `fb0` = mediatekdrmfb with the kernel console on screen. Refresh measured 66 Hz (kmscube, vsync-locked). (A one-off burst of 10 IOMMU faults at boot, before the first framebuffer is attached.) | Full OVL0 path for hardware planes |
 | Backlight | ✅ | `pwm-backlight` on DISP_PWM, `/sys/class/backlight/backlight` (0–255, default 200) | — |
@@ -31,7 +31,7 @@ Research notes (read-only investigations of the stock firmware, mainline tree an
 | USB | ✅ peripheral | Legacy CDC gadget `0525:a4aa` (ECM + ACM), 172.16.42.1, telnet, httpd | Host mode, VBUS/ID detection |
 | eMMC | ✅ probes (50 MHz, unused) | `init` never mounts it | Rootfs (research-rootfs) |
 | Internet in stage 2 | ✅ via host | `mainline/scripts/tablet-net.sh`: `http-proxy.py` on the host's 127.0.0.1:3128 + `ssh -R`, sets the clock. apk, curl ok; busybox wget https not | — |
-| Root filesystem | ✅ Alpine 3.24.4 | ext4 image `/cache/linux/rootfs.img` (256 MB, 20 MB used), loop-mounted by stage 1 (`init`), which falls back to the initramfs after 2 failed tries or with `tb.r=0`. SSH (dropbear, key only) + telnet on 172.16.42.1 | Package installs need a host proxy (`ssh -R`), no RTC → set the date from the host |
+| Root filesystem | ✅ Alpine 3.24.4 | **`tbroot_a` (mmcblk0p28, ext4, 2 GiB)**, checked with `e2fsck -p` and mounted by stage 1; `/data` = `tbdata` (2.5 GiB). The old loop image `/cache/linux/rootfs.img` is the fallback (slot `cache`); stage 1 stays in the initramfs with `tb.r=0` or `tb.slot=rescue`. SSH (dropbear, key only) + telnet on 172.16.42.1 | Package installs need a host proxy (`ssh -R`), no RTC → set the date from the host |
 | Reboot target | ✅ | `tb-reboot android|linux|android-direct|default-android|default-linux|uboot|bootloader` (boot record via `tbstate`, or LK's RTC flag via `rtc-boot-mode`); host side `linux-test.sh ml-to-*` / `to-linux` / `to-uboot` / `state` | — |
 | Panic recovery | ✅ in build6 | `CONFIG_PANIC_TIMEOUT=10` (no cmdline room for `panic=10`) | — |
 | Watchdog | ✅ | `mtk_wdt` | — |
@@ -196,9 +196,26 @@ tested escape. Details, matrix and plan: [handoff-uboot-2026-11-17.md](handoff-u
   `target=linux` (`/cache/linux/boot-mainline-uboot.img`) or `target=fastboot` (then `fastboot boot` from the Mac).
 - `linux-test.sh to-recovery` / `ml-to-*` assume Linux in `recovery`; update them or put #24 back.
 
+## Protected RAM at 0x5e700000 (found and fixed 2026-11-17)
+- Copying the root into `tbroot_a` crashed userspace: random segfaults (busybox applets, dropbear, pocketjs), then
+  the shell lost even `echo`. Files on the eMMC were fine (the same md5 after a reset); page-cache copies were not.
+- `mainline/scripts/analysis/memtest.c` (pattern write/verify over ~all free RAM, physical addresses from
+  `/proc/self/pagemap`) found exactly **0x5e700000..0x5fffffff (25 MiB)** bad: always reads 0, writes dropped, from
+  the first pass, the same range on every boot, everything else clean. That behaviour matches an EMI MPU region
+  set up by the boot firmware (preloader/LK/ATF; who and why not determined). The kernel had it as free RAM, so
+  any page landing there (in practice only under memory pressure, e.g. a large copy) silently became zeros.
+- Fix: `memory@5e700000` no-map in `dts/mt6737m-lenovo-tb7304x.dts`. After it: 720 MiB for 60 s on 4 threads,
+  0 errors. `apk audit --system` on the root found no damaged package files from earlier sessions.
+- This affected every mainline boot before the fix (LK-direct ones probably too). Files written in earlier
+  sessions outside apk (`/opt/mesa`, `/opt/pocketjs`, hand-made configs) were not verified.
+- Open: whether other LK boot modes protect other ranges, and what the mainline dtsi's `memory@78000000`
+  (77 MiB, from the Doogee board) really covers here.
+
 ## Repartitioning (2026-11-17)
 - New GPT is on the eMMC (plan-dualboot.md §2 and §6 step 3): `userdata` is 3072 MiB, `mmcblk0p24`–`p30` =
-  tbstate, tbkern_a/b, tbrescue, tbroot_a/b, tbdata (all still empty). Next: §6 step 4, the `userdata` wipe.
+  tbstate, tbkern_a/b, tbrescue, tbroot_a/b, tbdata. §6 step 4 (the `userdata` wipe, Magisk re-setup) is done.
+- §6 steps 5–6 done the same evening: record in `tbstate`, kernel in `tbkern_a` + `tbrescue`, root on `tbroot_a`,
+  `tbdata` on `/data` (plan-dualboot.md §6, T9). `tbkern_b`/`tbroot_b` are empty (b is formatted).
 - The Alpine root's `authorized_keys` now also holds the MacBook's key (it only had the build host's).
 
 ## Todo, in order

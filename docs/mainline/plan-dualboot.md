@@ -1,6 +1,6 @@
 # TB-7304X dual boot: the decided design (Linux by default, Android one step away)
 
-**Date:** 2026-11-17. **Status:** decided. **Live layout since 2026-11-17 12:46: U-Boot in `boot`, Android in `recovery`** (T3 passed). **Linux boots by default since 13:16** (T4 passed). Repartitioning not started.
+**Date:** 2026-11-17. **Status:** decided. **Live layout since 2026-11-17 12:46: U-Boot in `boot`, Android in `recovery`** (T3 passed). **Linux boots by default since 13:16** (T4 passed). **Repartitioned; since ~20:00 Linux boots from the raw slot `tbkern_a` with its root on `tbroot_a`** (§6 steps 3–6, T9).
 **Supersedes:** the U-Boot placement, ledger location, GUI actions and rootfs sections of
 [plan-boot-recovery.md](../../plan-boot-recovery.md), and the long-term layout of [research-rootfs.md](research-rootfs.md).
 **Evidence:** [research-lk-bootflow.md](research-lk-bootflow.md) (stock LK, disassembled, with addresses).
@@ -89,10 +89,11 @@ and `out/tbstate`).
 - **Copies:** two 512-byte copies, the second 64 KiB after the first. Each has magic `TBS1`, version, generation and
   CRC32 (zlib), plus `default` (linux/android), `oneshot` (none/linux/android/fastboot), `attempts`, `max` (3),
   `last_stage` (none/uboot/kernel/init/healthy), `last_error` (none/attempts/corrupt/no-image/bootm),
-  `slot`/`last_good_slot` (reserved for A/B), and the counters `linux_boots` and `fallbacks`.
-- **Location until repartitioning:** the last 1 MiB of `boot`, at sectors 30720 and 30848 of the partition. U-Boot
-  ends at 0.5 MiB, and `build-uboot.sh` fails if the image reaches 15 MiB. After §6 only `TBS_PART` and
-  `TBS_AREA_SECTOR` change.
+  `slot` (`cache`/`a`/`b`: what U-Boot boots), `last_good_slot` (set by `healthy` from `tb.slot=`), and the counters `linux_boots` and `fallbacks`.
+- **Location:** sectors 0 and 128 of the 1 MiB `tbstate` partition (mmcblk0p24), since 2026-11-17 ~20:00. Both
+  U-Boot and the tool refuse a `tbstate` partition outside 256–2048 sectors. Until then the record lived in the last
+  1 MiB of `boot` (sectors 30720/30848); that stale copy is still there and nothing reads it. `build-uboot.sh` still
+  keeps U-Boot below 15 MiB, so an old tool writing there cannot hit the image.
 - **Reading:** the valid copy with the higher generation. `blank` (no magic anywhere): U-Boot creates the record
   with default Linux. `corrupt` (magic but no valid copy): U-Boot rewrites it, records `error=corrupt`, and boots
   Android once.
@@ -177,8 +178,28 @@ recovery, para).
 5. **Format and fill the Linux partitions** from Linux: `mkfs.ext4` the roots and `tbdata`. Copy the Alpine root from
    the loop file into `tbroot_a` as files. Write the kernel image to `tbkern_a` and the rescue image to `tbrescue`.
    Write the first `tbstate`.
+   **Done 2026-11-17 ~19:30** from Linux: `tbroot_a`/`tbroot_b` formatted (`tbroot_b` empty), the live root copied
+   into `tbroot_a` with `tar` from a bind mount of `/` (md5 of every file compared, only live logs differ),
+   `tbdata` was already ext4 and is mounted at `/data`. `boot-mainline-uboot.img` (`95f2572e…`) is in `tbkern_a`,
+   `tbrescue` and `/cache/linux` (old one kept as `.prev`). First record: `slot=a`. `tbkern_b` is empty.
+   The first copy attempt crashed userspace: see "Protected RAM" in STATUS.md (fixed in the DTS before the retry).
 6. **Switch U-Boot's script** from `/cache/linux/boot-target` to `tbstate` and the raw slots. Keep `/cache/linux` as
    a fallback until A/B has worked for a week, then delete it.
+   **Done 2026-11-17 ~19:45** (U-Boot `88be1836…`, previous one in `mainline/out/u-boot-tb7304x-prev.img`). The
+   Linux part of `boot.cmd`, by the attempt count before this boot:
+   - `attempts < max`: the record's slot. `a`/`b`: header page of `tbkern_<slot>`, check `ANDROID!`, read
+     header + kernel + ramdisk + second (+16 KiB) if it fits the partition, `bootm` with `bootargs=tb.slot=<slot>`
+     (U-Boot prepends `bootargs` to the image cmdline). An invalid image (`error=no-image`) or a returning `bootm`
+     falls back to `/cache/linux/boot-mainline-uboot.img` with `tb.slot=cache`. Slot `cache` goes there directly.
+   - `attempts == max`: `tbrescue` once with `tb.slot=rescue` (stage 1 stays in the initramfs; its 300 s
+     auto-reboot goes to Android with the RTC flag).
+   - `attempts > max`: Android with `error=attempts` until re-armed.
+   Stage 1 (`init`): `tb.slot=a|b` → `e2fsck -p` (static, from Debian's `e2fsck-static`, with
+   `broken_system_clock` because there is no RTC) and mount `tbroot_<slot>`, falling back to the cache image;
+   `cache` (or no `tb.slot`, an older U-Boot) → the loop image as before; `rescue` → no stage 2. `tbdata` is
+   checked and mounted at `/data` in every stage-2 case. `/mnt/cache` is still mounted when it exists.
+   Not done: no integrity hash on the raw slots (the header check and the attempt counter cover a bad image), no
+   updater writing the inactive slot (§7), `/cache/linux` still in use as the fallback.
 
 ## 7. Updates
 
@@ -201,13 +222,15 @@ recovery, para).
 | T5 charger plugged while off (KPOC) | swap | ✅ Power-off with USB attached → LK charger mode → U-Boot → Android `kpoc_charger` from `recovery`. The screen is off at first (the charger blanks it). A short press on Power shows the battery animation (display resume, `bootlogo_show_charging`, backlight 150; confirmed by the user). It charges (CC 650 mA), and a long press on Power boots normally. |
 | T6 Magisk direct-install target with Android in `recovery` | swap | pending |
 | **T7** boot record + U-Boot boot counter (U-Boot `bcccc39d…`, Linux image `48dddb36…`) | swap | ✅ (13:40–13:55) A blank area made U-Boot create the record. Every stage was recorded (gen 1→4), and `healthy` at 60 s reset `attempts` (gen 10). One-shot Linux and one-shot Android (normal mode) were consumed by U-Boot. **Crash test:** `sysrq c` before `healthy` on 3 boots in a row (`attempts` 1, 2, 3) → the 4th boot went to Android in normal mode with `error=attempts`, `fallbacks=1`. `to-linux` re-armed it, and Linux reached `healthy`. |
+| **T9** raw slots (U-Boot `88be1836…`, image `95f2572e…`, record in `tbstate`) | repartitioned | ✅ (2026-11-17 19:45–20:10) Plain reboot → `tb.slot=a`, root `mmcblk0p28`, `/data` = `tbdata`, ssh 29 s after the reboot command, `healthy` at ~75 s uptime with `last_good_slot=a`. `slot=b` (empty `tbkern_b`) → `error=no-image`, cache image with `tb.slot=cache`. `attempts=3` → `tbrescue`, `tb.slot=rescue`, initramfs only. Reboot from there (`attempts=4`) → Android normal mode, `error=attempts`; the tool reads `tbstate` from Android (`/dev/block/mmcblk0p24`). `to-linux` → slot a, healthy. |
 | **T8** boot menu (`fastboot boot` test copies with `tb.menu=20`, then the production image on cache) | swap | ✅ (14:00–14:40) Vol± move the highlight. Double-tap on Linux chose it (taps 0.43 s apart). Hands-off, the 20 s countdown continued to Linux. The production 3 s menu continued to Linux at 3.0 s while logging and ignoring 4 ghost touches, with nobody at the tablet. Found during testing: single-tap selection plus ghost touches had produced an unintended "Rescue shell", and ignored touches kept resetting the timers; both fixed. |
 
 ### How to reach each target in the current layout (`boot` = U-Boot, `recovery` = Android)
 
 | Want | Do | Path |
 |---|---|---|
-| **Linux (default)** | power on, plain reboot; Linux `tb-reboot linux`; from Android `linux-test.sh to-linux` (also re-arms after a fallback) | LK → U-Boot (attempt counted) → `bootm` of `/cache/linux/boot-mainline-uboot.img` |
+| **Linux (default)** | power on, plain reboot; Linux `tb-reboot linux`; from Android `linux-test.sh to-linux` (also re-arms after a fallback) | LK → U-Boot (attempt counted) → `tbkern_<slot>` raw (fallback `/cache/linux/boot-mainline-uboot.img`) → root `tbroot_<slot>` |
+| Pick the Linux slot | `tbstate set slot=a\|b\|cache` (Linux, or Android as root) | next boots use it |
 | Android once, normal mode | Linux `tb-reboot android`; host `linux-test.sh ml-to-android` | record `oneshot=android` → U-Boot → `tbandroid` from `recovery` |
 | Android by default | Linux `tb-reboot default-android`; back: `linux-test.sh to-linux` | record `default=android` |
 | Android once, **without U-Boot** (escape) | Linux `tb-reboot android-direct`; `adb reboot recovery`; LK `oem reboot-recovery`; Vol+ menu → Recovery | LK RTC flag or menu → `recovery`, `ro.boot.mode=recovery` |

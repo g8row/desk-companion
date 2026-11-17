@@ -67,8 +67,9 @@ mkbootimg --base 0x40000000 --kernel_offset 0x00080000 --ramdisk_offset 0x040000
 python3 -c "
 import struct,sys
 f=open(sys.argv[1],'r+b'); f.seek(28); f.write(struct.pack('<I',0x40f00000)); f.close()" $OUT/u-boot-tb7304x.img
-# gate: the image must end before the boot record at the end of `boot` (tbstate.h: 15 MiB)
-[ $(stat -c %s $OUT/u-boot-tb7304x.img) -lt $((30720 * 512)) ] || { echo "image overlaps the tbstate area"; exit 1; }
+# gate: the image must fit `boot` (16 MiB). Up to 2026-11-17 the boot record lived in its last MiB, so stay below
+# 15 MiB as well: an older Linux/Android tbstate tool would still write there.
+[ $(stat -c %s $OUT/u-boot-tb7304x.img) -lt $((30720 * 512)) ] || { echo "image reaches the old tbstate area"; exit 1; }
 # gate: the offline model of LK's checks must pass, or the image is not written out
 python3 -I $M/scripts/analysis/lk_image_check.py $OUT/u-boot-tb7304x.img || { mv $OUT/u-boot-tb7304x.img $OUT/u-boot-tb7304x.img.REJECTED; exit 1; }
 ls -la $O/u-boot.bin $OUT/u-boot-tb7304x.img

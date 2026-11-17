@@ -1,2 +1,3 @@
-/dev/loop0	/	ext4	rw,noatime	0 0
+# / is mounted by stage 1 (tbroot_a/b, or the loop image on cache), /data too (tbdata)
+/dev/root	/	ext4	rw,noatime	0 0
 tmpfs	/tmp	tmpfs	nosuid,nodev,mode=1777	0 0

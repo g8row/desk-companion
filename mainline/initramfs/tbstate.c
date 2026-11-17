@@ -5,13 +5,14 @@
  *
  *   tbstate [show]                 print the record as key=value lines (state=ok|blank|corrupt first)
  *   tbstate set key=value ...      default=linux|android  oneshot=none|linux|android|fastboot  attempts=<n>
- *                                  max=<n>  stage=<name>  error=<name>
+ *                                  max=<n>  stage=<name>  error=<name>  slot=cache|a|b
  *   tbstate stage <name>           last_stage = none|uboot|kernel|init|healthy
- *   tbstate healthy                attempts=0, last_stage=healthy, last_error=none (stage 2, after 60 s)
+ *   tbstate healthy                attempts=0, last_stage=healthy, last_error=none, last_good_slot = the slot
+ *                                  this kernel was booted from (tb.slot= on /proc/cmdline) (stage 2, after 60 s)
  *
  * The partition is found by GPT name in /sys/class/block (works in the initramfs, Alpine and Android). Writes
- * go over the older copy with O_DIRECT|O_SYNC and are read back. Nothing is written unless `boot` holds an
- * Android-format image that ends before the record area, so this can never touch a kernel or U-Boot image.
+ * go over the older copy with O_DIRECT|O_SYNC and are read back. Nothing is written unless the partition is the
+ * 1 MiB `tbstate` one (TBS_PART_MIN/MAX_SECTORS), and only the two record sectors are ever written.
  * Static build, no libc extras: aarch64-linux-gnu-gcc -static -O2 -I mainline/u-boot -o tbstate tbstate.c
  */
 #define _GNU_SOURCE
@@ -125,34 +126,10 @@ static int load(int fd)
 	return 0;
 }
 
-/* refuse to write unless `boot` holds an Android-format image (U-Boot) that ends before the record area */
-static int boot_image_ok(int fd)
-{
-	unsigned int *h = (unsigned int *)&blk[1];
-	unsigned long long ks, rs, ss, ps, end;
-
-	if (pread(fd, h, 512, 0) != 512 || memcmp(h, "ANDROID!", 8)) {
-		fprintf(stderr, "tbstate: %s does not start with an Android image header, not writing\n", dev);
-		return 0;
-	}
-	ks = h[2]; rs = h[4]; ss = h[6]; ps = h[9];
-	if (!ps || ps & (ps - 1))
-		return 0;
-	end = ps + (ks + ps - 1) / ps * ps + (rs + ps - 1) / ps * ps + (ss + ps - 1) / ps * ps;
-	if (end > TBS_IMAGE_LIMIT) {
-		fprintf(stderr, "tbstate: the image in %s is %llu bytes and would overlap the record, not writing\n",
-			dev, end);
-		return 0;
-	}
-	return 1;
-}
-
 static int save(int fd)
 {
 	int copy;
 
-	if (!boot_image_ok(fd))
-		return -1;
 	cur.generation++;
 	cur.crc = tbs_crc(&cur);
 	copy = cur.generation & 1;
@@ -183,10 +160,11 @@ static const char *name(const char *const *names, int n, unsigned int v)
 static void show(void)
 {
 	printf("state=%s\ndevice=%s\ngeneration=%u\ndefault=%s\noneshot=%s\nattempts=%u\nmax=%u\nstage=%s\n"
-	       "error=%s\nlinux_boots=%u\nfallbacks=%u\n", state, dev, cur.generation,
+	       "error=%s\nslot=%s\nlast_good_slot=%s\nlinux_boots=%u\nfallbacks=%u\n", state, dev, cur.generation,
 	       name(tbs_target_name, 4, cur.default_target), name(tbs_target_name, 4, cur.oneshot), cur.attempts,
 	       cur.max_attempts, name(tbs_stage_name, 5, cur.last_stage), name(tbs_error_name, 5, cur.last_error),
-	       cur.linux_boots, cur.fallbacks);
+	       name(tbs_slot_name, 3, cur.slot), name(tbs_slot_name, 3, cur.last_good_slot), cur.linux_boots,
+	       cur.fallbacks);
 }
 
 static int set(const char *kv)
@@ -215,6 +193,10 @@ static int set(const char *kv)
 		if ((n = lookup(tbs_error_name, 5, v)) < 0)
 			return -1;
 		cur.last_error = n;
+	} else if (k == 4 && !strncmp(kv, "slot", 4)) {
+		if ((n = lookup(tbs_slot_name, 3, v)) < 0)
+			return -1;
+		cur.slot = n;
 	} else if (k == 8 && !strncmp(kv, "attempts", 8)) {
 		n = atoi(v);
 		if (n < 0 || n > 255)
@@ -231,6 +213,22 @@ static int set(const char *kv)
 	return 0;
 }
 
+/* tb.slot=<cache|a|b|rescue> on /proc/cmdline (set by U-Boot): the slot index, or -1 (rescue, or not given) */
+static int booted_slot(void)
+{
+	char buf[4096], *p;
+	FILE *f = fopen("/proc/cmdline", "r");
+	size_t n = f ? fread(buf, 1, sizeof(buf) - 1, f) : 0;
+
+	if (f)
+		fclose(f);
+	buf[n] = 0;
+	for (p = strtok(buf, " \n"); p; p = strtok(NULL, " \n"))
+		if (!strncmp(p, "tb.slot=", 8))
+			return lookup(tbs_slot_name, 3, p + 8);
+	return -1;
+}
+
 int main(int argc, char **argv)
 {
 	unsigned long long sectors = 0;
@@ -239,8 +237,9 @@ int main(int argc, char **argv)
 
 	if (sizeof(struct tbstate) != 512 || posix_memalign((void **)&blk, 4096, 1024))
 		return 2;
-	if (find_part(dev, sizeof(dev), &sectors) || sectors < TBS_PART_MIN_SECTORS) {
-		fprintf(stderr, "tbstate: no `%s` partition of >= %d sectors\n", TBS_PART, TBS_PART_MIN_SECTORS);
+	if (find_part(dev, sizeof(dev), &sectors) || sectors < TBS_PART_MIN_SECTORS || sectors > TBS_PART_MAX_SECTORS) {
+		fprintf(stderr, "tbstate: no `%s` partition of %d..%d sectors\n", TBS_PART, TBS_PART_MIN_SECTORS,
+			TBS_PART_MAX_SECTORS);
 		return 1;
 	}
 	fd = open(dev, (write ? O_RDWR | O_SYNC : O_RDONLY) | O_DIRECT);
@@ -257,7 +256,9 @@ int main(int argc, char **argv)
 		cur.attempts = 0;
 		cur.last_stage = TBS_S_HEALTHY;
 		cur.last_error = TBS_E_NONE;
-		cur.last_good_slot = cur.slot;
+		i = booted_slot();
+		if (i >= 0)
+			cur.last_good_slot = i;
 	} else if (!strcmp(cmd, "stage") && argc == 3) {
 		if ((i = lookup(tbs_stage_name, 5, argv[2])) < 0)
 			goto usage;

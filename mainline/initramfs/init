@@ -163,26 +163,55 @@ ls /www > /dev/null
 log "ready: serial on ttyGS0, telnet/http on 172.16.42.1"
 dmesg | grep -i -E 'lkfb|simple|musb|udc|mmc0|wdt|watchdog' > /dev/tty0 2>/dev/null
 
-# ---- 3c. stage 2: Alpine in /cache/linux/rootfs.img (docs/mainline/research-rootfs.md) ----------------
-# tb.r=0 on the cmdline, or 2 failed tries in a row (bootcount, reset by stage 2 after 60 s), keep us here.
-# Only the cache partition is ever mounted read-write. Any failure before switch_root falls through to the
-# initramfs shell below, with telnet/http still running.
-ROOTMODE=auto
-for a in $(cat /proc/cmdline); do case "$a" in tb.r=*) ROOTMODE=${a#tb.r=} ;; esac; done
+# ---- 3c. stage 2: Alpine (docs/mainline/plan-dualboot.md §2, research-rootfs.md) -----------------------------
+# U-Boot puts tb.slot=<a|b|cache|rescue> at the front of the cmdline (no tb.slot: an older U-Boot, same as cache).
+#   a/b     root on tbroot_a/b (ext4, `e2fsck -p` first); on failure the cache image below is tried
+#   cache   root in /cache/linux/rootfs.img (loop); stage 1 gives up after 2 failed tries (bootcount, reset by
+#           stage 2 after 60 s)
+#   rescue  no stage 2 (tbrescue, booted by U-Boot after `max` unhealthy boots): shell, then Android after 300 s
+# tb.r=0 also keeps us here. tbdata (ext4) is checked and mounted at /data when present. Only cache, the
+# tbroot/tbdata partitions and the boot record are ever written. Any failure before switch_root falls through to
+# the initramfs shell below, with telnet/http still running.
+ROOTMODE=auto; SLOT=cache
+for a in $(cat /proc/cmdline); do case "$a" in tb.r=*) ROOTMODE=${a#tb.r=} ;; tb.slot=*) SLOT=${a#tb.slot=} ;; esac; done
+[ "$SLOT" = rescue ] && { log "rescue boot (tb.slot=rescue): no stage 2"; ROOTMODE=0; }
+log "slot: $SLOT"
 find_part() {
 	for d in /sys/class/block/mmcblk0p*; do
 		grep -qx "PARTNAME=$1" $d/uevent 2>/dev/null && { echo /dev/${d##*/}; return 0; }
 	done
 	return 1
 }
-try_rootfs() {
-	[ "$ROOTMODE" = 0 ] && { log "stage 2 off (tb.r=0)"; return 1; }
+# e2fsck -p: 0 clean, 1 fixed; 2 fixed but wants a reboot (it was mounted: never the case here, carry on);
+# 4 and up: needs a human, so do not mount it
+fsck_part() {
+	[ -x /bin/e2fsck ] || { log "no e2fsck in the initramfs, mounting $1 unchecked"; return 0; }
+	# no RTC: the clock starts at 1970, and every superblock time would look like the future (a forced full check)
+	[ -f /etc/e2fsck.conf ] || { mkdir -p /etc; printf '[options]\n\tbroken_system_clock = 1\n' > /etc/e2fsck.conf; }
+	e2fsck -p "$1" >> $LOG 2>&1; r=$?
+	[ $r -lt 4 ] && { [ $r -gt 0 ] && log "e2fsck $1: fixed (exit $r)"; return 0; }
+	log "e2fsck $1: exit $r, not mounting it"; return 1
+}
+CACHE_MOUNTED=0
+mount_cache() {
+	[ $CACHE_MOUNTED = 1 ] && return 0
 	C=$(find_part cache) || { log "stage 2: no cache partition"; return 1; }
-	mkdir -p /mnt/cache /newroot
+	mkdir -p /mnt/cache
 	mount -t ext4 -o rw,noatime,nosuid,nodev "$C" /mnt/cache || { log "stage 2: cannot mount $C"; return 1; }
-	# boot record (docs/mainline/plan-dualboot.md §4): stage 1 is up and the eMMC answers. U-Boot counted the
-	# attempt; stage 2 marks it healthy after 60 s. Best effort: a missing tool or partition only logs.
-	tbstate stage kernel > /dev/null 2>&1 || log "tbstate: could not record stage kernel"
+	CACHE_MOUNTED=1
+}
+# root on tbroot_<slot>
+try_slot() {
+	P=$(find_part tbroot_$SLOT) || { log "stage 2: no tbroot_$SLOT partition"; return 1; }
+	fsck_part $P || return 1
+	mount -t ext4 -o rw,noatime $P /newroot || { log "stage 2: cannot mount $P"; return 1; }
+	[ -x /newroot/sbin/init ] || { log "stage 2: no /sbin/init on $P"; umount /newroot; return 1; }
+	mount_cache	# optional here: legacy scripts and the cache image's maintenance use /mnt/cache
+	log "stage 2: root on $P (tbroot_$SLOT)"
+}
+# root in the loop image on cache
+try_cache() {
+	mount_cache || return 1
 	IMG=/mnt/cache/linux/rootfs.img
 	# Rootfs update: a new image dropped in as rootfs.img.gz (from stage 2, scp/ssh) replaces the old one here,
 	# while nothing has it mounted. The old image is deleted first (cache is too small for both).
@@ -195,22 +224,35 @@ try_rootfs() {
 			log "stage 2: rootfs update FAILED"; rm -f $IMG.tmp
 		fi
 	fi
-	[ -f $IMG ] || { log "stage 2: no $IMG"; umount /mnt/cache; return 1; }
+	[ -f $IMG ] || { log "stage 2: no $IMG"; return 1; }
 	n=$(cat /mnt/cache/linux/bootcount 2>/dev/null); n=${n:-0}
 	if [ "$n" -ge 2 ]; then
 		log "stage 2 failed $n times in a row, staying in the initramfs (echo 0 > /mnt/cache/linux/bootcount)"
 		return 1    # leave cache mounted for inspection
 	fi
 	echo $((n + 1)) > /mnt/cache/linux/bootcount; sync
-	mount -t ext4 -o loop,rw,noatime $IMG /newroot || { log "stage 2: cannot mount $IMG"; umount /mnt/cache; return 1; }
-	[ -x /newroot/sbin/init ] || { log "stage 2: no /sbin/init in $IMG"; umount /newroot /mnt/cache; return 1; }
-	log "stage 2: switch_root to $IMG (try $((n + 1)))"
+	mount -t ext4 -o loop,rw,noatime $IMG /newroot || { log "stage 2: cannot mount $IMG"; return 1; }
+	[ -x /newroot/sbin/init ] || { log "stage 2: no /sbin/init in $IMG"; umount /newroot; return 1; }
+	log "stage 2: root in $IMG (try $((n + 1)))"
+}
+try_rootfs() {
+	[ "$ROOTMODE" = 0 ] && { log "stage 2 off"; return 1; }
+	mkdir -p /newroot
+	# boot record (docs/mainline/plan-dualboot.md §4): stage 1 is up and the eMMC answers. U-Boot counted the
+	# attempt; stage 2 marks it healthy after 60 s. Best effort: a missing tool or partition only logs.
+	tbstate stage kernel > /dev/null 2>&1 || log "tbstate: could not record stage kernel"
+	case "$SLOT" in
+	a|b) try_slot || { log "stage 2: tbroot_$SLOT failed, trying the cache image"; try_cache; } ;;
+	*) try_cache ;;
+	esac || return 1
+	D=$(find_part tbdata) && fsck_part $D && mkdir -p /newroot/data &&
+		{ mount -t ext4 -o rw,noatime,nosuid,nodev $D /newroot/data || log "stage 2: cannot mount $D"; }
 	tbstate stage init > /dev/null 2>&1 || log "tbstate: could not record stage init"
 	mkdir -p /newroot/usr/local/sbin && cp /bin/tbstate /newroot/usr/local/sbin/tbstate 2>/dev/null
 	cp $LOG /newroot/var/log/tb7304-stage1.log 2>/dev/null
 	# we are PID 1: kill -1 hits every other user process (telnetd, httpd, the status/display loops)
 	kill -9 -1 2>/dev/null; sleep 1
-	mkdir -p /newroot/mnt/cache && mount --move /mnt/cache /newroot/mnt/cache
+	[ $CACHE_MOUNTED = 1 ] && mkdir -p /newroot/mnt/cache && mount --move /mnt/cache /newroot/mnt/cache
 	for m in dev proc sys; do mount --move /$m /newroot/$m; done
 	exec switch_root /newroot /sbin/init
 }

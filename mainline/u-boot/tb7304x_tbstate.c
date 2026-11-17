@@ -4,16 +4,17 @@
  *
  *   tbstate load              read both copies, keep the newest valid one, export it to the environment:
  *                             tb_state (ok|blank|corrupt) tb_default tb_oneshot tb_attempts tb_max tb_stage
- *                             tb_error tb_gen. blank = no copy carries the magic (first boot): defaults
+ *                             tb_error tb_slot tb_gen. blank = no copy carries the magic (first boot): defaults
  *                             (linux, 3 attempts). corrupt = a magic is present but no copy is valid.
- *   tbstate set <field> <v>   default|oneshot (none|linux|android|fastboot), error (none|attempts|...), max <n>
+ *   tbstate set <field> <v>   default|oneshot (none|linux|android|fastboot), error (none|attempts|...), max <n>,
+ *                             slot (cache|a|b)
  *   tbstate attempt           attempts++, last_stage=uboot, linux_boots++ (before booting Linux)
  *   tbstate fail <error>      last_error=<error>, fallbacks++ (when falling back to Android)
  *   tbstate save              generation++, CRC, write over the OLDER copy, read back and compare
  *   tbstate show              print the record
  *
- * This is the only place U-Boot writes the eMMC, and it can only write the two record sectors of the `boot`
- * partition (TBS_AREA_SECTOR and TBS_AREA_SECTOR + TBS_COPY_STRIDE).
+ * This is the only place U-Boot writes the eMMC, and it can only write the two record sectors of the 1 MiB
+ * `tbstate` partition (TBS_AREA_SECTOR and TBS_AREA_SECTOR + TBS_COPY_STRIDE).
  */
 #include <common.h>
 #include <command.h>
@@ -37,7 +38,7 @@ static int tbs_locate(struct blk_desc **dev, lbaint_t *base)
 		return -ENODEV;
 	if (part_get_info_by_name(*dev, TBS_PART, &info) < 0)
 		return -ENOENT;
-	if (info.blksz != 512 || info.size < TBS_PART_MIN_SECTORS)
+	if (info.blksz != 512 || info.size < TBS_PART_MIN_SECTORS || info.size > TBS_PART_MAX_SECTORS)
 		return -EINVAL;
 	*base = info.start + TBS_AREA_SECTOR;
 	return 0;
@@ -83,6 +84,7 @@ static void tbs_export(const char *state)
 	env_set_ulong("tb_max", s->max_attempts);
 	env_set("tb_stage", tbs_name(tbs_stage_name, 5, s->last_stage));
 	env_set("tb_error", tbs_name(tbs_error_name, 5, s->last_error));
+	env_set("tb_slot", tbs_name(tbs_slot_name, 3, s->slot));
 	env_set_ulong("tb_gen", s->generation);
 }
 
@@ -159,11 +161,11 @@ static void tbs_show(void)
 {
 	const struct tbstate *s = &tbs_cur;
 
-	printf("tbstate: %s gen %u default %s oneshot %s attempts %u/%u stage %s error %s boots %u fallbacks %u\n",
+	printf("tbstate: %s gen %u default %s oneshot %s slot %s attempts %u/%u stage %s error %s boots %u fallbacks %u\n",
 	       tbs_state, s->generation, tbs_name(tbs_target_name, 4, s->default_target),
-	       tbs_name(tbs_target_name, 4, s->oneshot), s->attempts, s->max_attempts,
-	       tbs_name(tbs_stage_name, 5, s->last_stage), tbs_name(tbs_error_name, 5, s->last_error),
-	       s->linux_boots, s->fallbacks);
+	       tbs_name(tbs_target_name, 4, s->oneshot), tbs_name(tbs_slot_name, 3, s->slot), s->attempts,
+	       s->max_attempts, tbs_name(tbs_stage_name, 5, s->last_stage),
+	       tbs_name(tbs_error_name, 5, s->last_error), s->linux_boots, s->fallbacks);
 }
 
 static int do_tbstate(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
@@ -215,6 +217,11 @@ static int do_tbstate(struct cmd_tbl *cmdtp, int flag, int argc, char *const arg
 			if (v < 0)
 				return CMD_RET_USAGE;
 			tbs_cur.last_error = v;
+		} else if (!strcmp(argv[2], "slot")) {
+			v = tbs_lookup(tbs_slot_name, 3, argv[3]);
+			if (v < 0)
+				return CMD_RET_USAGE;
+			tbs_cur.slot = v;
 		} else if (!strcmp(argv[2], "max")) {
 			v = simple_strtoul(argv[3], NULL, 10);
 			if (v < 1 || v > 20)
@@ -229,5 +236,5 @@ static int do_tbstate(struct cmd_tbl *cmdtp, int flag, int argc, char *const arg
 	return CMD_RET_USAGE;
 }
 
-U_BOOT_CMD(tbstate, 4, 0, do_tbstate, "TB-7304X boot record (two copies at the end of `boot`)",
-	   "load | save | show | attempt | fail <error> | set default|oneshot|error|max <value>");
+U_BOOT_CMD(tbstate, 4, 0, do_tbstate, "TB-7304X boot record (two copies in the `tbstate` partition)",
+	   "load | save | show | attempt | fail <error> | set default|oneshot|error|max|slot <value>");
