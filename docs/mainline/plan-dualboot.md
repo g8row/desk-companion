@@ -163,6 +163,10 @@ recovery, para).
 3. **Write the new GPT**, both primary and backup. Only `userdata`'s end LBA changes, plus entries 24–30 and the
    entry count. Write it from mainline Linux with `sgdisk`, or with mtkclient from BROM. Reboot, then check LK and
    Android still start. Android will refuse the oversized encrypted `userdata`; that is expected.
+   **Done 2026-11-17 ~15:50** with `mainline/scripts/tb-gpt.py` (tables in `backup/partitions/2026-11-17-newgpt/`,
+   pre-write dumps in `2026-11-17-prepart/`, read-back in `2026-11-17-postpart/`), written with `dd` from mainline
+   Linux, backup first. After a reboot, preloader → LK → U-Boot → Linux came up and the kernel lists p1–p30 with the
+   `tb*` names. Android not yet checked.
 4. **Wipe `userdata`:**
    1. Put the stock `backup/partitions/recovery.bin` into `recovery` once.
    2. Boot it with the RTC bit and run "Wipe data/factory reset". That formats `userdata` at its new size and clears

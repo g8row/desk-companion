@@ -196,6 +196,11 @@ tested escape. Details, matrix and plan: [handoff-uboot-2026-11-17.md](handoff-u
   `target=linux` (`/cache/linux/boot-mainline-uboot.img`) or `target=fastboot` (then `fastboot boot` from the Mac).
 - `linux-test.sh to-recovery` / `ml-to-*` assume Linux in `recovery`; update them or put #24 back.
 
+## Repartitioning (2026-11-17)
+- New GPT is on the eMMC (plan-dualboot.md §2 and §6 step 3): `userdata` is 3072 MiB, `mmcblk0p24`–`p30` =
+  tbstate, tbkern_a/b, tbrescue, tbroot_a/b, tbdata (all still empty). Next: §6 step 4, the `userdata` wipe.
+- The Alpine root's `authorized_keys` now also holds the MacBook's key (it only had the build host's).
+
 ## Todo, in order
 0. Boot path: follow handoff-uboot-2026-11-17.md §6 (diagnostic U-Boot, LK path analysis, decide U-Boot vs a Linux chooser).
 1. ~~Fix the Android safe-mode boot loop~~ (done: Magisk boot counter, see above).
