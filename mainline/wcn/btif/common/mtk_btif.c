@@ -41,7 +41,7 @@
 
 /*-----------static function declearation----------------*/
 static int mtk_btif_probe(struct platform_device *pdev);
-static int mtk_btif_remove(struct platform_device *pdev);
+static void mtk_btif_remove(struct platform_device *pdev);
 static int mtk_btif_suspend(struct platform_device *pdev, pm_message_t state);
 static int mtk_btif_resume(struct platform_device *pdev);
 static int mtk_btif_drv_resume(struct device *dev);
@@ -251,13 +251,12 @@ static int mtk_btif_probe(struct platform_device *pdev)
 	return 0;
 }
 
-static int mtk_btif_remove(struct platform_device *pdev)
+static void mtk_btif_remove(struct platform_device *pdev)
 {
 /*Chaozhong: ToDo: to be implement*/
 	BTIF_INFO_FUNC("DO BTIF REMOVE\n");
 	platform_set_drvdata(pdev, NULL);
 	g_btif[0].private_data = NULL;
-	return 0;
 }
 
 int _btif_suspend(p_mtk_btif p_btif)
@@ -495,7 +494,7 @@ static int btif_chrdev_init(void)
 	}
 	BTIF_INFO_FUNC("add btif dev to kernel succeed\n");
 
-	p_btif_class = class_create(THIS_MODULE, p_btif_dev_name);
+	p_btif_class = class_create(p_btif_dev_name);
 	if (IS_ERR(p_btif_class)) {
 		BTIF_ERR_FUNC("error happened when doing class_create\n");
 		unregister_chrdev_region(btif_dev, 1);

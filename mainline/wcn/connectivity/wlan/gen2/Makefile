@@ -75,6 +75,9 @@ endif
 ifeq ($(CONFIG_ARCH_MT6735M), y)
     MTK_SRAM_SIZE_OPTION=1
 endif
+ifeq ($(CONFIG_MTK_COMBO_CHIP_CONSYS_6735), y)
+    MTK_SRAM_SIZE_OPTION=1
+endif
 ifeq ($(CONFIG_ARCH_MT6753), y)
     MTK_SRAM_SIZE_OPTION=1
 endif
@@ -102,8 +105,8 @@ ccflags-y += -DDBG=0
 #ccflags-y += -DDBG=1
 # ----------------------------------------------------
 
-ccflags-y += -I$(srctree)/$(src)/os -I$(srctree)/$(src)/os/linux/include -I$(srctree)/$(src)/os/linux/hif/ahb/include
-ccflags-y += -I$(srctree)/$(src)/include -I$(srctree)/$(src)/include/nic -I$(srctree)/$(src)/include/mgmt
+ccflags-y += -I$(src)/os -I$(src)/os/linux/include -I$(src)/os/linux/hif/ahb/include
+ccflags-y += -I$(src)/include -I$(src)/include/nic -I$(src)/include/mgmt
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/
 
@@ -226,6 +229,10 @@ endif
 #$(warning $(CONFIG_MACH_MT7623))
 
 ifeq ($(MTK_PLATFORM), mt7623)
+HIF_AHB_PDMA = $(HIF_DIR)mt8127/
+endif
+# MT6735: same AP DMA HIF channel IP as MT8127, at AP_DMA + 0x80 (hif_pdma.h, CONFIG_OF)
+ifeq ($(MTK_PLATFORM), mt6735)
 HIF_AHB_PDMA = $(HIF_DIR)mt8127/
 endif
 HIF_OBJS :=  $(HIF_DIR)arm.o \

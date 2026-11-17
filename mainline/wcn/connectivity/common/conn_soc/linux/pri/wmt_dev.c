@@ -245,7 +245,7 @@ struct early_suspend wmt_early_suspend_handler = {
 	.resume = wmt_dev_late_resume,
 };
 
-#else
+#elif defined(FB_EVENT_BLANK)	/* fbdev blank notifier, removed in 5.x: no screen state hint on mainline */
 
 static struct notifier_block wmt_fb_notifier;
 static int wmt_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *data)
@@ -2407,7 +2407,7 @@ static int WMT_init(void)
 	}
 	WMT_INFO_FUNC("driver(major %d) installed\n", gWmtMajor);
 #if WMT_CREATE_NODE_DYNAMIC
-	wmt_class = class_create(THIS_MODULE, "stpwmt");
+	wmt_class = class_create("stpwmt");
 	if (IS_ERR(wmt_class))
 		goto error;
 	wmt_dev = device_create(wmt_class, NULL, devID, NULL, "stpwmt");
@@ -2457,7 +2457,7 @@ static int WMT_init(void)
 #ifdef CONFIG_EARLYSUSPEND
 	register_early_suspend(&wmt_early_suspend_handler);
 	WMT_INFO_FUNC("register_early_suspend finished\n");
-#else
+#elif defined(FB_EVENT_BLANK)
 	wmt_fb_notifier.notifier_call = wmt_fb_notifier_callback;
 	ret = fb_register_client(&wmt_fb_notifier);
 	if (ret)
@@ -2503,7 +2503,7 @@ static void WMT_exit(void)
 #ifdef CONFIG_EARLYSUSPEND
 	unregister_early_suspend(&wmt_early_suspend_handler);
 	WMT_INFO_FUNC("unregister_early_suspend finished\n");
-#else
+#elif defined(FB_EVENT_BLANK)
 	fb_unregister_client(&wmt_fb_notifier);
 #endif
 

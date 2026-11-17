@@ -178,7 +178,7 @@ GL_HIF_DMA_OPS_T HifPdmaOps = {
 VOID HifPdmaInit(GL_HIF_INFO_T *HifInfo)
 {
 	/* IO remap PDMA register memory */
-#ifdef AP_DMA_HIF_BASE
+#if defined(AP_DMA_HIF_BASE) && defined(CONFIG_MTK_COMBO_CHIP_CONSYS_7623)
 #undef AP_DMA_HIF_BASE
 #define AP_DMA_HIF_BASE		0x11000180
 #endif

@@ -499,10 +499,10 @@ static ssize_t procDbgLevelWrite(struct file *file, const char *buffer, size_t c
 {
 	UINT_32 u4NewDbgModule, u4NewDbgLevel;
 	UINT_8 i = 0;
-	UINT_32 u4CopySize = kalStrLen(aucProcBuf);//sizeof(aucProcBuf);
+	UINT_32 u4CopySize = sizeof(aucProcBuf) - 1;	/* was kalStrLen(aucProcBuf): overflowed on long writes */
 	UINT_8 *temp = &aucProcBuf[0];
 
-	if (u4CopySize >= count + 1)
+	if (u4CopySize > count)
 		u4CopySize = count;
 
 	kalMemSet(aucProcBuf, 0, u4CopySize);
@@ -575,7 +575,7 @@ static ssize_t procTxDoneCfgWrite(struct file *file, const char *buffer, size_t 
 #define MODULE_NAME_LENGTH 6
 
 	UINT_8 i = 0;
-	UINT_32 u4CopySize = kalStrLen(aucProcBuf);//sizeof(aucProcBuf);
+	UINT_32 u4CopySize = sizeof(aucProcBuf) - 1;	/* was kalStrLen(aucProcBuf): overflowed on long writes */
 	UINT_8 *temp = &aucProcBuf[0];
 	UINT_16 u2SetTxDoneCfg = 0;
 	UINT_16 u2ClsTxDoneCfg = 0;
@@ -583,7 +583,7 @@ static ssize_t procTxDoneCfgWrite(struct file *file, const char *buffer, size_t 
 	UINT_32 u4Enabled;
 	UINT_8 aucModuleArray[][MODULE_NAME_LENGTH] = {"ARP", "DNS", "TCP", "UDP", "EAPOL", "DHCP", "ICMP"};
 
-	if (u4CopySize >= count + 1)
+	if (u4CopySize > count)
 		u4CopySize = count;
 
 	kalMemSet(aucProcBuf, 0, u4CopySize);

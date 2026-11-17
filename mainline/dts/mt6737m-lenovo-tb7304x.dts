@@ -125,6 +125,62 @@
 		linux,keymap = <MATRIX_KEY(0, 0, KEY_VOLUMEUP)
 				MATRIX_KEY(0, 1, KEY_VOLUMEDOWN)>;
 	};
+
+	/*
+	 * WiFi/BT: CONSYS + MT6625L, out-of-tree MediaTek driver (mainline/wcn, patches/0011). Addresses, IRQs and
+	 * the reg order come from the stock DT; clocks, power domain and supplies are the mainline equivalents of the
+	 * vendor clkmgr/PMIC calls (wcn/connectivity/common/conn_soc/mt6735/mtk_wcn_consys_hw.c).
+	 */
+	consys: consys@18070000 {
+		compatible = "mediatek,mt6735m-consys", "mediatek,mt6735-consys";
+		reg = <0 0x18070000 0 0x200>,	/* CONN_MCU_CONFIG */
+		      <0 0x10212000 0 0x100>,	/* TOPRGU (CONNSYS CPU SW reset) */
+		      <0 0x10000000 0 0x2000>,	/* TOPCKGEN/INFRACFG (EMI remap) */
+		      <0 0x10006000 0 0x1000>;	/* SPM */
+		interrupts = <GIC_SPI 227 IRQ_TYPE_LEVEL_LOW>,	/* BGF EINT */
+			     <GIC_SPI 225 IRQ_TYPE_LEVEL_LOW>;	/* WDT */
+		clocks = <&infracfg CLK_INFRA_CONNMCU_BUS>;
+		clock-names = "bus";
+		power-domains = <&spm MT6735_POWER_DOMAIN_CONN>;
+		mediatek,pwrap-regmap = <&pwrap>;
+		vcn18-supply = <&mt6328_vcn18_reg>;
+		vcn28-supply = <&mt6328_vcn28_reg>;
+		vcn33_bt-supply = <&mt6328_vcn33_bt_reg>;
+		vcn33_wifi-supply = <&mt6328_vcn33_wifi_reg>;
+	};
+
+	btif: serial@1100c000 {
+		compatible = "mediatek,mtk-btif";
+		reg = <0 0x1100c000 0 0x1000>;
+		interrupts = <GIC_SPI 90 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&pericfg CLK_PERI_BTIF>, <&pericfg CLK_PERI_APDMA>;
+		clock-names = "main", "apdmac";
+	};
+
+	btif_tx: dma-controller@11000780 {
+		compatible = "mediatek,btif_tx";
+		reg = <0 0x11000780 0 0x80>;
+		interrupts = <GIC_SPI 111 IRQ_TYPE_LEVEL_LOW>;
+	};
+
+	btif_rx: dma-controller@11000800 {
+		compatible = "mediatek,btif_rx";
+		reg = <0 0x11000800 0 0x80>;
+		interrupts = <GIC_SPI 112 IRQ_TYPE_LEVEL_LOW>;
+	};
+
+	wifi: wifi@180f0000 {
+		compatible = "mediatek,wifi";
+		reg = <0 0x180f0000 0 0x5c>;
+		interrupts = <GIC_SPI 226 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&pericfg CLK_PERI_APDMA>;
+		clock-names = "wifi-dma";
+	};
+};
+
+/* CONSYS EMI window: the 1 MB the mt6735.dtsi already reserves (no-map), claimed by the WMT driver */
+&consys_mem {
+	compatible = "mediatek,consys-reserve-memory";
 };
 
 /*

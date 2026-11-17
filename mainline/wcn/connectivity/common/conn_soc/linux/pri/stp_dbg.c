@@ -107,14 +107,7 @@ static struct nla_policy stp_dbg_genl_policy[STP_DBG_ATTR_MAX + 1] = {
 	[STP_DBG_ATTR_MSG] = {.type = NLA_NUL_STRING},
 };
 
-static struct genl_family stp_dbg_gnl_family = {
-	.id = GENL_ID_GENERATE,
-	.hdrsize = 0,
-	.name = STP_DBG_FAMILY_NAME,
-	.version = 1,
-	.maxattr = STP_DBG_ATTR_MAX,
-	.policy = stp_dbg_genl_policy,
-};
+static struct genl_family stp_dbg_gnl_family;
 
 static void stp_dbg_nl_init(void);
 static void stp_dbg_nl_deinit(void);
@@ -152,6 +145,19 @@ static struct genl_ops stp_dbg_gnl_ops_array[] = {
 		.doit = stp_dbg_nl_reset,
 		.dumpit = NULL,
 	},
+};
+
+/* genetlink since 4.10: the family carries its ops and gets its id on registration */
+static struct genl_family stp_dbg_gnl_family = {
+	.hdrsize = 0,
+	.name = STP_DBG_FAMILY_NAME,
+	.version = 1,
+	.maxattr = STP_DBG_ATTR_MAX,
+	.policy = stp_dbg_genl_policy,
+	.module = THIS_MODULE,
+	.ops = stp_dbg_gnl_ops_array,
+	.n_ops = ARRAY_SIZE(stp_dbg_gnl_ops_array),
+	.resv_start_op = STP_DBG_COMMAND_RESET + 1,
 };
 
 #if 0
@@ -1239,7 +1245,7 @@ static void stp_dbg_nl_init(void)
 
 	}
 #endif
-	if (genl_register_family_with_ops(&stp_dbg_gnl_family, stp_dbg_gnl_ops_array) != 0)
+	if (genl_register_family(&stp_dbg_gnl_family) != 0)
 		STP_DBG_ERR_FUNC("%s(): GE_NELINK family registration fail\n", __func__);
 }
 

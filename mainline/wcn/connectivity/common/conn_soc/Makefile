@@ -1,10 +1,10 @@
 subdir-ccflags-y += \
-	-I$(srctree)/$(src)/linux/include \
-	-I$(srctree)/$(src)/linux/pri/include \
-	-I$(srctree)/$(src)/core/include \
-	-I$(srctree)/$(src)/include \
+	-I$(src)/linux/include \
+	-I$(src)/linux/pri/include \
+	-I$(src)/core/include \
+	-I$(src)/include \
 	-I$(srctree)/drivers/misc/mediatek/btif/common/inc \
-	-I$(srctree)/$(src)/$(MTK_PLATFORM)/include
+	-I$(src)/$(MTK_PLATFORM)/include
 
 EXT_FLAG=_soc
 COMMON_SRC_PATH := $(src)

@@ -1,10 +1,10 @@
 # WMT HAL driver for MT7623
 
 ccflags-y += \
-	-I$(srctree)/$(src)/include \
-	-I$(srctree)/$(src)/../linux/include \
-	-I$(srctree)/$(src)/../include \
-	-I$(srctree)/$(src)/../../common_detect
+	-I$(src)/include \
+	-I$(src)/../linux/include \
+	-I$(src)/../include \
+	-I$(src)/../../common_detect
 
   ifeq ($(CONFIG_MTK_CLKMGR),y)
 	endif
