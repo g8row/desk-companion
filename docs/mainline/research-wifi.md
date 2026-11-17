@@ -46,6 +46,10 @@ udhcpc -i mt6625_0 -n -q
 ```
 Result 2026-11-17: associated on 2.4 GHz ch 9 at -64 dBm (65 Mbit/s TX rate), WPA2 CCMP, DHCP lease, 0% loss to the
 gateway (~3 ms) and to 1.1.1.1 (~27 ms), a 3.9 MB download in about a second with no DMA errors.
+5 GHz (same day): the only 5 GHz AP in range was ch 108 (5540 MHz, DFS) at -93/-94 dBm. Pinned to it, 8 attempts
+in a minute: 5 auth timeouts (status 16), 3 associations, one complete WPA2 4-way handshake (CCMP), then lost after
+9 s (reason 100, beacon loss) and handshake timeouts (reason 15). So the 5 GHz path works (EAPOL both ways); the
+link failed on signal. Not yet tested with a nearby 5 GHz AP. The channel list stops at 5700 MHz (ch 140): no 149-165.
 
 Problems found on the way (all fixed in the tree):
 - **CONSYS EMI must be 2 MB aligned.** At 0x7ef00000 (1 MB aligned) the firmware wrote its trace 1 MB lower, into
