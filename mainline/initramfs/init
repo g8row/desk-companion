@@ -214,6 +214,35 @@ try_rootfs() {
 	for m in dev proc sys; do mount --move /$m /newroot/$m; done
 	exec switch_root /newroot /sbin/init
 }
+# ---- 3d. boot menu (docs/mainline/plan-dualboot.md §5) -----------------------------------------------
+# tb.menu=<s> on the cmdline sets the countdown (default 3), tb.menu=0 skips it. bootmenu only returns a choice;
+# anything unexpected (no framebuffer, crash) is choice 0 = continue Linux, so the menu cannot block a boot.
+MENU=3
+for a in $(cat /proc/cmdline); do case "$a" in tb.menu=*) MENU=${a#tb.menu=} ;; esac; done
+now_reboot() {
+	sync
+	echo 1 > /proc/sys/kernel/sysrq; echo s > /proc/sysrq-trigger; sleep 1; echo b > /proc/sysrq-trigger
+	sleep 5; reboot -f
+}
+RTC=/sys/devices/platform/rtc-boot-mode/next_boot
+if [ "$MENU" -gt 0 ] 2>/dev/null && [ -x /bin/bootmenu ]; then
+	st=$(tbstate 2>/dev/null | sed -n 's/^error=//p;s/^linux_boots=//p' | tr '\n' ' ')
+	set -- $st
+	case "$1" in none|"") st="Linux boots: ${2:-?}" ;; *) st="Last fallback: $1" ;; esac
+	bootmenu "$MENU" "$st" 2> /www/menu.log; c=$?
+	cat /www/menu.log >> $LOG 2>/dev/null
+	case $c in
+	0) log "menu: Linux" ;;
+	1) log "menu: Android (once, via U-Boot)"
+	   tbstate set oneshot=android > /dev/null 2>&1 || echo recovery > $RTC; now_reboot ;;
+	2) log "menu: Android without U-Boot"; echo recovery > $RTC; now_reboot ;;
+	3) log "menu: rescue shell (no stage 2, no autoreboot)"; ROOTMODE=0; touch /tmp/stay ;;
+	4) log "menu: U-Boot fastboot"; tbstate set oneshot=fastboot > /dev/null 2>&1 && now_reboot ;;
+	5) log "menu: LK fastboot"; echo bootloader > $RTC; now_reboot ;;
+	*) log "menu: exit $c, continuing with Linux" ;;
+	esac
+fi
+
 try_rootfs
 
 # ---- 4. self-reboot to Android (RTC recovery flag; a plain reboot would come back to Linux) ----

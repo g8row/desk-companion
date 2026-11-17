@@ -43,6 +43,15 @@ $STRIP $R/bin/lkpaint
 # boot record tool (format shared with U-Boot: u-boot/tbstate.h). Also copied to out/ for Android (adb push).
 $CC -static -O2 -Wall -Wextra -I $M/u-boot -o $R/bin/tbstate $M/initramfs/tbstate.c
 $STRIP $R/bin/tbstate; cp $R/bin/tbstate $OUT/tbstate
+# boot menu (plan-dualboot.md §5). Font: Terminus 16x32 from the kernel tree, converted here (GPL, not committed)
+python3 - $M/src/linux/lib/fonts/font_ter16x32.c /build/font.h <<'PY'
+import re, sys
+t = open(sys.argv[1]).read(); i = t.index("FONTDATAMAX, 0 }, {"); j = t.index("} };", i)
+b = re.findall(r"0x[0-9a-fA-F]{2}", t[i:j]); assert len(b) == 16384, len(b)
+open(sys.argv[2], "w").write("static const unsigned char font_ter16x32[16384] = {" + ",".join(b) + "};\n")
+PY
+$CC -static -O2 -Wall -Wextra -I /build -o $R/bin/bootmenu $M/initramfs/bootmenu.c
+$STRIP $R/bin/bootmenu
 cp $M/initramfs/init $R/init; chmod 755 $R/init
 mknod -m 600 $R/dev/console c 5 1; mknod -m 666 $R/dev/null c 1 3
 (cd $R && find . | sort | cpio -o -H newc --owner=0:0 2>/dev/null) > /build/initramfs.cpio

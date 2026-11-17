@@ -113,29 +113,43 @@ Tool usage (Linux: `/usr/local/sbin/tbstate`, initramfs: `tbstate`, Android: `/d
 `tbstate` (show) · `tbstate set default=android oneshot=fastboot attempts=0 error=none max=3` · `tbstate stage init`
 · `tbstate healthy`. U-Boot: `tbstate load|save|show|attempt|fail <error>|set default|oneshot|error|max <v>`.
 
-## 5. Boot menu (GUI)
+## 5. Boot menu (GUI) (implemented 2026-11-17)
 
-The menu is a static C program in the stage-1 initramfs, drawing to `/dev/fb0` and reading `/dev/input/*` (Goodix
-touch, keypad Vol±, `mt6328-keys` Power). It runs on every Linux boot with a 5 s countdown. The design is
-plan-boot-recovery §8.2, with these corrections for this layout:
+`mainline/initramfs/bootmenu.c` is a static program in the stage-1 initramfs. It draws on `/dev/fb0` (600×1024,
+Terminus 16×32, generated at build time from the kernel's `lib/fonts/font_ter16x32.c`) and reads every
+`/dev/input/event*` (Goodix touch, keypad Vol±, `mt6328-keys` Power).
+- **When it runs:** stage 1 starts it after the USB gadget is up, so telnet works meanwhile, and before mounting
+  the root.
+- **Countdown:** **3 s**. `tb.menu=<s>` on the command line changes it; `tb.menu=0` turns the menu off.
+- **Exit status = choice.** It never acts itself; stage 1 does.
+- **Log:** `/www/menu.log`, copied into stage 1's log, which is `/var/log/tb7304-stage1.log` in stage 2.
 
-| Action | Does | Reboot? |
+| Row | Stage 1 does | Reboot? |
 |---|---|---|
-| Continue Linux (default, timeout) | carry on | no |
-| Linux slot A / B / rescue | `kexec` the kernel from the chosen raw slot (`CONFIG_KEXEC=y`) | no |
-| Android | `oneshot_target=android` in `tbstate`, reboot → U-Boot → Android in normal mode | yes |
-| Android (U-Boot broken) | set the RTC recovery bit, reboot → LK boots `recovery` directly | yes |
-| Fastboot | `oneshot_target=fastboot` (U-Boot) or the RTC fastboot bit (LK) | yes |
+| Linux (default: countdown, 30 s idle, or any failure) | carries on | no |
+| Android | `tbstate set oneshot=android` (falls back to the RTC flag) → U-Boot → Android in normal mode | yes |
+| Android without U-Boot | RTC recovery flag → LK boots `recovery` directly | yes |
+| Rescue shell | no stage 2, no auto-reboot; telnet/serial shell in the initramfs | no |
+| U-Boot fastboot | `tbstate set oneshot=fastboot` | yes |
+| LK fastboot | RTC fastboot flag | yes |
 
-- **Do not set the RTC recovery bit on "Continue Linux".** Plan §8.2 said to, but in this layout the bit means
-  Android.
-- **Android can't be kexec'd.** Its 3.18 kernel depends on LK's DT handoff, so choosing Android always costs a reboot.
-- **The menu never causes a reboot on failure.** A missing framebuffer or input device, or an unreadable record,
-  means: wait out the timeout, then continue.
-- **Getting back to Linux from Android is a plain reboot:** U-Boot's default is Linux. A Quick Settings tile only
-  resets Magisk's boot-loop counter and reboots.
-- Later, optionally: a U-Boot text menu with the volume keys. That needs a PMIC/keypad driver in U-Boot and is not
-  required.
+**Input:**
+- **Touch:** **double-tap** a row, two short (< 0.8 s), non-sliding (< 40 px) taps within 1.5 s. The first tap only
+  highlights the row.
+- **Keys:** Vol+/Vol− move the highlight, and Power chooses it.
+- **What stops the countdown:** only a real tap on a row or a key. After that, 30 s without input continues with
+  Linux.
+- **Why the strict touch rules:** the tablet's glass is cracked, and it produces **ghost touches** at fixed spots
+  every few seconds, even with nobody touching it (logged at (7,118), (461,7–118)). They are short, at least 2.5 s
+  apart, and outside the rows. A touch that isn't a tap on a row has no effect at all.
+- **Display:** the console is set to `KD_GRAPHICS` on tty0 while the menu runs, so kernel messages don't draw over
+  it.
+- **Failure:** no framebuffer within 4 s, a crash or a signal all mean exit 0 (Linux). The menu can't block or
+  redirect a boot by itself.
+
+Not done yet: Linux slot A/B/rescue via `kexec` (needs the raw kernel slots from §6). Android can never be
+kexec'd: its 3.18 kernel depends on LK's DT handoff, so it always costs a reboot. Getting back to Linux from
+Android is a plain reboot (U-Boot's default is Linux).
 
 ## 6. Migration (one session, after §8 passes)
 
@@ -183,6 +197,7 @@ recovery, para).
 | T5 charger plugged while off (KPOC) | swap | ✅ Power-off with USB attached → LK charger mode → U-Boot → Android `kpoc_charger` from `recovery`. The screen is off at first (the charger blanks it). A short press on Power shows the battery animation (display resume, `bootlogo_show_charging`, backlight 150; confirmed by the user). It charges (CC 650 mA), and a long press on Power boots normally. |
 | T6 Magisk direct-install target with Android in `recovery` | swap | pending |
 | **T7** boot record + U-Boot boot counter (U-Boot `bcccc39d…`, Linux image `48dddb36…`) | swap | ✅ (13:40–13:55) A blank area made U-Boot create the record. Every stage was recorded (gen 1→4), and `healthy` at 60 s reset `attempts` (gen 10). One-shot Linux and one-shot Android (normal mode) were consumed by U-Boot. **Crash test:** `sysrq c` before `healthy` on 3 boots in a row (`attempts` 1, 2, 3) → the 4th boot went to Android in normal mode with `error=attempts`, `fallbacks=1`. `to-linux` re-armed it, and Linux reached `healthy`. |
+| **T8** boot menu (`fastboot boot` test copies with `tb.menu=20`, then the production image on cache) | swap | ✅ (14:00–14:40) Vol± move the highlight. Double-tap on Linux chose it (taps 0.43 s apart). Hands-off, the 20 s countdown continued to Linux. The production 3 s menu continued to Linux at 3.0 s while logging and ignoring 4 ghost touches, with nobody at the tablet. Found during testing: single-tap selection plus ghost touches had produced an unintended "Rescue shell", and ignored touches kept resetting the timers; both fixed. |
 
 ### How to reach each target in the current layout (`boot` = U-Boot, `recovery` = Android)
 
