@@ -272,6 +272,16 @@
 };
 
 /*
+ * PMIC RTC (patches/0012 adds the MFD cell): the MT6323/MT6397 block at 0x4000. Kept running on the coin-less
+ * battery by LK/Android; mtk-rtc-boot-mode (rtc-boot-mode node) uses the spare registers of the same block.
+ */
+&mt6328 {
+	rtc {
+		compatible = "mediatek,mt6328-rtc", "mediatek,mt6323-rtc";
+	};
+};
+
+/*
  * Power key (and the PMIC "home" input, unused on this tablet). long-press-mode 1 (from mt6328.dtsi): holding
  * power resets the PMIC in hardware, whatever the kernel is doing (needs patches/0010). power-off-time-sec is
  * the raw PWRKEY_RST_TD field (bits 13:12), not seconds; 0 is the reset default. Time each value on the tablet.
@@ -314,6 +324,19 @@
 &i2c2 {
 	status = "okay";
 	clock-frequency = <100000>;
+
+	/*
+	 * Bosch BMA2xx (chip ID 0xFA, BMA253/255 family; bmc150-accel). The MC3433 the stock DT also lists (@0x4c)
+	 * is not fitted. Stock cust_accel@1 "direction = 7" (MTK hwmsen map: sign -1,-1,-1, axes swapped X<->Y):
+	 * device X = -chip Y, Y = -chip X, Z = -chip Z. No interrupt line in the stock DT: polled.
+	 */
+	accelerometer@18 {
+		compatible = "bosch,bma255";
+		reg = <0x18>;
+		mount-matrix = "0", "-1", "0",
+			       "-1", "0", "0",
+			       "0", "0", "-1";
+	};
 };
 
 /* SM5414 charger @0x49. No driver yet; LK programs and enables it on every boot. Bus enabled for i2c-dev reads. */

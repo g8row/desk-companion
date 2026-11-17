@@ -38,12 +38,13 @@ docker run --rm -v "$HERE/overlay:/overlay:ro" -v "$OUT:/out" alpine:$ALPINE sh 
   for t in $TOOLS; do install -m 755 /out/tools/\$t \$R/usr/local/sbin/; done
   mkdir -p \$R/usr/local/bin && mv \$R/usr/local/sbin/bbdeb \$R/usr/local/bin/ && ln -sf bbdeb \$R/usr/local/bin/devmem
   [ -f /out/mesa-opt.tar.gz ] && mkdir -p \$R/opt && tar -xzf /out/mesa-opt.tar.gz -C \$R/opt --no-same-owner
-  [ -x \$R/etc/init.d/ntpd ] && [ -x \$R/etc/init.d/swclock ] || { echo 'ntpd/swclock init scripts missing'; exit 1; }
+  [ -x \$R/etc/init.d/ntpd ] && [ -x \$R/etc/init.d/hwclock ] || { echo 'ntpd/hwclock init scripts missing'; exit 1; }
   # what the skipped install scripts and setup-alpine would do
   for a in telnetd telnet ftpd ftpget ftpput httpd inetd tftp tftpd udhcpd dnsd fakeidentd; do ln -sf /bin/busybox-extras \$R/usr/sbin/\$a; done
   for s in devfs dmesg mdev; do ln -sf /etc/init.d/\$s \$R/etc/runlevels/sysinit/; done
-  # swclock: no RTC driver, restore the last shutdown time; ntpd (busybox, pool.ntp.org) sets it once WiFi is up
-  for s in hostname bootmisc sysctl syslog networking urandom swclock; do ln -sf /etc/init.d/\$s \$R/etc/runlevels/boot/; done
+  # hwclock: the MT6328 RTC (patches/0012); the kernel also reads it at boot. ntpd (busybox, pool.ntp.org) corrects
+  # it once WiFi is up and the kernel writes NTP time back (RTC_SYSTOHC); hwclock writes it at shutdown too.
+  for s in hostname bootmisc sysctl syslog networking urandom hwclock; do ln -sf /etc/init.d/\$s \$R/etc/runlevels/boot/; done
   for s in dropbear local wifi ntpd pocketjs; do ln -sf /etc/init.d/\$s \$R/etc/runlevels/default/; done
   for s in killprocs savecache; do ln -sf /etc/init.d/\$s \$R/etc/runlevels/shutdown/; done
   mkdir -p \$R/root/.ssh \$R/mnt/cache; chmod 700 \$R/root/.ssh
