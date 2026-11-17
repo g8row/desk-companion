@@ -1,6 +1,6 @@
 # TB-7304X mainline: WiFi / BT (MT6625L via CONSYS) — feasibility notes
 
-Status 2026-11-17: **scanning works** (2.4 + 5 GHz) on a RAM-booted kernel; association not tried yet. See "Bring-up".
+Status 2026-11-17: **works** on a RAM-booted kernel: 2.4 + 5 GHz scan, WPA2 association, DHCP, internet. See "Bring-up".
 
 ## Hardware
 - The WiFi/BT/GPS/FM MAC and baseband live in the SoC's **CONSYS** (connectivity subsystem); the **MT6625L** next to
@@ -40,7 +40,12 @@ wmt_loader                                   # chip id 0x335, registers /dev/stp
 setsid stp_uart_launcher -p /etc/firmware </dev/null >/tmp/launcher.log 2>&1 &   # powers CONSYS, ROM patches
 echo 1 > /dev/wmtWifi                        # WIFI_RAM_CODE download, netdev mt6625_0 (MAC from nvram/WIFI)
 ip link set mt6625_0 up; iw dev mt6625_0 scan
+wpa_passphrase <ssid> <psk> > /tmp/wpa.conf  # Alpine's wpa_supplicant has no -f: redirect its output
+setsid wpa_supplicant -t -i mt6625_0 -c /tmp/wpa.conf -D nl80211 </dev/null >/tmp/wpa.log 2>&1 &
+udhcpc -i mt6625_0 -n -q
 ```
+Result 2026-11-17: associated on 2.4 GHz ch 9 at -64 dBm (65 Mbit/s TX rate), WPA2 CCMP, DHCP lease, 0% loss to the
+gateway (~3 ms) and to 1.1.1.1 (~27 ms), a 3.9 MB download in about a second with no DMA errors.
 
 Problems found on the way (all fixed in the tree):
 - **CONSYS EMI must be 2 MB aligned.** At 0x7ef00000 (1 MB aligned) the firmware wrote its trace 1 MB lower, into
