@@ -12,12 +12,14 @@ Research notes (read-only investigations of the stock firmware, mainline tree an
 | Charger SM5414, battery ADC, RTC, thermal, I2C inventory, accelerometer | [research-power.md](research-power.md) |
 | Root filesystem on the eMMC (Alpine in an image on `cache`) | [research-rootfs.md](research-rootfs.md) |
 | WiFi/BT: MT6625L via CONSYS, prior art and plan | [research-wifi.md](research-wifi.md) |
+| Power off, PMIC long-press reset | [research-poweroff.md](research-poweroff.md) |
+| U-Boot chainload: what works, the LK normal-path loop, next plan | [handoff-uboot-2026-11-17.md](handoff-uboot-2026-11-17.md) |
 
 ## Device functionality
 
 | Function | Status | How / notes | Next step |
 |---|---|---|---|
-| Boot | ✅ works | `recovery` partition via LK `oem reboot-recovery`. `fb_send.py` because stock `fastboot` stalls. Cmdline ≤ 99 chars. | — |
+| Boot | ✅ works | `recovery` partition via LK `oem reboot-recovery`. `fb_send.py` / `scripts/fbusb` because stock `fastboot` stalls. Cmdline ≤ 99 chars. Since 2026-11-17 `recovery` holds **U-Boot**, which RAM-boots Linux (`fastboot boot`, no cmdline limit) or boots Android; see handoff-uboot-2026-11-17.md | Fix the LK normal-path loop, or choose the Linux-chooser design (handoff §7) |
 | CPU, 4× A53 | ✅ all 4 cores, hotplug, cpufreq 1040–1196 MHz (1144/1196 = overclock, boost) | `mediatek,mt6735-smp` enable-method: PSCI CPU_ON + SPM MTCMOS (`patches/smp_mt6735.c`). cpufreq-dt on ARMPLL + MT6328 VPROC, schedutil; ARMPLL /1 only (see "cpufreq" below) | Idle below 1040 MHz needs a CPU clock mux (park on MAINPLL) to change the post-divider safely; SoC thermal sensor before trusting 1196 MHz long-term |
 | Display | ✅ mediatek-drm, 66 Hz | RDMA0 → DSI0 → NT51021B GX (`panel-novatek-nt51021b.c`), D2 mutex table, through the IOMMU. `/dev/dri/card1`; `fb0` = mediatekdrmfb with the kernel console on screen. Refresh measured 66 Hz (kmscube, vsync-locked). (A one-off burst of 10 IOMMU faults at boot, before the first framebuffer is attached.) | Full OVL0 path for hardware planes |
 | Backlight | ✅ | `pwm-backlight` on DISP_PWM, `/sys/class/backlight/backlight` (0–255, default 200) | — |
@@ -154,6 +156,12 @@ Prevention: `mainline/scripts/linux-test.sh to-fastboot|to-recovery` waits for `
 the counter before rebooting (TEST-PLAN step 1). The keypad was checked and is innocent: mainline leaves
 KP_SEL=0, debounce 0x400 (same as stock), no key bits set.
 
+### U-Boot runs only from LK's RTC-recovery path (open, 2026-11-17)
+The same U-Boot image works when LK enters through the RTC "reboot recovery" flag, and loops (LK logo ~25 s,
+reset, no U-Boot band) when LK boots it normally from `boot` or through a `boot-recovery` BCB in `para`. The BCB
+also disables the volume-key boot menu; recovering needed mtkclient in BROM with sudo. Never write BCB without a
+tested escape. Details, matrix and plan: [handoff-uboot-2026-11-17.md](handoff-uboot-2026-11-17.md).
+
 ### Other
 - `reboot -f` can hang in mainline; `echo b > /proc/sysrq-trigger` works.
 - Reading `/sys/kernel/debug/clk/clk_summary` in mainline appears to lock up the tablet (watchdog reset).
@@ -171,11 +179,23 @@ KP_SEL=0, debounce 0x400 (same as stock), no key bits set.
   bcbfda96…). PocketJS service running the DRM build. Installed by hand on the rootfs, not in the image yet:
   `/opt/pocketjs`, `/opt/mesa`, `/usr/local/sbin/{peek,poke,swipe,tb-reboot}`, `/etc/mdev.conf`,
   `local.d/{tb-charger,tb-cpu}.start`, OpenRC `pocketjs`, apk `libdrm expat zstd-libs gdb`.
+- Kernel #24 in `recovery` since 20:22 (adds #23 thermal, SoC zone reads ~42 °C, plus the power-off work). `poweroff`
+  works: on USB it ends in LK power-off charging. #22 hung on `poweroff` and its pmic-keys bug disabled the
+  long-press reset. See research-poweroff.md. The rootfs image reported "mounting fs with errors" after the
+  battery pull: run e2fsck on it from Android or stage 1.
 - Android exits must use `mainline/scripts/linux-test.sh to-recovery` (Magisk boot counter). If a new kernel does
   not come up, LK falls back to Android: write a known-good image to recovery with `su -c dd` from adb, then
   `to-recovery` (done twice on 2026-11-16 with #17).
 
+## Tablet state on 2026-11-17 (after the U-Boot session)
+- `boot` = stock Android + Magisk (original, `backup/partitions/2026-11-17/boot-magisk.img`), `recovery` = U-Boot
+  (`mainline/out/u-boot-tb7304x.img`, bc5937ad…), `para` original (no BCB). Kernel #24 is **not** in `recovery` any
+  more: `adb reboot recovery` lands in U-Boot, which boots Android unless `/cache/linux/boot-target` says
+  `target=linux` (`/cache/linux/boot-mainline-uboot.img`) or `target=fastboot` (then `fastboot boot` from the Mac).
+- `linux-test.sh to-recovery` / `ml-to-*` assume Linux in `recovery`; update them or put #24 back.
+
 ## Todo, in order
+0. Boot path: follow handoff-uboot-2026-11-17.md §6 (diagnostic U-Boot, LK path analysis, decide U-Boot vs a Linux chooser).
 1. ~~Fix the Android safe-mode boot loop~~ (done: Magisk boot counter, see above).
 2. ~~Panic timeout~~ (in build7). The clk_summary lockup left nothing in pstore; avoid reading `clk_summary`.
 3. ~~Enable i2c2/i2c3, read SM5414 and accelerometer~~ (done, see above). Add the BMA2xx node.

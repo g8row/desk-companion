@@ -2,6 +2,7 @@
 backup/partitions/
 backup/*.log
 tools/venv/
+tools/fbusb-venv/
 tools/mtkclient/
 tools/magisk/*.apk
 tools/magisk/patch/

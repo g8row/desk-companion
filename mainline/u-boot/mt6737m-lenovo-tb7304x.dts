@@ -1,0 +1,134 @@
+// SPDX-License-Identifier: (GPL-2.0 OR MIT)
+/*
+ * U-Boot control DT for the Lenovo TB-7304X (MT6737M, MT6328), chainloaded by stock LK.
+ * This is not the Linux DT. Based on mt6737t-samsung-grandpplte.dts; see plan-boot-recovery.md section 7.4.
+ */
+
+/dts-v1/;
+#include "mt6735-common.dtsi"
+
+/ {
+	model = "Lenovo TB-7304X";
+	compatible = "lenovo,tb7304x", "mediatek,mt6735";
+
+	memory {
+		device_type = "memory";
+		reg = <0x40000000 0x40000000>;	/* 1 GiB */
+	};
+
+	reserved-memory {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		atf@43000000 {
+			reg = <0x43000000 0x00030000>;
+			no-map;
+		};
+
+		ram_console@43f00000 {
+			reg = <0x43f00000 0x00010000>;
+			no-map;
+		};
+
+		pstore@43f10000 {
+			reg = <0x43f10000 0x000e0000>;
+			no-map;
+		};
+
+		minirdump@43ff0000 {
+			reg = <0x43ff0000 0x00010000>;
+			no-map;
+		};
+
+		framebuffer@7f000000 {
+			reg = <0x7f000000 0x01000000>;
+			no-map;
+		};
+	};
+
+	/*
+	 * LK's live framebuffer: OVL0 layer 0 scans 0x7f7b0000, 600x1024, pitch 2432, 32 bpp, DSI video mode.
+	 * simplefb has no stride property and uses width * 4, so width = 2432 / 4 = 608. U-Boot only writes pixels
+	 * here; it never touches the display hardware. Colours may be swapped (format not confirmed).
+	 */
+	framebuffer@7f7b0000 {
+		compatible = "simple-framebuffer";
+		reg = <0x7f7b0000 0x00260000>;
+		width = <608>;
+		height = <1024>;
+		format = "x8r8g8b8";
+	};
+};
+
+/* eMMC: as grandpplte, external pulls on the MMC pins (stock msdc0 has no internal pulls either) */
+&mmc0_pins_default {
+	conf-cmd-data {
+		/delete-property/ bias-pull-up;
+	};
+
+	conf-clk {
+		/delete-property/ bias-pull-down;
+	};
+
+	conf-ds {
+		/delete-property/ bias-pull-down;
+	};
+
+	conf-rst {
+		/delete-property/ bias-pull-up;
+	};
+};
+
+/*
+ * Spike scope: USB fastboot + watchdog only. This tablet is the "mt6735m" pwrap/pinctrl variant (Linux:
+ * mt6735m.dtsi). U-Boot only knows the mt6735 register maps, and its pwrap probe re-initializes the wrapper
+ * unconditionally (Linux skips that when LK set INIT_DONE2). With pwrap and pin states enabled, the first
+ * attempt painted its progress bands and then the panel went black and U-Boot hung.
+ * Until there is an mt6735m port: no PMIC (pwrap), no SD, no pinctrl states, no extra UARTs (eMMC: below).
+ */
+&pwrap {
+	status = "disabled";
+};
+
+/*
+ * eMMC read access (Android and Linux images). LK leaves the card powered and its pins muxed, and U-Boot cannot
+ * reach the PMIC here, so no regulators, no pin states and no hardware reset; 52 MHz HS, no HS200/HS400 tuning.
+ * The tb7304x config has no eMMC write commands.
+ */
+&mmc0 {
+	status = "okay";
+	/delete-property/ pinctrl-names;
+	/delete-property/ pinctrl-0;
+	/delete-property/ vmmc-supply;
+	/delete-property/ vqmmc-supply;
+	/delete-property/ cap-mmc-hw-reset;
+	/delete-property/ mmc-hs400-1_8v;
+	max-frequency = <52000000>;
+};
+
+&mmc1 {
+	status = "disabled";
+};
+
+&uart0 {
+	/delete-property/ pinctrl-names;
+	/delete-property/ pinctrl-0;
+};
+
+&uart1 {
+	status = "disabled";
+};
+
+&uart2 {
+	status = "disabled";
+};
+
+&usb0 {
+	/* LK leaves VUSB33 and the PHY on; no PMIC access, no pin changes */
+	/delete-property/ vbus-supply;
+	/delete-property/ pinctrl-names;
+	/delete-property/ pinctrl-0;
+	/delete-property/ pinctrl-1;
+	dr_mode = "peripheral";
+};
