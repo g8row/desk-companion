@@ -91,10 +91,14 @@
 		regulator-boot-on;
 	};
 
-	/* `echo bootloader|recovery|normal > /sys/devices/platform/rtc-boot-mode/next_boot`: LK's next boot target */
+	/*
+	 * `echo bootloader|recovery|normal > /sys/devices/platform/rtc-boot-mode/next_boot`: LK's next boot target.
+	 * Also the power-off handler (PMIC RTC BBPU, or a TOPRGU reset into LK's power-off charging on a charger).
+	 */
 	rtc-boot-mode {
 		compatible = "lenovo,tb7304x-rtc-boot-mode";
 		mediatek,pwrap = <&pwrap>;
+		mediatek,toprgu = <&toprgu>;
 	};
 
 	keypad@10003000 {
@@ -188,8 +192,13 @@
 	status = "okay";
 };
 
-/* Power key (and the PMIC "home" input, unused on this tablet) */
+/*
+ * Power key (and the PMIC "home" input, unused on this tablet). long-press-mode 1 (from mt6328.dtsi): holding
+ * power resets the PMIC in hardware, whatever the kernel is doing (needs patches/0010). power-off-time-sec is
+ * the raw PWRKEY_RST_TD field (bits 13:12), not seconds; 0 is the reset default. Time each value on the tablet.
+ */
 &mt6328_keys {
+	power-off-time-sec = <0>;
 	status = "okay";
 };
 
