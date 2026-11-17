@@ -29,8 +29,8 @@ Research notes (read-only investigations of the stock firmware, mainline tree an
 | Touch | ✅ works, at 1.0 s | Goodix GT9293, i2c1 @0x5d, `goodix,gt911`, IRQ GPIO10, reset GPIO62, VGP1 2.8 V. `FW_LOADER_USER_HELPER` off: its fallback for the optional `goodix_9293_cfg.bin` delayed the device to 62 s | — |
 | Buttons | ✅ works | Vol± on the SoC keypad (`mt6779-keypad`), Power on `mt6328-keys` | — |
 | USB | ✅ peripheral | Legacy CDC gadget `0525:a4aa` (ECM + ACM), 172.16.42.1, telnet, httpd | Host mode, VBUS/ID detection |
-| eMMC | ✅ probes (50 MHz, unused) | `init` never mounts it | Rootfs (research-rootfs) |
-| Internet / time | ✅ WiFi, or via host | WiFi joins at boot (`wifi` service, saved networks in `/data/wifi`). Without WiFi: `mainline/scripts/tablet-net.sh` (`http-proxy.py` on the host + `ssh -R`, `/etc/profile.d/tb-proxy.sh`, sets the clock). Clock: busybox `ntpd` (pool.ntp.org) once WiFi is up, `swclock` restores the last shutdown time at boot (no RTC driver). | MT6328 RTC |
+| eMMC | ✅ in use | 50 MHz. Root on `tbroot_a`, `/data` on `tbdata`, kernel slots read by U-Boot (see Root filesystem) | HS200 if the bus allows |
+| Internet / time | ✅ WiFi, or via host | WiFi joins at boot (`wifi` service, saved networks in `/data/wifi`). Without WiFi: `mainline/scripts/tablet-net.sh` (`http-proxy.py` on the host + `ssh -R`, `/etc/profile.d/tb-proxy.sh`, sets the clock). Clock: busybox `ntpd` (pool.ntp.org) once WiFi is up; the kernel reads the RTC at boot. The root installed on `tbroot_a` still enables `swclock` (image from before the RTC); `build-rootfs.sh` now uses `hwclock` | Reinstall the root image (hwclock) |
 | Root filesystem | ✅ Alpine 3.24.4, built image | **`tbroot_a` (mmcblk0p28, ext4, 2 GiB)**, checked with `e2fsck -p` and mounted by stage 1; `/data` = `tbdata`. Built by `rootfs/build-rootfs.sh` (packages, overlay, tools from `out/`, Mesa) and installed by `scripts/tb-install.sh rootfs` (from a RAM boot; backs up the old root, keeps `/opt/pocketjs`, `/etc/firmware`, host keys). Installed 2026-11-17. Fallback: the old loop image `/cache/linux/rootfs.img` (slot `cache`, RAM boots) | — |
 | Reboot target | ✅ | `tb-reboot android|linux|android-direct|default-android|default-linux|uboot|bootloader` (boot record via `tbstate`, or LK's RTC flag via `rtc-boot-mode`); host side `linux-test.sh ml-to-*` / `to-linux` / `to-uboot` / `state` | — |
 | Panic recovery | ✅ in build6 | `CONFIG_PANIC_TIMEOUT=10` (no cmdline room for `panic=10`) | — |
@@ -40,8 +40,9 @@ Research notes (read-only investigations of the stock firmware, mainline tree an
 | RTC | ✅ rtc0 (2026-11-17) | MT6328 RTC = the MT6323/MT6397 block at 0x4000: `patches/0012` adds the MFD cell, DT child `mediatek,mt6328-rtc`, `mediatek,mt6323-rtc` → rtc-mt6397. Same year encoding as stock (year − 1968). Kernel sets the clock from it at boot (HCTOSYS) and writes NTP time back (SYSTOHC); `hwclock` service. It read 2077-12-31 before it was first set; kept time across a reboot through `tb-reboot` (the boot-mode flags share the block). Not yet checked: what Android does with it | — |
 | SoC thermal | ✅ verified 2026-11-17 | `patches/0009`: `mediatek,mt6735-thermal` in auxadc_thermal.c, MT8173 data with 3 banks. `thermal_zone0` cpu-thermal: 45 °C idle, 60 °C after 30 s on 4 cores, back to 47 °C. Trips 85 °C passive (cpufreq) / 110 °C critical | — |
 | Accelerometer | ✅ iio:device0 (2026-11-17) | **Bosch BMA2xx @0x18 on i2c2**, chip ID 0xFA, `bosch,bma255` → bmc150-accel, polled (no IRQ in the stock DT). `mount-matrix` from the stock `direction = 7`: 0 −1 0; −1 0 0; 0 0 −1. Lying flat: raw z −9.86 m/s² (device +Z up). MC3433 @0x4c not fitted | iio-sensor-proxy / screen rotation if wanted |
-| IOMMU (M4U) | ✅ probes | Binds larbs 0–2 after the D2 address fix and dropping larb3. Display ports not attached yet (MMU_EN = 0) | Attach with the DRM pipeline |
-| WiFi | ✅ at boot, 2.4 GHz | MT6625L via CONSYS: MediaTek WMT/STP/BTIF + wlan_gen2 (frank-w 5.15 + MT6735 BSP platform layer, ported to 7.0, built in: `mainline/wcn`, patches/0011). Installed in `tbkern_a` 2026-11-17. OpenRC `wifi` → `wifi-up join` (`/data/wifi/wpa_supplicant.conf`, `wifi-up save <ssid> <psk>`). Firmware/NVRAM: `scripts/wifi-deploy.sh`. The board is 2.4 GHz only (NVRAM). research-wifi.md | BT; rename to wlan0 |
+| IOMMU (M4U) | ✅ display through it | Binds larbs 0–2 after the D2 address fix and dropping larb3. RDMA0 (D2 port 2) translates (MMU_EN = 0x4) | OVL0 ports with the OVL path |
+| WiFi | ✅ at boot, 2.4 GHz | MT6625L via CONSYS: MediaTek WMT/STP/BTIF + wlan_gen2 (frank-w 5.15 + MT6735 BSP platform layer, ported to 7.0, built in: `mainline/wcn`, patches/0011). Installed in `tbkern_a` 2026-11-17. OpenRC `wifi` → `wifi-up join` (`/data/wifi/wpa_supplicant.conf`, `wifi-up save <ssid> <psk>`). Firmware/NVRAM: `scripts/wifi-deploy.sh`. The board is 2.4 GHz only (NVRAM). research-wifi.md | Rename to wlan0 |
+| Bluetooth (MT6625L) | ⚠️ WIP: powers on, scans find nothing | `CONFIG_BT` + `MTK_COMBO_BT` built in (in `tbkern_a`). `hci0` registers (re-registered when its setup power-on fails before `stp_uart_launcher` runs), BD address from NVRAM `BT_Addr` (vendor cmd 0xfc1a), powers on, LE enables. LE scan and inquiry return nothing, also with WiFi off. `bt-up` (not in the image; needs `bluez-btmgmt` and the btmgmt stdin fix) | Probably the MTK vendor init commands `libbluetooth_mtk` sends (radio, sleep, TX power offset from `BT_Addr`) |
 | Audio, camera, modem | ❌ | — | Not planned |
 
 ## Display step 0 (LK state, read 2026-11-16)
@@ -247,13 +248,13 @@ tested escape. Details, matrix and plan: [handoff-uboot-2026-11-17.md](handoff-u
 0. Boot path: follow handoff-uboot-2026-11-17.md §6 (diagnostic U-Boot, LK path analysis, decide U-Boot vs a Linux chooser).
 1. ~~Fix the Android safe-mode boot loop~~ (done: Magisk boot counter, see above).
 2. ~~Panic timeout~~ (in build7). The clk_summary lockup left nothing in pstore; avoid reading `clk_summary`.
-3. ~~Enable i2c2/i2c3, read SM5414 and accelerometer~~ (done, see above). Add the BMA2xx node.
-4. RTC (MT6328).
+3. ~~Enable i2c2/i2c3, read SM5414 and accelerometer~~, ~~BMA2xx node~~ (done).
+4. ~~RTC (MT6328)~~ (done). Next: reinstall the root image so `hwclock` replaces `swclock`.
 5. ~~Rootfs~~, ~~proxy for apk~~, ~~image with everything installed by hand~~ (done). Next: `apk fix` for the skipped package scripts.
 6. ~~Display: D2 DT fixes, IOMMU, NT51021B GX panel driver, D2 mutex table, mediatek-drm~~ (done). Next: the OVL0 path (hardware planes).
-7. MT6328 ADC + battery NTC + SM5414 driver with the desk charging policy.
+7. ~~MT6328 ADC + battery NTC~~ (done). Next: SM5414 driver with the desk charging policy.
 8. ~~Backlight~~, ~~GPU: Panfrost + Mesa~~, ~~Mesa in the rootfs image~~ (done). Next: GPU OPPs.
-9. ~~cpufreq, 1092 MHz, overclock to 1196~~ (done). SoC thermal: flash and verify kernel #23.
+9. ~~cpufreq, 1092 MHz, overclock to 1196~~, ~~SoC thermal~~ (done).
 10. ~~PocketJS on DRM/KMS with page flips at vblank~~, ~~60 Hz panel + vblank-locked tick~~ (done).
-11. ~~WiFi~~ (done, at boot, research-wifi.md). ~~Time over WiFi (ntpd, swclock)~~ (done). Next: BT, RTC.
+11. ~~WiFi~~ (done, at boot, research-wifi.md). ~~Time over WiFi~~ (done). BT: WIP (powers on, no scan results).
 12. ~~Rootfs image rebuild with everything installed by hand~~ (done 2026-11-17: `build-rootfs.sh` + `tb-install.sh`; peek/poke/swipe now built from `rootfs/tools/`). A/B updates: not for now.
