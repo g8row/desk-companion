@@ -1,28 +1,34 @@
 #!/bin/sh
-# tb-reboot [linux|android|android-normal|uboot|bootloader]   (layout: U-Boot in `boot`, Android in `recovery`;
-# docs/mainline/plan-dualboot.md "How to reach each target")
-#   linux           plain reboot: LK -> U-Boot -> Linux (the default). Clears a leftover boot-target file.
-#   android         one-shot: LK's RTC recovery flag -> LK starts Android from `recovery` directly (no U-Boot;
-#                   Android runs with ro.boot.mode=recovery). The next plain reboot is Linux again. (default)
-#   android-normal  persistent: target=android in /cache/linux/boot-target -> U-Boot starts Android in normal mode
-#                   on every boot until the file is removed (from Android: `rm /cache/linux/boot-target`, reboot).
-#   uboot           persistent: target=fastboot -> U-Boot fastboot (`fastboot boot <img>`; leave with
-#                   `fastboot reboot` after removing the file, never `fastboot continue`).
-#   bootloader      one-shot: LK's RTC fastboot flag -> LK fastboot (scripts/fbusb).
+# tb-reboot [android|linux|android-direct|default-android|default-linux|uboot|bootloader]
+# Layout: U-Boot in `boot`, Android in `recovery`; U-Boot picks the target from the boot record (`tbstate`,
+# docs/mainline/plan-dualboot.md §4 and "How to reach each target").
+#   android          one-shot via U-Boot: Android in normal mode once, then Linux again (default)
+#   linux            one-shot via U-Boot: Linux (also when the default is android)
+#   android-direct   one-shot via LK's RTC recovery flag: Android started by LK directly, U-Boot not involved
+#                    (ro.boot.mode=recovery). Used automatically when the record cannot be written.
+#   default-android  persistent: every boot goes to Android until `default-linux` (from Android:
+#                    `tbstate set default=linux`, or the host's linux-test.sh to-linux)
+#   default-linux    persistent: back to Linux by default
+#   uboot            one-shot: U-Boot fastboot (`fastboot boot <img>`; leave with `fastboot reboot`)
+#   bootloader       one-shot via LK's RTC fastboot flag: LK fastboot (scripts/fbusb)
 # Syncs and reboots with sysrq because `reboot -f` can hang on this kernel.
 M=${1:-android}
 F=/sys/devices/platform/rtc-boot-mode/next_boot
-BT=/mnt/cache/linux/boot-target
-[ -w $F ] || { echo "no $F (kernel without mtk-rtc-boot-mode)" >&2; exit 1; }
+TBS=/usr/local/sbin/tbstate
+rtc() { [ -w $F ] && echo "$1" > $F; }
+rec() { $TBS set "$@" > /dev/null; }
 case "$M" in
-linux)          rm -f $BT; echo normal > $F ;;
-android)        echo recovery > $F ;;
-android-normal) echo target=android > $BT && echo normal > $F ;;
-uboot)          echo target=fastboot > $BT && echo normal > $F ;;
-bootloader|fastboot) echo bootloader > $F ;;
-*) echo "usage: tb-reboot [linux|android|android-normal|uboot|bootloader]" >&2; exit 2 ;;
-esac || exit 1
-echo "next boot: $M (RTC: $(cat $F), boot-target: $(cat $BT 2>/dev/null || echo none))"
+android)         rec oneshot=android || { echo "boot record not writable, using LK's RTC flag"; rtc recovery; } ;;
+linux)           rec oneshot=linux && rtc normal ;;
+android-direct)  rtc recovery ;;
+default-android) rec default=android && rtc normal ;;
+default-linux)   rec default=linux && rtc normal ;;
+uboot)           rec oneshot=fastboot && rtc normal ;;
+bootloader|fastboot) rtc bootloader ;;
+*) echo "usage: tb-reboot [android|linux|android-direct|default-android|default-linux|uboot|bootloader]" >&2; exit 2 ;;
+esac || { echo "tb-reboot: could not set the next target" >&2; exit 1; }
+rm -f /mnt/cache/linux/boot-target	# pre-tbstate override file, no longer read
+echo "next boot: $M (RTC: $(cat $F 2>/dev/null), record: $($TBS 2>/dev/null | grep -E '^(default|oneshot)=' | tr '\n' ' '))"
 sync
 echo 1 > /proc/sys/kernel/sysrq
 echo s > /proc/sysrq-trigger; sleep 1

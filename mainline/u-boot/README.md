@@ -33,7 +33,8 @@ Since 2026-11-17 12:46, U-Boot is in **`boot`** and Android in **`recovery`**, a
 | `tb7304x_entry.S` | Saves LK's DTB pointer (`x0`), paints the "entered" band |
 | `tb7304x_debug.c` | Bands, LK display hand-over (OVL0 L0/L3), console start (`console_init_r`), status lines |
 | `tb7304x_android.c` | `tb_lk_info` (reads LK's DT, picks `android_part`), `tbandroid` command |
-| `boot.cmd` | Boot script, becomes the image's ramdisk. Default **linux**; reads `/cache/linux/boot-target` (`target=linux|android|fastboot`); LK bootmode 7/8/9 (alarm, charger) → Android |
+| `boot.cmd` | Boot script, becomes the image's ramdisk. Target from the boot record (oneshot > default, default **linux**). Counts Linux attempts; Android after 3 unhealthy ones. LK bootmode 7/8/9 (alarm, charger) → Android |
+| `tbstate.h`, `tb7304x_tbstate.c` | Boot record format (shared with `mainline/initramfs/tbstate.c`) and the `tbstate` command: the only eMMC writes U-Boot makes, limited to the two record sectors at the end of `boot` (docs/mainline/plan-dualboot.md §4) |
 | `0001-musb-mt6735-register-dm-gadget-udc.patch` | Fixes the fork's MT6735 MUSB glue for DM gadget (fastboot) |
 | `build-uboot.sh` | Builds in the `tb7304-build` container. Pads the kernel area to ≥ 512 KiB and gates on `lk_image_check.py`. Outputs `out/u-boot-tb7304x.img` and `out/boot-mainline-uboot.img`. The build host also needs `mainline/scripts/analysis/lk_image_check.py`. |
 

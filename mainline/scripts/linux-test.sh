@@ -14,11 +14,14 @@
 #   mainline/scripts/linux-test.sh run            # LK fastboot: `oem reboot-recovery` = Android from `recovery`
 #   mainline/scripts/linux-test.sh shell          # wait for the mainline gadget, cancel the auto-reboot (mlsh.py wait)
 #   mainline/scripts/linux-test.sh to-fastboot    # Android -> LK fastboot, safely (see below)
-#   mainline/scripts/linux-test.sh to-linux       # Android -> Linux (plain reboot via U-Boot; removes boot-target)
-#   mainline/scripts/linux-test.sh to-uboot       # Android -> U-Boot fastboot (target=fastboot; `fastboot boot <img>`)
+#   mainline/scripts/linux-test.sh to-linux       # Android -> Linux: boot record default=linux, attempts=0, reboot
+#   mainline/scripts/linux-test.sh to-uboot       # Android -> U-Boot fastboot once (`fastboot boot <img>`)
 #   mainline/scripts/linux-test.sh ml-to-fastboot # running mainline (either stage) -> LK fastboot directly
-#   mainline/scripts/linux-test.sh ml-to-android  # running mainline -> Android (LK one-shot RTC flag -> `recovery`)
-#   mainline/scripts/linux-test.sh ml-to-linux    # running mainline -> plain reboot -> Linux again
+#   mainline/scripts/linux-test.sh ml-to-android  # running mainline -> Android once (stage 2: via U-Boot, normal
+#                                                 # mode; stage 1: LK's RTC flag -> `recovery`)
+#   mainline/scripts/linux-test.sh ml-to-linux    # running mainline -> Linux again
+#   mainline/scripts/linux-test.sh state          # print the boot record (from Android, or from Linux over telnet)
+# The boot record tool (out/tbstate, built with the initramfs) is pushed to Android's /data/local/tmp when needed.
 #
 # ALWAYS leave Android with to-fastboot / to-recovery, never a bare `adb reboot ...`: Magisk counts every boot that
 # does not reach sys.boot_completed and enters safe mode after 2 (all modules disabled). Without tb7304x_strip,
@@ -51,6 +54,12 @@ adb_leave_android() {
 }
 
 ping() { echo "== ping"; T 5 fastboot getvar version 2>&1; }
+
+# The boot record tool (built with the initramfs into out/tbstate, static aarch64) on Android
+push_tbstate() {
+  [ -f $OUT/tbstate ] || { echo "no $OUT/tbstate (build the initramfs)"; return 1; }
+  T 20 adb push $OUT/tbstate /data/local/tmp/tbstate >/dev/null && T 10 adb shell chmod 755 /data/local/tmp/tbstate
+}
 
 case "${1:-}" in
 fetch)
@@ -89,20 +98,25 @@ run)
 shell)
   T 250 python3 -I mainline/scripts/mlsh.py wait ;;
 ml-to-fastboot|ml-to-android|ml-to-recovery|ml-to-linux)
-  # Set LK's RTC boot flag, then reboot from a detached subshell: mlsh appends "; echo marker", so a bare
-  # trailing "&" would be a syntax error, and a plain background job dies with the telnet session.
-  # android/recovery = LK's RTC recovery flag (Android lives in `recovery`); linux = plain reboot (U-Boot default)
-  m=${1#ml-to-}; [ "$m" = fastboot ] && m=bootloader; [ "$m" = android ] && m=recovery; [ "$m" = linux ] && m=normal
+  # Stage 2 has tb-reboot (boot record + RTC); stage 1 only the RTC flag (android/recovery = LK's recovery flag,
+  # linux = plain reboot). Reboot from a detached subshell: mlsh appends "; echo marker", so a bare trailing "&"
+  # would be a syntax error, and a plain background job dies with the telnet session.
+  m=${1#ml-to-}; t=$m; [ "$m" = fastboot ] && t=bootloader; [ "$m" = recovery ] && t=android-direct
+  r=$m; [ "$m" = fastboot ] && r=bootloader; [ "$m" = android ] && r=recovery; [ "$m" = linux ] && r=normal
   F=/sys/devices/platform/rtc-boot-mode/next_boot
-  T 15 python3 -I mainline/scripts/mlsh.py "echo $m > $F; echo next boot: \$(cat $F)" \
-    "(setsid sh -c 'sleep 2; sync; echo 1 > /proc/sys/kernel/sysrq; echo s > /proc/sysrq-trigger; sleep 1; echo u > /proc/sysrq-trigger; sleep 1; echo b > /proc/sysrq-trigger' </dev/null >/dev/null 2>&1 &)"
+  T 20 python3 -I mainline/scripts/mlsh.py \
+    "if [ -x /usr/local/sbin/tb-reboot ]; then (setsid /usr/local/sbin/tb-reboot $t </dev/null >/dev/null 2>&1 &); echo tb-reboot $t; else echo $r > $F; echo next boot: \$(cat $F); (setsid sh -c 'sleep 2; sync; echo 1 > /proc/sys/kernel/sysrq; echo s > /proc/sysrq-trigger; sleep 1; echo u > /proc/sysrq-trigger; sleep 1; echo b > /proc/sysrq-trigger' </dev/null >/dev/null 2>&1 &); fi"
   ;;
+state)
+  if T 5 adb get-state >/dev/null 2>&1; then push_tbstate && T 15 adb shell "su -c '/data/local/tmp/tbstate'"
+  else T 15 python3 -I mainline/scripts/mlsh.py '/usr/local/sbin/tbstate 2>/dev/null || tbstate'; fi ;;
 to-fastboot)
   adb_leave_android bootloader ;;
 to-linux|to-uboot)
   T 30 adb wait-for-device || exit 1
-  if [ "$1" = to-uboot ]; then c='echo target=fastboot > /cache/linux/boot-target'; else c='rm -f /cache/linux/boot-target'; fi
-  T 20 adb shell "su -c '$c; sync; cat /cache/linux/boot-target 2>/dev/null || echo boot-target: none'" || exit 1
+  push_tbstate || exit 1
+  if [ "$1" = to-uboot ]; then a='oneshot=fastboot'; else a='default=linux oneshot=none attempts=0 error=none'; fi
+  T 20 adb shell "su -c 'rm -f /cache/linux/boot-target; echo 0 > /cache/linux/bootcount; /data/local/tmp/tbstate set $a'" || exit 1
   adb_leave_android "" ;;
 to-recovery)
   echo "to-recovery would only reach Android again (recovery holds Android). Use to-linux or to-uboot."; exit 1 ;;

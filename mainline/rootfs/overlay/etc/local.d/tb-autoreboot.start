@@ -1,6 +1,7 @@
 #!/bin/sh
 # Safety net, same rules as stage 1:
-#  - 60 s after reaching userspace the boot counts as good (stage 1 gives up on the rootfs after 2 bad ones).
+#  - 60 s after reaching userspace the boot counts as good: bootcount (stage 1 gives up on the rootfs after 2 bad
+#    ones) and the boot record (`tbstate healthy`: U-Boot boots Android after 3 unhealthy Linux boots).
 #  - Optional timed return to Android: tb.autoreboot=<s> on the cmdline or a number in /etc/tb-autoreboot.
 #    Default 0 (off): Linux is the default OS since U-Boot sits in `boot` (docs/mainline/plan-dualboot.md).
 #    /tmp/stay or /run/stay pauses it. The reboot sets LK's one-shot RTC recovery flag (Android in `recovery`);
@@ -11,6 +12,8 @@ for a in $(cat /proc/cmdline); do case "$a" in tb.autoreboot=*) T=${a#tb.autoreb
 (
 	sleep 60
 	echo 0 > /mnt/cache/linux/bootcount; sync
+	# boot record: healthy resets U-Boot's attempt counter (stage 1 copies the tool in; plan-dualboot.md §4)
+	/usr/local/sbin/tbstate healthy > /dev/null 2>&1 || logger -t tb7304 "tbstate healthy failed"
 	t=60
 	while [ "$T" -gt 0 ]; do
 		sleep 5; t=$((t + 5))

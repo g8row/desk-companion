@@ -40,6 +40,9 @@ R=/build/rootfs; rm -rf $R; mkdir -p $R/bin $R/www $R/dev
 cp $BUSYBOX $R/bin/busybox
 $CC -static -O2 -Wall -o $R/bin/lkpaint $M/initramfs/lkpaint.c
 $STRIP $R/bin/lkpaint
+# boot record tool (format shared with U-Boot: u-boot/tbstate.h). Also copied to out/ for Android (adb push).
+$CC -static -O2 -Wall -Wextra -I $M/u-boot -o $R/bin/tbstate $M/initramfs/tbstate.c
+$STRIP $R/bin/tbstate; cp $R/bin/tbstate $OUT/tbstate
 cp $M/initramfs/init $R/init; chmod 755 $R/init
 mknod -m 600 $R/dev/console c 5 1; mknod -m 666 $R/dev/null c 1 3
 (cd $R && find . | sort | cpio -o -H newc --owner=0:0 2>/dev/null) > /build/initramfs.cpio

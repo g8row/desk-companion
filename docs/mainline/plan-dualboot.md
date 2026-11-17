@@ -76,28 +76,42 @@ Notes:
 | Writer | May write | Must never write |
 |---|---|---|
 | LK | nothing on the eMMC in our flows (RTC bits only) | — |
-| U-Boot | `tbstate` | everything else (no `fastboot flash`, no ext4/FAT write, enforced by `build-uboot.sh`) |
+| U-Boot | `tbstate` (until §6: the record sectors at the end of `boot`) | everything else (no `fastboot flash`, no ext4/FAT write, enforced by `build-uboot.sh`) |
 | Linux | `tbstate`, inactive `tbkern_*`/`tbroot_*`, `tbdata`; `boot`/`recovery` only by explicit admin command | `para`, Android partitions |
 | Android | `recovery` (Magisk updates), `tbstate` (from the "boot Linux/Android" tile) | everything `tb*` except `tbstate` |
 | Host | anything, via LK fastboot (`fbusb`) or BROM | — |
 
-## 4. `tbstate` boot record
+## 4. `tbstate` boot record (implemented 2026-11-17)
 
-Two 512-byte copies at offsets 0 and 64 KiB. Each copy holds magic, version, generation, CRC32, and:
-
-`default_target` (linux/android) · `oneshot_target` (none/android/fastboot/rescue/slot-a/slot-b, cleared by U-Boot
-when it acts) · `slot` (a/b) · `last_good_slot` · `boot_attempt` · `trial` · `last_stage` (uboot/kernel/init/healthy)
-· `last_error`.
-
-- **Reading:** U-Boot takes the copy with the highest generation and a valid CRC. If neither copy is valid, it boots
-  Android.
-- **Writing:** the writer updates the older copy first, then the newer one, so one valid copy always survives a power
-  loss.
-- **Counting attempts:** U-Boot increments `boot_attempt` before booting Linux. Stage 2 writes
-  `last_stage=healthy` and resets it to 0 after 60 s. At N = 3 failed attempts, U-Boot tries `last_good_slot`, then
-  rescue, then Android, and records `last_error`.
+**Format:** [`mainline/u-boot/tbstate.h`](../../mainline/u-boot/tbstate.h), shared by the U-Boot command
+(`tb7304x_tbstate.c`) and the Linux/Android tool (`mainline/initramfs/tbstate.c`, built static into the initramfs
+and `out/tbstate`).
+- **Copies:** two 512-byte copies, the second 64 KiB after the first. Each has magic `TBS1`, version, generation and
+  CRC32 (zlib), plus `default` (linux/android), `oneshot` (none/linux/android/fastboot), `attempts`, `max` (3),
+  `last_stage` (none/uboot/kernel/init/healthy), `last_error` (none/attempts/corrupt/no-image/bootm),
+  `slot`/`last_good_slot` (reserved for A/B), and the counters `linux_boots` and `fallbacks`.
+- **Location until repartitioning:** the last 1 MiB of `boot`, at sectors 30720 and 30848 of the partition. U-Boot
+  ends at 0.5 MiB, and `build-uboot.sh` fails if the image reaches 15 MiB. After §6 only `TBS_PART` and
+  `TBS_AREA_SECTOR` change.
+- **Reading:** the valid copy with the higher generation. `blank` (no magic anywhere): U-Boot creates the record
+  with default Linux. `corrupt` (magic but no valid copy): U-Boot rewrites it, records `error=corrupt`, and boots
+  Android once.
+- **Writing:** generation+1 goes into copy `generation & 1`, which always overwrites the **older** copy, then is
+  read back. Linux/Android use `O_DIRECT|O_SYNC`. The tool refuses to write unless `boot` starts with an
+  Android-format image that ends before the area.
+- **Who writes what:**
+  - U-Boot: consumes `oneshot`; `attempt` (attempts+1, stage=uboot) before every Linux boot it starts.
+  - Stage 1: `stage kernel` after mounting `cache`, `stage init` before `switch_root`, and copies the tool to
+    `/usr/local/sbin`.
+  - Stage 2: `tbstate healthy` at 60 s (attempts=0, stage=healthy, error=none).
+- **Fallback:** at `attempts >= max`, U-Boot records `error=attempts` and boots Android **until Linux is re-armed**
+  (`linux-test.sh to-linux`, or `tbstate set attempts=0 error=none` from Android).
 - **Cover for early hangs:** the watchdog. LK leaves 10 s armed, U-Boot reprograms 15 s, and Linux `mtk_wdt` takes
-  it over. A kernel that hangs before stage 1 still resets, and the count advances.
+  it over. A kernel that hangs or panics before stage 1 still resets, and the count advances.
+
+Tool usage (Linux: `/usr/local/sbin/tbstate`, initramfs: `tbstate`, Android: `/data/local/tmp/tbstate` as root):
+`tbstate` (show) · `tbstate set default=android oneshot=fastboot attempts=0 error=none max=3` · `tbstate stage init`
+· `tbstate healthy`. U-Boot: `tbstate load|save|show|attempt|fail <error>|set default|oneshot|error|max <v>`.
 
 ## 5. Boot menu (GUI)
 
@@ -168,27 +182,31 @@ recovery, para).
 | **T4** Linux by default (interim: `boot.cmd` default `linux`, image `/cache/linux/boot-mainline-uboot.img`; U-Boot `19d6778a…`) | swap | ✅ (2026-11-17 13:00–13:34) RAM boot via U-Boot `fastboot boot`: no "Kernel image misaligned", `memory@78000000` reserved, `mtk_wdt` takes over. Plain reboot from Android → **Linux** (gadget 16 s after reset). Linux reboot → Linux. `linux-test.sh ml-to-android` → Android (`rtc`/`recovery`, 32 s). `to-linux` → Linux. Stage-1 fallback (`bootcount=2`): stage 1 holds, auto-reboots after 300 s with the RTC flag → Android. Charger/alarm boots (LK bootmode 7/8/9) are routed to Android by `boot.cmd` (not re-tested since that change). |
 | T5 charger plugged while off (KPOC) | swap | ✅ Power-off with USB attached → LK charger mode → U-Boot → Android `kpoc_charger` from `recovery`. The screen is off at first (the charger blanks it). A short press on Power shows the battery animation (display resume, `bootlogo_show_charging`, backlight 150; confirmed by the user). It charges (CC 650 mA), and a long press on Power boots normally. |
 | T6 Magisk direct-install target with Android in `recovery` | swap | pending |
+| **T7** boot record + U-Boot boot counter (U-Boot `bcccc39d…`, Linux image `48dddb36…`) | swap | ✅ (13:40–13:55) A blank area made U-Boot create the record. Every stage was recorded (gen 1→4), and `healthy` at 60 s reset `attempts` (gen 10). One-shot Linux and one-shot Android (normal mode) were consumed by U-Boot. **Crash test:** `sysrq c` before `healthy` on 3 boots in a row (`attempts` 1, 2, 3) → the 4th boot went to Android in normal mode with `error=attempts`, `fallbacks=1`. `to-linux` re-armed it, and Linux reached `healthy`. |
 
 ### How to reach each target in the current layout (`boot` = U-Boot, `recovery` = Android)
 
 | Want | Do | Path |
 |---|---|---|
-| **Linux (default since T4, no `boot-target` file)** | power on, `adb reboot`, Linux `tb-reboot linux`, host `linux-test.sh to-linux` | LK → U-Boot → `bootm` of `/cache/linux/boot-mainline-uboot.img` |
-| Android, one-shot (next plain reboot is Linux again) | Linux `tb-reboot android`, host `linux-test.sh ml-to-android`, `adb reboot recovery` | LK RTC flag → `recovery` directly, `ro.boot.mode=recovery` |
-| Android, normal mode, persistent | Linux `tb-reboot android-normal` (`target=android`). Back to Linux: `linux-test.sh to-linux` from Android. | LK → U-Boot → `tbandroid` from `recovery` |
+| **Linux (default)** | power on, plain reboot; Linux `tb-reboot linux`; from Android `linux-test.sh to-linux` (also re-arms after a fallback) | LK → U-Boot (attempt counted) → `bootm` of `/cache/linux/boot-mainline-uboot.img` |
+| Android once, normal mode | Linux `tb-reboot android`; host `linux-test.sh ml-to-android` | record `oneshot=android` → U-Boot → `tbandroid` from `recovery` |
+| Android by default | Linux `tb-reboot default-android`; back: `linux-test.sh to-linux` | record `default=android` |
+| Android once, **without U-Boot** (escape) | Linux `tb-reboot android-direct`; `adb reboot recovery`; LK `oem reboot-recovery`; Vol+ menu → Recovery | LK RTC flag or menu → `recovery`, `ro.boot.mode=recovery` |
 | Charger plugged in while off / RTC alarm | automatic | LK → U-Boot → Android (charging UI / alarm) |
-| U-Boot fastboot (`fastboot boot <img>`) | `echo target=fastboot > /cache/linux/boot-target`, reboot. Leave with `fastboot reboot`; remove the file afterwards. | LK → U-Boot |
-| Android **without U-Boot** (escape) | LK `oem reboot-recovery`, or Vol+ menu → Recovery | LK → `recovery`, `ro.boot.mode=recovery` |
-| LK fastboot (`fbusb … flash:`) | `adb reboot bootloader` or Vol+ menu → Fastboot | LK |
+| U-Boot fastboot (`fastboot boot <img>`) | Linux `tb-reboot uboot`; from Android `linux-test.sh to-uboot`. Leave with `fastboot reboot`. | record `oneshot=fastboot` → U-Boot |
+| LK fastboot (`fbusb … flash:`) | `adb reboot bootloader`, Linux `tb-reboot bootloader`, or Vol+ menu → Fastboot | LK |
+| Inspect the record | `linux-test.sh state` (Android or Linux) | — |
+
+`/cache/linux/boot-target` is no longer read; `tb-reboot` and `to-linux` delete leftovers.
 
 Linux safety nets in this layout:
-- Stage 2 `tb-autoreboot` is **off by default** (`tb.autoreboot=` or `/etc/tb-autoreboot` to enable). It still marks
-  the boot good after 60 s.
-- Stage 1, when it gives up on the root filesystem (2 failed tries, `tb.r=0`, no image), reboots to Android after
-  300 s with the RTC flag.
-- **Gap until `tbstate`:** a kernel that panics before stage 1 reboots into Linux again, because U-Boot can't count
-  attempts yet. Escape: Vol+ → Recovery, or let the 10 s panic timeout loop while you hold Vol+.
-- `linux-test.sh flash` now needs an explicit partition. `recovery` (Android) requires `YES=1`; `boot` must pass
+- **U-Boot's boot counter (§4):** 3 Linux boots in a row that never reach `healthy` → Android, with
+  `error=attempts`. This covers kernels that panic or hang before stage 1.
+- **Stage 1**, when it gives up on the root filesystem (2 failed tries of its own `bootcount`, `tb.r=0`, no
+  image), reboots to Android after 300 s with the RTC flag.
+- **Stage 2 `tb-autoreboot`** is off by default (`tb.autoreboot=` or `/etc/tb-autoreboot` enables it). It marks
+  the boot good after 60 s (`bootcount`, `tbstate healthy`).
+- **`linux-test.sh flash`** needs an explicit partition. `recovery` (Android) requires `YES=1`; `boot` must pass
   `lk_image_check.py`. On macOS the script uses a perl timeout (no GNU `timeout`).
 
 Known U-Boot bug: **`fastboot continue` resets the tablet** (preloader within 2 s) instead of booting Android.

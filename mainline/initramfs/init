@@ -180,6 +180,9 @@ try_rootfs() {
 	C=$(find_part cache) || { log "stage 2: no cache partition"; return 1; }
 	mkdir -p /mnt/cache /newroot
 	mount -t ext4 -o rw,noatime,nosuid,nodev "$C" /mnt/cache || { log "stage 2: cannot mount $C"; return 1; }
+	# boot record (docs/mainline/plan-dualboot.md §4): stage 1 is up and the eMMC answers. U-Boot counted the
+	# attempt; stage 2 marks it healthy after 60 s. Best effort: a missing tool or partition only logs.
+	tbstate stage kernel > /dev/null 2>&1 || log "tbstate: could not record stage kernel"
 	IMG=/mnt/cache/linux/rootfs.img
 	# Rootfs update: a new image dropped in as rootfs.img.gz (from stage 2, scp/ssh) replaces the old one here,
 	# while nothing has it mounted. The old image is deleted first (cache is too small for both).
@@ -202,6 +205,8 @@ try_rootfs() {
 	mount -t ext4 -o loop,rw,noatime $IMG /newroot || { log "stage 2: cannot mount $IMG"; umount /mnt/cache; return 1; }
 	[ -x /newroot/sbin/init ] || { log "stage 2: no /sbin/init in $IMG"; umount /newroot /mnt/cache; return 1; }
 	log "stage 2: switch_root to $IMG (try $((n + 1)))"
+	tbstate stage init > /dev/null 2>&1 || log "tbstate: could not record stage init"
+	mkdir -p /newroot/usr/local/sbin && cp /bin/tbstate /newroot/usr/local/sbin/tbstate 2>/dev/null
 	cp $LOG /newroot/var/log/tb7304-stage1.log 2>/dev/null
 	# we are PID 1: kill -1 hits every other user process (telnetd, httpd, the status/display loops)
 	kill -9 -1 2>/dev/null; sleep 1

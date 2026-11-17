@@ -19,9 +19,11 @@ cp $M/u-boot/mt6737m-lenovo-tb7304x.dts $U/arch/arm/dts/
 cp $M/u-boot/tb7304x_debug.c $U/board/mediatek/mt6735/
 cp $M/u-boot/tb7304x_entry.S $U/board/mediatek/mt6735/
 cp $M/u-boot/tb7304x_android.c $U/board/mediatek/mt6735/
+cp $M/u-boot/tb7304x_tbstate.c $M/u-boot/tbstate.h $U/board/mediatek/mt6735/
 grep -q tb7304x_entry $U/board/mediatek/mt6735/Makefile || echo 'obj-y += tb7304x_entry.o' >> $U/board/mediatek/mt6735/Makefile
 grep -q tb7304x_debug $U/board/mediatek/mt6735/Makefile || echo 'obj-y += tb7304x_debug.o' >> $U/board/mediatek/mt6735/Makefile
 grep -q tb7304x_android $U/board/mediatek/mt6735/Makefile || echo 'obj-y += tb7304x_android.o' >> $U/board/mediatek/mt6735/Makefile
+grep -q tb7304x_tbstate $U/board/mediatek/mt6735/Makefile || echo 'obj-y += tb7304x_tbstate.o' >> $U/board/mediatek/mt6735/Makefile
 grep -q mt6737m-lenovo-tb7304x.dtb $U/arch/arm/dts/Makefile ||
 	sed -i 's/\tmt6737t-samsung-grandpplte.dtb \\/\tmt6737t-samsung-grandpplte.dtb \\\n\tmt6737m-lenovo-tb7304x.dtb \\/' $U/arch/arm/dts/Makefile
 grep -q mt6737m-lenovo-tb7304x.dtb $U/arch/arm/dts/Makefile
@@ -65,6 +67,8 @@ mkbootimg --base 0x40000000 --kernel_offset 0x00080000 --ramdisk_offset 0x040000
 python3 -c "
 import struct,sys
 f=open(sys.argv[1],'r+b'); f.seek(28); f.write(struct.pack('<I',0x40f00000)); f.close()" $OUT/u-boot-tb7304x.img
+# gate: the image must end before the boot record at the end of `boot` (tbstate.h: 15 MiB)
+[ $(stat -c %s $OUT/u-boot-tb7304x.img) -lt $((30720 * 512)) ] || { echo "image overlaps the tbstate area"; exit 1; }
 # gate: the offline model of LK's checks must pass, or the image is not written out
 python3 -I $M/scripts/analysis/lk_image_check.py $OUT/u-boot-tb7304x.img || { mv $OUT/u-boot-tb7304x.img $OUT/u-boot-tb7304x.img.REJECTED; exit 1; }
 ls -la $O/u-boot.bin $OUT/u-boot-tb7304x.img
