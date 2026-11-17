@@ -4,6 +4,7 @@
 #   wifi-up <ssid> <password>   ... and join (config in /tmp, RAM only), DHCP
 #   wifi-up join                ... and join with the saved networks ($SAVED), DHCP
 #   wifi-up save <ssid> <password>   add/replace a network in $SAVED (on /data: survives root reflashes)
+#   wifi-up core                only the WMT core (loader + launcher), WiFi radio off: used by bt-up
 #   wifi-up off                 leave, radio off
 # The OpenRC service `wifi` runs `wifi-up join` at boot when $SAVED exists.
 # Needs /etc/firmware (mainline/scripts/wifi-deploy.sh), wmt_loader + stp_uart_launcher in /usr/local/sbin,
@@ -52,6 +53,7 @@ if ! pgrep -f stp_uart_launcher > /dev/null; then
 	setsid stp_uart_launcher -p /etc/firmware < /dev/null > $L/launcher.log 2>&1 &
 	sleep 5
 fi
+[ "$1" = core ] && { echo "WMT core up"; exit 0; }
 # 3. WiFi function: firmware download, netdev
 if [ ! -e /sys/class/net/$IF ]; then
 	echo 1 > /dev/wmtWifi || die "WiFi power on failed (dmesg)"

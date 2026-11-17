@@ -91,6 +91,17 @@ struct mtk_hci {
 
 static struct mtk_hci   mtk_hci;
 
+/*
+ * Built in, the HCI device registers when wmt_loader runs the module init, before stp_uart_launcher has set up
+ * WMT: the kernel's first power-on (HCI_SETUP) fails and mgmt/BlueZ never sees hci0 (it only adds a controller after
+ * a successful setup). Re-register a few seconds later until the setup power-on works.
+ */
+#define MTK_BT_RETRY_MAX	20
+static struct delayed_work mtk_bt_retry;
+static int mtk_bt_retries;
+int mtk_bt_hci_init(void);
+static int mtk_bt_set_bdaddr(struct hci_dev *hdev, const bdaddr_t *bdaddr);
+
 #endif
 
 #if WMT_CREATE_NODE_DYNAMIC
@@ -313,6 +324,10 @@ mtk_bt_hci_open(struct hci_dev *hdev)
 	err = mtk_wcn_wmt_func_on(WMTDRV_TYPE_BT);
 	if (err != MTK_WCN_BOOL_TRUE) {
 		pr_err("%s func on failed with %d\n", __func__, err);
+		if (hci_dev_test_flag(hdev, HCI_SETUP) && mtk_bt_retries < MTK_BT_RETRY_MAX) {
+			mtk_bt_retries++;
+			schedule_delayed_work(&mtk_bt_retry, 3 * HZ);
+		}
 		return -ENODEV;
 	}
 
@@ -471,9 +486,10 @@ int mtk_bt_hci_init(void)
 	mtk_hci.hdev->send = mtk_bt_hci_send;
 	mtk_hci.hdev->flush = mtk_bt_hci_flush;
 	mtk_hci.hdev->notify = mtk_bt_hci_notify;
+	mtk_hci.hdev->set_bdaddr = mtk_bt_set_bdaddr;
 	SET_HCIDEV_DEV(mtk_hci.hdev, stpbt_dev);
 
-	set_bit(HCI_QUIRK_BROKEN_ERR_DATA_REPORTING, &mtk_hci.hdev->quirks);
+	hci_set_quirk(mtk_hci.hdev, HCI_QUIRK_BROKEN_ERR_DATA_REPORTING);	/* quirks became quirk_flags (6.16) */
 
         hci_set_drvdata(mtk_hci.hdev, &mtk_hci);       
 
@@ -491,6 +507,30 @@ int mtk_bt_hci_init(void)
 	INIT_WORK(&mtk_hci.work, mtk_bt_hci_work);
 
 	return 0;
+}
+
+/* MediaTek vendor command, as in mainline drivers/bluetooth/btmtk.c: lets `btmgmt public-addr` set the address */
+static int mtk_bt_set_bdaddr(struct hci_dev *hdev, const bdaddr_t *bdaddr)
+{
+	struct sk_buff *skb = __hci_cmd_sync(hdev, 0xfc1a, 6, bdaddr, HCI_INIT_TIMEOUT);
+
+	if (IS_ERR(skb))
+		return PTR_ERR(skb);
+	kfree_skb(skb);
+	return 0;
+}
+
+static void mtk_bt_retry_work(struct work_struct *work)
+{
+	pr_info("mtk_bt: re-registering hci (setup power-on failed, try %d)\n", mtk_bt_retries);
+	if (mtk_hci.hdev) {
+		hci_unregister_dev(mtk_hci.hdev);
+		cancel_work_sync(&mtk_hci.work);
+		skb_queue_purge(&mtk_hci.txq);
+		hci_free_dev(mtk_hci.hdev);
+		mtk_hci.hdev = NULL;
+	}
+	mtk_bt_hci_init();
 }
 #endif
 
@@ -835,7 +875,8 @@ static int BT_init(void)
 	init_waitqueue_head(&(inq));
 
 #ifdef MTK_BT_HCI
- 	mtk_bt_hci_init();
+	INIT_DELAYED_WORK(&mtk_bt_retry, mtk_bt_retry_work);
+	mtk_bt_hci_init();
 #endif
 
 	return 0;
@@ -879,8 +920,11 @@ static void BT_exit(void)
 	BT_INFO_FUNC("%s driver removed\n", BT_DRIVER_NAME);
 }
 
-#if 0
-//#ifdef MTK_WCN_REMOVE_KERNEL_MODULE
+/*
+ * Registered from wmt_loader's COMBO_IOCTL_DO_MODULE_INIT (do_bluetooth_drv_init), after the WMT core: as a plain
+ * initcall the HCI device came up before WMT and the kernel's power-on of hci0 failed (frank-w had it that way).
+ */
+#ifdef MTK_WCN_REMOVE_KERNEL_MODULE
 
 int mtk_wcn_stpbt_drv_init(void)
 {
