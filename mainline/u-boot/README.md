@@ -11,7 +11,7 @@ loads like a kernel. Status, test history and the next plan:
 | ✅ | Console on LK's framebuffer, USB fastboot (`0e8d:201c`), `fastboot boot` of mainline Linux, eMMC read |
 | ✅ | `tbandroid` boots stock Android + Magisk in **normal** mode: patches `atag,boot` and `/firmware/android/mode` |
 | ✅ | **Deterministic start from LK** since the image is padded: T1 passed in the state where the old image hung |
-| ❌ | `fastboot continue` resets the tablet; use `fastboot reboot` |
+| ✅ | `fastboot continue` carries on with the default target (fixed by patch 0002; it used to reset the tablet) |
 
 **Why the old image looped:** LK reads the DTB it hands over from the last 512 KiB of the kernel area **in the
 partition**. Our 0x5883b-byte kernel area made that read underflow, and LK fell back to whatever DTB the previous
@@ -36,6 +36,7 @@ Since 2026-11-17 12:46, U-Boot is in **`boot`** and Android in **`recovery`**, a
 | `boot.cmd` | Boot script, becomes the image's ramdisk. Target from the boot record (oneshot > default, default **linux**). Counts Linux attempts; Android after 3 unhealthy ones. LK bootmode 7/8/9 (alarm, charger) → Android |
 | `tbstate.h`, `tb7304x_tbstate.c` | Boot record format (shared with `mainline/initramfs/tbstate.c`) and the `tbstate` command: the only eMMC writes U-Boot makes, limited to the two record sectors at the end of `boot` (docs/mainline/plan-dualboot.md §4) |
 | `0001-musb-mt6735-register-dm-gadget-udc.patch` | Fixes the fork's MT6735 MUSB glue for DM gadget (fastboot) |
+| `0002-musb-mt6735-unregister-udc-on-remove.patch` | Unregisters the UDC before the glue frees the musb on remove; without it `fastboot continue` / Ctrl-C used freed memory and reset the tablet |
 | `build-uboot.sh` | Builds in the `tb7304-build` container. Pads the kernel area to ≥ 512 KiB and gates on `lk_image_check.py`. Outputs `out/u-boot-tb7304x.img` and `out/boot-mainline-uboot.img`. The build host also needs `mainline/scripts/analysis/lk_image_check.py`. |
 
 ## Build and install

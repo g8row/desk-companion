@@ -1,0 +1,22 @@
+--- a/drivers/usb/musb-new/mt6735.c
++++ b/drivers/usb/musb-new/mt6735.c
+@@ -274,7 +274,19 @@
+ 	struct mtk_musb_glue *glue = dev_get_priv(dev);
+ 	struct musb_host_data *host = &glue->mdata;
+ 
++	if (!host->host)
++		return 0;
++#ifndef CONFIG_USB_MUSB_HOST
++	/*
++	 * Peripheral: probe registered the gadget with usb_add_gadget_udc(); unregister it before the musb
++	 * is freed, as ti-musb.c does. Without this the UDC list keeps a pointer into freed memory and the
++	 * g_dnl_unregister() that `fastboot usb` runs right after this remove (fastboot continue, Ctrl-C)
++	 * faults, which resets the tablet.
++	 */
++	usb_del_gadget_udc(&host->host->g);
++#endif
+ 	musb_stop(host->host);
++	generic_phy_power_off(&glue->phys);
+ 	free(host->host);
+ 	host->host = NULL;
+ 

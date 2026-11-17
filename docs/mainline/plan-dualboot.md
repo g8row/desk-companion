@@ -208,7 +208,7 @@ recovery, para).
 | Android by default | Linux `tb-reboot default-android`; back: `linux-test.sh to-linux` | record `default=android` |
 | Android once, **without U-Boot** (escape) | Linux `tb-reboot android-direct`; `adb reboot recovery`; LK `oem reboot-recovery`; Vol+ menu → Recovery | LK RTC flag or menu → `recovery`, `ro.boot.mode=recovery` |
 | Charger plugged in while off / RTC alarm | automatic | LK → U-Boot → Android (charging UI / alarm) |
-| U-Boot fastboot (`fastboot boot <img>`) | Linux `tb-reboot uboot`; from Android `linux-test.sh to-uboot`. Leave with `fastboot reboot`. | record `oneshot=fastboot` → U-Boot |
+| U-Boot fastboot (`fastboot boot <img>`) | Linux `tb-reboot uboot`; from Android `linux-test.sh to-uboot`. Leave with `fastboot continue` (default target) or `fastboot reboot`. | record `oneshot=fastboot` → U-Boot |
 | LK fastboot (`fbusb … flash:`) | `adb reboot bootloader`, Linux `tb-reboot bootloader`, or Vol+ menu → Fastboot | LK |
 | Inspect the record | `linux-test.sh state` (Android or Linux) | — |
 
@@ -224,8 +224,10 @@ Linux safety nets in this layout:
 - **`linux-test.sh flash`** needs an explicit partition. `recovery` (Android) requires `YES=1`; `boot` must pass
   `lk_image_check.py`. On macOS the script uses a perl timeout (no GNU `timeout`).
 
-Known U-Boot bug: **`fastboot continue` resets the tablet** (preloader within 2 s) instead of booting Android.
-Use `fastboot reboot` until it's fixed.
+Fixed U-Boot bug (2026-11-17): `fastboot continue` used to reset the tablet. Our MT6735 MUSB glue freed the
+controller on remove without `usb_del_gadget_udc()`, and the `g_dnl_unregister()` that follows then used freed
+memory (`u-boot/0002-musb-mt6735-unregister-udc-on-remove.patch`). `continue` now carries on with the default
+target (Linux, counted as an attempt).
 
 ## 9. Open questions
 

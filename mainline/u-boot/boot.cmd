@@ -39,8 +39,10 @@ tbstate show
 echo tb7304x: target ${target} (LK bootmode ${lk_bootmode}), Android in ${android_part}
 
 if test "${target}" = "fastboot"; then
-	echo tb7304x: fastboot usb 0 (fastboot boot <img> / fastboot reboot; NOT continue: it resets)
+	echo tb7304x: fastboot usb 0 (fastboot boot <img> / fastboot continue = default target / fastboot reboot)
 	fastboot usb 0
+	setenv target ${tb_default}
+	echo tb7304x: fastboot continue, booting the default target ${target}
 fi
 
 if test "${target}" = "linux"; then
