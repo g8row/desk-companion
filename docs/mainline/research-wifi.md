@@ -1,6 +1,6 @@
 # TB-7304X mainline: WiFi / BT (MT6625L via CONSYS) — feasibility notes
 
-Status 2026-11-17: **works** on a RAM-booted kernel: 2.4 + 5 GHz scan, WPA2 association, DHCP, internet. See "Bring-up".
+Status 2026-11-17: **works** on a RAM-booted kernel: 2.4 GHz scan, WPA2 association, DHCP, internet. The board is 2.4 GHz only (NVRAM). See "Bring-up".
 
 ## Hardware
 - The WiFi/BT/GPS/FM MAC and baseband live in the SoC's **CONSYS** (connectivity subsystem); the **MT6625L** next to
@@ -49,7 +49,11 @@ gateway (~3 ms) and to 1.1.1.1 (~27 ms), a 3.9 MB download in about a second wit
 5 GHz (same day): the only 5 GHz AP in range was ch 108 (5540 MHz, DFS) at -93/-94 dBm. Pinned to it, 8 attempts
 in a minute: 5 auth timeouts (status 16), 3 associations, one complete WPA2 4-way handshake (CCMP), then lost after
 9 s (reason 100, beacon loss) and handshake timeouts (reason 15). So the 5 GHz path works (EAPOL both ways); the
-link failed on signal. Not yet tested with a nearby 5 GHz AP. The channel list stops at 5700 MHz (ch 140): no 149-165.
+link failed on signal. **Wrong conclusion, corrected:** the Mac next to the tablet sees that AP at -45 dBm (ch 108,
+80 MHz, 960 Mbit/s), 48 dB more. The tablet's NVRAM says 5G Enable(0) Support(0) (efuse allows 5 GHz): Lenovo built
+the TB-7304X as 2.4 GHz only, and stock Android follows the NVRAM. frank-w's tree forced 5 GHz on (BPI-R2
+workaround); the BSP logic is restored in wlan_lib.c and logs `wlan: NVRAM 5G ... -> 5 GHz off`. Scans are 2.4 GHz
+only now. `iw phy` still lists 5 GHz channels (the driver registers its band list unconditionally).
 
 Problems found on the way (all fixed in the tree):
 - **CONSYS EMI must be 2 MB aligned.** At 0x7ef00000 (1 MB aligned) the firmware wrote its trace 1 MB lower, into

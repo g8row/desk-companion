@@ -4497,11 +4497,10 @@ WLAN_STATUS wlanLoadManufactureData(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T pr
 		}
 	}
 
-        /* Workaround for supporting 5G */
-        prRegInfo->ucEnable5GBand = 1;
-        prRegInfo->ucSupport5GBand = 1;
-
-	/* 3. Check if needs to support 5GHz */
+	/*
+	 * 3. Check if needs to support 5GHz. As in the MT6735 BSP (stock): on unless the chip efuse disables it or the
+	 * board's NVRAM says the board has no 5 GHz support. frank-w's tree forced 5 GHz on (BPI-R2 workaround).
+	 */
 	/* if(prRegInfo->ucEnable5GBand) { // Frank workaround */
 	if (1) {
 		/* check if it is disabled by hardware */
@@ -4511,12 +4510,10 @@ WLAN_STATUS wlanLoadManufactureData(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T pr
 			prAdapter->fgEnable5GBand = TRUE;
 	} else
 		prAdapter->fgEnable5GBand = FALSE;
-        /* Workaround for supporting 5G */
-        prAdapter->fgEnable5GBand = TRUE;
-/*
-	DBGLOG(INIT, INFO, "NVRAM 5G Enable(%d) SW_En(%d) HW_Dis(%d)\n",
-	       prRegInfo->ucEnable5GBand, prRegInfo->ucSupport5GBand, prAdapter->fgIsHw5GBandDisabled);
-*/
+
+	pr_info("wlan: NVRAM 5G Enable(%d) Support(%d), efuse HW_Dis(%d) -> 5 GHz %s\n",
+		prRegInfo->ucEnable5GBand, prRegInfo->ucSupport5GBand, prAdapter->fgIsHw5GBandDisabled,
+		prAdapter->fgEnable5GBand ? "on" : "off");
 	/* 4. Send EFUSE data */
 #if  defined(MT6628)
 	wlanChangeNvram6620to6628(prRegInfo->aucEFUSE);
