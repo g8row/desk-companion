@@ -3,6 +3,14 @@
 Research only. Nothing was run on the tablet and no repo file was changed. I read the build host (taos) only to check
 for Docker and binfmt.
 
+> **Long-term layout decided 2026-11-17** in [plan-dualboot.md](plan-dualboot.md):
+> - No microSD.
+> - `userdata` shrinks to 3 GiB. Android's data is wiped once, and its stock recovery re-formats it so Android can
+>   re-encrypt.
+> - The freed space holds `tbstate`, raw kernel slots A/B/rescue, ext4 roots A/B and `tbdata`.
+>
+> The cache loop image below stays the interim root until the migration in plan-dualboot §6.
+
 ## TL;DR recommendation
 
 - **Where:** an ext4 **loop image file on the `cache` partition** (`/cache/linux/rootfs.img`), inside Android's own

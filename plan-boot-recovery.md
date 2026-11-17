@@ -10,6 +10,18 @@
 > and booting Android from `boot` with LK's DT (`tbandroid`, contrary to §7.9's "not recommended"). Putting U-Boot
 > in `boot` (Phase 4) and the BCB transport (§3.3) both **failed**: LK loops on its logo. LK does honor BCB, and a
 > BCB disables the volume-key menu; recovery needed BROM. Do not write `para` again without a tested escape.
+>
+> **Superseded in part, 2026-11-17** by [docs/mainline/plan-dualboot.md](docs/mainline/plan-dualboot.md), after
+> disassembling LK ([research-lk-bootflow.md](docs/mainline/research-lk-bootflow.md)):
+> - The Phase 4 failure was **our image**, not LK. Its kernel area was < 512 KiB, so LK could not load the DTB from
+>   the partition and booted with a leftover DTB in RAM. The padded image boots (T1).
+> - **U-Boot now goes in `boot`** (Linux by default), and Android in `recovery`.
+> - **BCB is rejected permanently** (§3.3, decision 6): LK never clears it, and it hides the volume menu.
+> - **The ledger is a raw `tbstate` partition**, not the `recovery` tail (§5.4).
+> - **GUI (§8.2):** the RTC recovery bit now means **Android**, so the stage-1 menu must not set it on
+>   "Continue Linux". The menu's actions are in plan-dualboot §5.
+> - **Rootfs (§9):** no microSD. Raw kernel slots A/B/rescue and ext4 roots A/B are carved from `userdata` on the
+>   internal eMMC (plan-dualboot §2).
 
 Companion documents: [STATUS.md](STATUS.md) (current device state), [research-rootfs.md](research-rootfs.md)
 (the cache/loop-image design), [TEST-PLAN.md](../../mainline/TEST-PLAN.md) (the tested boot flow),

@@ -43,6 +43,15 @@ grep -E "warning:" $O/build.log | grep -v -e "pattern recipe" -e "^/m/src/u-boot
 DTB=$M/stock/stock.dtb
 [ "$(head -c4 $DTB | od -An -tx1 | tr -d ' ')" = d00dfeed ] || { echo "$DTB is not a DTB"; exit 1; }
 gzip -9 -n -c $O/u-boot.bin > /tmp/u-boot.bin.gz
+# LK's bldr_load_dtb reads the DTB it hands over from the LAST 512 KiB of the kernel area in the partition; a
+# smaller kernel area underflows that read and LK boots with a stale DTB left in RAM (docs/mainline/
+# research-lk-bootflow.md §1). Zero-pad between the gzip stream and the DTB (LK's inflate stops at the stream end).
+python3 - /tmp/u-boot.bin.gz $DTB <<'PY'
+import os, sys
+gz, dtb = sys.argv[1], os.path.getsize(sys.argv[2])
+n = os.path.getsize(gz); pad = max(0, 0x80000 - n - dtb); pad += -(n + pad) % 4
+open(gz, 'ab').write(b'\0' * pad); print('kernel area: gzip %#x + pad %#x + dtb %#x' % (n, pad, dtb))
+PY
 cat /tmp/u-boot.bin.gz $DTB > /tmp/u-boot.bin.gz-dtb
 # ramdisk = the boot script (boot.cmd), loaded by LK to 0x44000000 and sourced by CONFIG_BOOTCOMMAND
 RD=/tmp/empty; : > $RD
@@ -56,6 +65,8 @@ mkbootimg --base 0x40000000 --kernel_offset 0x00080000 --ramdisk_offset 0x040000
 python3 -c "
 import struct,sys
 f=open(sys.argv[1],'r+b'); f.seek(28); f.write(struct.pack('<I',0x40f00000)); f.close()" $OUT/u-boot-tb7304x.img
+# gate: the offline model of LK's checks must pass, or the image is not written out
+python3 -I $M/scripts/analysis/lk_image_check.py $OUT/u-boot-tb7304x.img || { mv $OUT/u-boot-tb7304x.img $OUT/u-boot-tb7304x.img.REJECTED; exit 1; }
 ls -la $O/u-boot.bin $OUT/u-boot-tb7304x.img
 (cd $OUT && sha256sum u-boot-tb7304x.img)
 

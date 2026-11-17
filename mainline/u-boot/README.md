@@ -6,13 +6,23 @@ loads like a kernel. Status, test history and the next plan:
 
 ## Status (2026-11-17)
 
-| Works | Only when LK enters through the RTC "reboot recovery" flag (`adb reboot recovery`, LK `oem reboot-recovery`) |
+| | |
 |---|---|
-| ✅ | Console on LK's framebuffer, USB fastboot (`0e8d:201c`), `fastboot boot` of mainline Linux, eMMC read, `tbandroid` booting stock Android + Magisk in normal mode |
-| ❌ | LK normal boot of U-Boot from `boot`, and LK BCB-recovery boot from `recovery`: logo, ~25 s, reset, loop. Cause unknown |
+| ✅ | Console on LK's framebuffer, USB fastboot (`0e8d:201c`), `fastboot boot` of mainline Linux, eMMC read |
+| ✅ | `tbandroid` boots stock Android + Magisk in **normal** mode: patches `atag,boot` and `/firmware/android/mode` |
+| ✅ | **Deterministic start from LK** since the image is padded: T1 passed in the state where the old image hung |
+| ❌ | `fastboot continue` resets the tablet; use `fastboot reboot` |
 
-Keep U-Boot in `recovery` and Android in `boot`. Do **not** write a `boot-recovery` BCB to `para`: LK then skips
-the volume-key menu and only BROM (mtkclient) gets the tablet back.
+**Why the old image looped:** LK reads the DTB it hands over from the last 512 KiB of the kernel area **in the
+partition**. Our 0x5883b-byte kernel area made that read underflow, and LK fell back to whatever DTB the previous
+boot left in RAM. `build-uboot.sh` now zero-pads the gzip stream so the kernel area is ≥ 512 KiB. It refuses to
+output an image that fails `mainline/scripts/analysis/lk_image_check.py`. Details:
+[research-lk-bootflow.md](../../docs/mainline/research-lk-bootflow.md).
+
+Since 2026-11-17 12:46, U-Boot is in **`boot`** and Android in **`recovery`**, as decided in
+[plan-dualboot.md](../../docs/mainline/plan-dualboot.md). T3 passed. Escape: hold Vol+ at power-on → Recovery
+(LK boots Android directly). Never write a `boot-recovery` BCB to
+`para`: LK never clears it, it hides the volume-key menu, and only BROM (mtkclient) gets the tablet back.
 
 ## Files
 
@@ -25,7 +35,7 @@ the volume-key menu and only BROM (mtkclient) gets the tablet back.
 | `tb7304x_android.c` | `tb_lk_info` (reads LK's DT, picks `android_part`), `tbandroid` command |
 | `boot.cmd` | Boot script, becomes the image's ramdisk; reads `/cache/linux/boot-target` (`target=android|linux|fastboot`) |
 | `0001-musb-mt6735-register-dm-gadget-udc.patch` | Fixes the fork's MT6735 MUSB glue for DM gadget (fastboot) |
-| `build-uboot.sh` | Builds in the `tb7304-build` container; outputs `out/u-boot-tb7304x.img` and `out/boot-mainline-uboot.img` |
+| `build-uboot.sh` | Builds in the `tb7304-build` container. Pads the kernel area to ≥ 512 KiB and gates on `lk_image_check.py`. Outputs `out/u-boot-tb7304x.img` and `out/boot-mainline-uboot.img`. The build host also needs `mainline/scripts/analysis/lk_image_check.py`. |
 
 ## Build and install
 

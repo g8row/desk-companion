@@ -175,6 +175,13 @@ static int do_tbandroid(struct cmd_tbl *cmdtp, int flag, int argc, char *const a
 	if (bm && le32_to_cpu(*bm) == LK_BOOTMODE_RECOVERY) {
 		*bm = cpu_to_le32(LK_BOOTMODE_NORMAL);
 		printf("tbandroid: atag,boot bootmode recovery -> normal\n");
+		/* LK also writes /firmware/android/mode (lk.bin 0x41e04848), which Android's init turns into
+		 * ro.boot.mode; atag,boot alone is not enough (docs/mainline/research-lk-bootflow.md §3.7) */
+		off = fdt_path_offset(nfdt, "/firmware/android");
+		if (off >= 0 && fdt_setprop_string(nfdt, off, "mode", "normal") == 0)
+			printf("tbandroid: /firmware/android/mode -> normal\n");
+		else
+			printf("tbandroid: no /firmware/android/mode to patch\n");
 	}
 	fdt_pack(nfdt);
 

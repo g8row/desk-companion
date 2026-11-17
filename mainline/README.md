@@ -4,6 +4,12 @@ Status (2026-11-16): **mainline 7.0.10 boots on the tablet** from the `recovery`
 framebuffer), touch, all buttons, all 4 CPU cores, eMMC (read-only) and a USB shell and network.
 The run steps are in [TEST-PLAN.md](TEST-PLAN.md). Results and findings are in [section 0](#0-bring-up-results-2026-11-16).
 
+> Since 2026-11-17, `recovery` holds U-Boot, which RAM-boots these images (`fastboot boot out/boot-mainline-uboot.img`).
+> The target design is U-Boot in `boot` with Linux by default:
+> [docs/mainline/plan-dualboot.md](../docs/mainline/plan-dualboot.md).
+> Anything LK boots directly must pass `scripts/analysis/lk_image_check.py`
+> ([research-lk-bootflow.md](../docs/mainline/research-lk-bootflow.md) §4).
+
 ## 0. Bring-up results (2026-11-16)
 
 | Area | State | Notes |

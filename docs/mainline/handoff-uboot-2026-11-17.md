@@ -5,6 +5,23 @@
 **Read with:** [plan-boot-recovery.md](../../plan-boot-recovery.md) (the design this tested),
 [STATUS.md](STATUS.md), [mainline/u-boot/README.md](../../mainline/u-boot/README.md).
 
+> **Resolved later on 2026-11-17** ([research-lk-bootflow.md](research-lk-bootflow.md),
+> [plan-dualboot.md](plan-dualboot.md)):
+> - **§1, §4.1, §5 "only the RTC path works":** wrong conclusion. Inside LK, every route behaves the same. LK loads
+>   the DTB from the last 512 KiB of the kernel area in the partition. Our U-Boot kernel area (0x5883b) was too
+>   small, so LK used whatever DTB the previous boot left at `0x4e000000`.
+>   - The RTC runs worked because the previous Android had been started by LK.
+>   - P2 failed because its previous Android had been started by U-Boot and then did heavy I/O. Reproduced as T0,
+>     fixed by padding the image (T1).
+>   - BCB and P2b stay unexplained, and neither route is used any more.
+> - **§6.1** (the double-buffered framebuffer hypothesis) is not needed. U-Boot never ran in the failing boots.
+> - **§7:** decided: option B, U-Boot in `boot`. LK accepts any image that meets research-lk-bootflow §4.
+> - **P1's `ro.boot.mode=normal`** was also left over in RAM. `tbandroid` now patches `/firmware/android/mode` too.
+> - **The layout in §2 is outdated.** Since 12:46, `boot` = padded U-Boot (`672f2f9a…`) and `recovery` = Android +
+>   Magisk. `adb reboot recovery` now starts Android directly in LK recovery mode, and U-Boot no longer runs on that
+>   route.
+> - **New bug:** `fastboot continue` in U-Boot resets the tablet.
+
 ---
 
 ## 1. One-paragraph summary
