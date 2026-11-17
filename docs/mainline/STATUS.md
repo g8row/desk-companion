@@ -23,9 +23,9 @@ Research notes (read-only investigations of the stock firmware, mainline tree an
 |---|---|---|---|
 | Boot | ✅ works | `recovery` partition via LK `oem reboot-recovery`. `fb_send.py` / `scripts/fbusb` because stock `fastboot` stalls. Cmdline ≤ 99 chars. Since 2026-11-17 `recovery` holds **U-Boot** (padded image `672f2f9a…`), which RAM-boots Linux (`fastboot boot`, no cmdline limit) or boots Android in normal mode. The "LK normal-path loop" was our image: kernel area < 512 KiB, so LK used a leftover DTB (research-lk-bootflow.md). Fixed and tested: T0 reproduced, T1 passes. Check every LK-bootable image with `scripts/analysis/lk_image_check.py` | **Dual boot live:** `boot` = U-Boot, `recovery` = Android. **Power-on and plain reboots boot Linux** from the raw slot `tbkern_a` (fallback `/cache/linux/boot-mainline-uboot.img`; `tbrescue` after 3 unhealthy boots, then Android; T9). Android: `tb-reboot android` (one-shot, normal mode) or `default-android`. Charger/alarm boots go to Android. **Boot record + U-Boot boot counter:** 3 Linux boots that never reach `healthy` → Android (crash-tested, T7). `linux-test.sh state` shows the record. **Boot menu** in stage 1 (3 s; double-tap or Vol±/Power; ghost touches from the cracked glass are filtered; T8). `fastboot continue` fixed (patch 0002). Repartitioned (§6 done). Next: an updater for the inactive slot (§7) |
 | CPU, 4× A53 | ✅ all 4 cores, hotplug, cpufreq 1040–1196 MHz (1144/1196 = overclock, boost) | `mediatek,mt6735-smp` enable-method: PSCI CPU_ON + SPM MTCMOS (`patches/smp_mt6735.c`). cpufreq-dt on ARMPLL + MT6328 VPROC, schedutil; ARMPLL /1 only (see "cpufreq" below) | Idle below 1040 MHz needs a CPU clock mux (park on MAINPLL) to change the post-divider safely; SoC thermal sensor before trusting 1196 MHz long-term |
-| Display | ✅ mediatek-drm, 66 Hz | RDMA0 → DSI0 → NT51021B GX (`panel-novatek-nt51021b.c`), D2 mutex table, through the IOMMU. `/dev/dri/card1`; `fb0` = mediatekdrmfb with the kernel console on screen. Refresh measured 66 Hz (kmscube, vsync-locked). (A one-off burst of 10 IOMMU faults at boot, before the first framebuffer is attached.) | Full OVL0 path for hardware planes |
+| Display | ✅ mediatek-drm, 60 Hz | RDMA0 → DSI0 → NT51021B GX (`panel-novatek-nt51021b.c`), D2 mutex table, through the IOMMU. `/dev/dri/card1`; `fb0` = mediatekdrmfb with the kernel console on screen. Refresh 60.0 Hz (VFP stretched 35 → 141 lines at the stock link rate; was 65.9 Hz with LK's porches; kmscube vsync-locked). (A one-off burst of 10 IOMMU faults at boot, before the first framebuffer is attached.) | Full OVL0 path for hardware planes |
 | Backlight | ✅ | `pwm-backlight` on DISP_PWM, `/sys/class/backlight/backlight` (0–255, default 200) | — |
-| GPU (Mali-T720 MP1, 450 MHz) | ✅ Panfrost + Mesa 24.3 | `&gpu` from mt6735.dtsi, VCORE1 as mali-supply; `/dev/dri/card0` (render). Mesa built by `mainline/gpu/build-mesa.sh` into `/opt/mesa` (EGL, GLES 2.0, GBM, kmsro). kmscube 66 fps | GPU devfreq/OPPs (runs at LK's 450 MHz); Mesa into the rootfs image |
+| GPU (Mali-T720 MP1, 450 MHz) | ✅ Panfrost + Mesa 24.3 | `&gpu` from mt6735.dtsi, VCORE1 as mali-supply; `/dev/dri/card0` (render). Mesa built by `mainline/gpu/build-mesa.sh` into `/opt/mesa` (EGL, GLES 2.0, GBM, kmsro). kmscube 60 fps; Mesa ships in the rootfs image | GPU devfreq/OPPs (runs at LK's 450 MHz) |
 | Touch | ✅ works, at 1.0 s | Goodix GT9293, i2c1 @0x5d, `goodix,gt911`, IRQ GPIO10, reset GPIO62, VGP1 2.8 V. `FW_LOADER_USER_HELPER` off: its fallback for the optional `goodix_9293_cfg.bin` delayed the device to 62 s | — |
 | Buttons | ✅ works | Vol± on the SoC keypad (`mt6779-keypad`), Power on `mt6328-keys` | — |
 | USB | ✅ peripheral | Legacy CDC gadget `0525:a4aa` (ECM + ACM), 172.16.42.1, telnet, httpd | Host mode, VBUS/ID detection |
@@ -108,7 +108,7 @@ Bus numbers in stage 2: i2c-0 = i2c1 (touch), i2c-1 = i2c2 (sensors), i2c-2 = i2
   17 MB in `/opt/mesa`; needs `apk add libdrm expat zstd-libs`.
 - Pitfalls hit: zig links non-PIE executables without copy relocations for musl's data (getopt loops, getenv
   crashes) → PIE; no ELF build-id → Panfrost's disk cache crashes → `-Dshader-cache=disabled`.
-- Result: `Mali-T720 (Panfrost)`, OpenGL ES 2.0 Mesa 24.3.4; kmscube 66 fps, vsync-locked, no kernel errors.
+- Result: `Mali-T720 (Panfrost)`, OpenGL ES 2.0 Mesa 24.3.4; kmscube 66 fps (60 since the panel runs at 60 Hz), vsync-locked, no kernel errors.
 
 ## PocketJS on mainline
 - `pocketjs-kiosk` (pocketjs `hosts/android`, static aarch64 musl) runs as the OpenRC service `pocketjs`
@@ -121,8 +121,12 @@ Bus numbers in stage 2: i2c-0 = i2c1 (touch), i2c-1 = i2c2 (sensors), i2c-2 = i2
   full-screen frame 10.3 ms. More than 2 threads gains nothing: memory-bandwidth bound.
 - DRM/KMS scanout (pocketjs 9db560b, default; `POCKETJS_DISPLAY=fb` for fbdev): card1, two dumb buffers, page
   flip at vblank, buffer reused only after its flip completes, console CRTC restored on exit. Swipes: 60 frames/s
-  steady, rotate+present ~7.5 ms, no tearing. Still to do: pace the loop by the flip event (it runs on the 60 Hz
-  timer, so it renders 60 of the panel's 66 refreshes); write straight into the dumb buffer if its mapping allows.
+  steady, rotate+present ~7.5 ms, no tearing.
+- Pacing (pocketjs 424d1a6, 2026-11-17): the PocketJS clock is a fixed 60 Hz (virtual frames), so at 66 Hz every
+  11th refresh repeated a frame. The panel mode now runs at 60.0 Hz, and the kiosk's 60 Hz tick is phase-locked to
+  the flip events (frame starts 8 ms after a vblank; JS + raster overlap the pending flip). Swipes: every flip
+  during animation on the next refresh (963/963 over 3 runs; free-running timer 97-99%). `POCKETJS_PACE=timer`,
+  `POCKETJS_PHASE_MS`. Still to do: write straight into the dumb buffer if its mapping allows.
 - Tools: `/usr/local/sbin/swipe /dev/input/event2 l|r N gap_ms` injects swipes; `POCKETJS_STATS=1|2` per-second /
   per-frame stats; `mainline/scripts/tb.sh` (ssh) and `fb2png.py` (fbdev dumps only, not DRM buffers).
 
@@ -248,8 +252,8 @@ tested escape. Details, matrix and plan: [handoff-uboot-2026-11-17.md](handoff-u
 5. ~~Rootfs~~, ~~proxy for apk~~, ~~image with everything installed by hand~~ (done). Next: `apk fix` for the skipped package scripts.
 6. ~~Display: D2 DT fixes, IOMMU, NT51021B GX panel driver, D2 mutex table, mediatek-drm~~ (done). Next: the OVL0 path (hardware planes).
 7. MT6328 ADC + battery NTC + SM5414 driver with the desk charging policy.
-8. ~~Backlight~~, ~~GPU: Panfrost + Mesa~~ (done). Next: GPU OPPs; Mesa in the rootfs image.
+8. ~~Backlight~~, ~~GPU: Panfrost + Mesa~~, ~~Mesa in the rootfs image~~ (done). Next: GPU OPPs.
 9. ~~cpufreq, 1092 MHz, overclock to 1196~~ (done). SoC thermal: flash and verify kernel #23.
-10. ~~PocketJS on DRM/KMS with page flips at vblank~~ (done). Next: pace by the flip event (66 fps).
+10. ~~PocketJS on DRM/KMS with page flips at vblank~~, ~~60 Hz panel + vblank-locked tick~~ (done).
 11. ~~WiFi~~ (done, at boot, research-wifi.md). ~~Time over WiFi (ntpd, swclock)~~ (done). Next: BT, RTC.
 12. ~~Rootfs image rebuild with everything installed by hand~~ (done 2026-11-17: `build-rootfs.sh` + `tb-install.sh`; peek/poke/swipe now built from `rootfs/tools/`). A/B updates: not for now.

@@ -103,7 +103,9 @@ static int nt51021b_unprepare(struct drm_panel *panel)
 
 /*
  * GX timings. The pixel clock is chosen so that the MTK DSI link runs at the stock 336 Mb/s per lane
- * (clock * 24 bpp / 4 lanes); that gives about 66 Hz with these porches, close to what LK runs.
+ * (clock * 24 bpp / 4 lanes). With LK's porches (VFP 35) that is 65.9 Hz; the vertical front porch is
+ * stretched to 141 lines instead so the panel refreshes at 60.0 Hz (56 MHz / (783 x 1192)), matching
+ * userspace that animates on a 60 Hz clock, with the same link rate.
  */
 static const struct drm_display_mode nt51021b_gx_mode = {
 	.clock = 56000,
@@ -112,9 +114,9 @@ static const struct drm_display_mode nt51021b_gx_mode = {
 	.hsync_end = 600 + 85 + 13,
 	.htotal = 600 + 85 + 13 + 85,
 	.vdisplay = 1024,
-	.vsync_start = 1024 + 35,
-	.vsync_end = 1024 + 35 + 2,
-	.vtotal = 1024 + 35 + 2 + 25,
+	.vsync_start = 1024 + 141,
+	.vsync_end = 1024 + 141 + 2,
+	.vtotal = 1024 + 141 + 2 + 25,
 	.width_mm = 90,
 	.height_mm = 154,
 	.type = DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED,
