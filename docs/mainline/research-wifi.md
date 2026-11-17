@@ -1,6 +1,6 @@
 # TB-7304X mainline: WiFi / BT (MT6625L via CONSYS) — feasibility notes
 
-Status 2026-11-16: research only, nothing built yet.
+Status 2026-11-17: sources and firmware collected (see "Inputs collected"), nothing built yet.
 
 ## Hardware
 - The WiFi/BT/GPS/FM MAC and baseband live in the SoC's **CONSYS** (connectivity subsystem); the **MT6625L** next to
@@ -41,6 +41,37 @@ Status 2026-11-16: research only, nothing built yet.
 Effort: weeks; risk: high (CONSYS power-on and EMI layout are the unknowns). Value for the desk use case is moderate
 — USB already provides power + network to the host. Order: read the stock DT's consys/btif/reserved-memory nodes and
 the BSP platform layer first, then decide.
+
+## Inputs collected (2026-11-17)
+- **Android /system** copied to this Mac: `backup/system.tar` (3.3 GB, `tar -C /mnt/sys -cf - .` over tb.sh from
+  `mmcblk0p20` mounted ro) and unpacked in `backup/system/`. Both gitignored.
+- **Firmware** in `backup/system/vendor/firmware/` (`/system/etc/firmware` does not exist on this build):
+  `WMT_SOC.cfg` (80 B: `coex_wmt_ant_mode=1`, `wmt_gps_lna_pin=0`, `wmt_gps_lna_enable=0`, `co_clock_flag=3`),
+  `ROMv2_lm_patch_1_0_hdr.bin`, `ROMv2_lm_patch_1_1_hdr.bin`, `WIFI_RAM_CODE_6735`, `mt6627_fm_v1_{patch,coeff}.bin`.
+- **NVRAM**: `nvdata` (`mmcblk0p18`) `APCFG/APRDEB/WIFI` (514 B, starts `04 01`, holds the MAC and TX power
+  tables) and `WIFI_CUSTOM` (6 B), copied to `backup/nvdata/` (gitignored, unique to this device).
+- **Stock userspace** (`backup/system/vendor/bin`, bionic aarch64, will not run on Alpine): `wmt_loader`
+  (`/dev/wmtdetect`, chip id), `wmt_launcher` (`/dev/stpwmt`, `-p /vendor/firmware`, `WMT_SOC.cfg`),
+  `wmt_concurrency`, `wmt_loopback`, `stp_dump3`, `autokd`. The stock kernel builds the driver in (no `.ko`).
+  Plan: build the open-source loader/launcher equivalents (frank-w's BPI-R2 tools) against musl.
+- **Sources** on taos under `/build/alex/wifi/` (sparse clones):
+  - `frankw/` = frank-w BPI-Router-Linux `5.15-main`, `drivers/misc/mediatek/{btif,connectivity,include}`.
+    Platform layer: `connectivity/common/conn_soc/mt7623/` (1772 lines); WLAN HIF `wlan/gen2/os/linux/hif/ahb/mt8127`.
+  - `bsp2/` = `dhirajms/kernel_lenovo_P1m_3.18.y` (`p1mup`), MT6735 3.18 BSP: **`conn_soc/mt6735/`**
+    (`mtk_wcn_consys_hw.c` 1233, `wmt_plat_alps.c` 1053, header 290 lines) and `wlan/gen2/.../hif/ahb/mt6735`.
+    Same directory layout as frank-w's tree, so the MT6735 layer drops in next to `mt7623`. It takes clocks
+    `conn`/`bus`, regulators `vcn18`/`vcn28`/`vcn33_bt`/`vcn33_wifi`, regs via `of_iomap` (CONSYS, AP RGU,
+    topckgen, SPM, matching the stock DT order), EMI via `RESERVEDMEM_OF_DECLARE("mediatek,consys-reserve-memory")`
+    and the topckgen EMI remap register; EMI MPU protection is optional (`CONSYS_EMI_MPU_SETTING`).
+  - `bsp/` (maozi-114 3.18.79) has only the build-in adapter stubs; the driver lives out of tree there. Not useful.
+
+## Next steps
+1. Diff `bsp2` vs `frankw` `conn_soc/` (35 differing files) and `btif/` to separate MT6735 platform code from
+   the 3.18 to 5.15 API port.
+2. Import frank-w's tree into `mainline/src/` as an out-of-tree module or patch set, add `conn_soc/mt6735` and
+   `hif/ahb/mt6735`, port to 7.0.
+3. DT: `consys`, `btif`, `wifi` nodes and a `reserved-memory` node; check the mainline mt6735 clock IDs for
+   `conn`/`bus` and the CONN power domain.
 
 ## Sources
 - OpenWrt forum, UFI6735 (MT6735 has no usable mainline support): https://forum.openwrt.org/t/ufi6735-mediatek-mt6735-4g-lte-wifi-usb-stick-router/141528
