@@ -74,6 +74,19 @@
 			reg = <0x0 0x43ff0000 0x0 0x00010000>;
 			no-map;
 		};
+
+		/*
+		 * CONSYS EMI window (WMT driver, mainline/wcn). Not the dtsi's 0x7f800000: on this tablet LK keeps
+		 * 0x7f000000.. out of the memory node and its framebuffer sits at 0x7f7b0000..0x7fa10000 (600x1024,
+		 * stride 2432), right over it. The base must be 2 MB aligned (stock: alignment 0x200000): at 0x7ef00000
+		 * CONSYS wrote its trace into 0x7eexxxxx, i.e. the remap drops address bit 20, and corrupted the kernel
+		 * page tables there (2026-11-17). 2 MB reserved so the window CONSYS sees is ours either way.
+		 */
+		consys-memory@7ee00000 {
+			compatible = "mediatek,consys-reserve-memory";
+			reg = <0x0 0x7ee00000 0x0 0x00200000>;
+			no-map;
+		};
 	};
 
 	/*
@@ -150,7 +163,7 @@
 	};
 
 	btif: serial@1100c000 {
-		compatible = "mediatek,mtk-btif";
+		compatible = "mediatek,btif";	/* stock; "mediatek,mtk-btif" would bind 8250_of */
 		reg = <0 0x1100c000 0 0x1000>;
 		interrupts = <GIC_SPI 90 IRQ_TYPE_LEVEL_LOW>;
 		clocks = <&pericfg CLK_PERI_BTIF>, <&pericfg CLK_PERI_APDMA>;
@@ -178,10 +191,8 @@
 	};
 };
 
-/* CONSYS EMI window: the 1 MB the mt6735.dtsi already reserves (no-map), claimed by the WMT driver */
-&consys_mem {
-	compatible = "mediatek,consys-reserve-memory";
-};
+/* the dtsi's CONSYS window lies under LK's framebuffer on this tablet, see consys-memory@7ee00000 */
+/delete-node/ &consys_mem;
 
 /*
  * Secondary CPUs: plain PSCI CPU_ON does not power the core on with the stock ATF (that is the

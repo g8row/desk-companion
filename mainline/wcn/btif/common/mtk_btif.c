@@ -200,7 +200,7 @@ static struct timespec64 btif_rxd_time_stamp[MAX_BTIF_RXD_TIME_REC];
 
 #ifdef CONFIG_OF
 const struct of_device_id apbtif_of_ids[] = {
-	{ .compatible = "mediatek,mtk-btif", },
+	{ .compatible = "mediatek,btif", },	/* not mtk-btif: 8250_of claims that */
 	{}
 };
 #endif
@@ -3209,6 +3209,12 @@ static int BTIF_init(void)
 	if (i_ret) {
 		BTIF_ERR_FUNC("BTIF platform driver registered failed, ret(%d)\n", i_ret);
 		goto err_exit1;
+	}
+	if (!g_btif[0].private_data) {
+		/* probe did not run (no/disabled DT node, deferred, or another driver owns it) */
+		BTIF_ERR_FUNC("BTIF device not probed, giving up\n");
+		platform_driver_unregister(&mtk_btif_dev_drv);
+		return -ENODEV;
 	}
 
 	i_ret = driver_create_file(&mtk_btif_dev_drv.driver, &driver_attr_flag);

@@ -38,3 +38,5 @@ mainline/gpu/out/
 backup/system.tar
 backup/system/
 backup/nvdata/
+mainline/wcn-tools/stp_uart_launcher
+mainline/wcn-tools/wmt_loader

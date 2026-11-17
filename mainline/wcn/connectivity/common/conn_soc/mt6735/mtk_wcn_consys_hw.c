@@ -39,6 +39,7 @@
 #include <linux/pm_runtime.h>
 #include <linux/regmap.h>
 #include <linux/regulator/consumer.h>
+#include <linux/sizes.h>
 #include "osal_typedef.h"
 #include "mtk_wcn_consys_hw.h"
 
@@ -367,10 +368,23 @@ static INT32 consys_emi_setup(VOID)
 		WMT_PLAT_ERR_FUNC("consys emi memory address gConEmiPhyBase invalid\n");
 		return -1;
 	}
-	/* consys to ap emi remapping register 0x10000320: [11:0] = base >> 20, [12] = enable */
+	/*
+	 * The remap ignores address bit 20: a base that is only 1 MB aligned makes CONSYS write 1 MB below the
+	 * reservation (seen on the TB-7304X: firmware trace text in the kernel page tables). Stock DT: 2 MB alignment.
+	 */
+	if (gConEmiPhyBase & (SZ_2M - 1)) {
+		WMT_PLAT_ERR_FUNC("consys EMI base 0x%llx is not 2 MB aligned, refusing\n",
+				  (unsigned long long)gConEmiPhyBase);
+		gConEmiPhyBase = 0;
+		return -1;
+	}
+	/*
+	 * consys to ap emi remapping register 0x10000320: [11:0] = base >> 20, [12] = enable. The BSP ORs the value
+	 * in, which keeps stale bits from a previous setting; replace the field instead.
+	 */
 	addrPhy = ((gConEmiPhyBase & 0xFFF00000) >> 20) | 0x1000;
 	CONSYS_REG_WRITE(conn_reg.topckgen_base + CONSYS_EMI_MAPPING_OFFSET,
-			 CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_EMI_MAPPING_OFFSET) | addrPhy);
+			 (CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_EMI_MAPPING_OFFSET) & ~0x1FFF) | addrPhy);
 	WMT_PLAT_INFO_FUNC("EMI 0x%llx, CONSYS_EMI_MAPPING(0x%08x)\n", (unsigned long long)gConEmiPhyBase,
 			   CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_EMI_MAPPING_OFFSET));
 

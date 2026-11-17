@@ -1,6 +1,6 @@
 # TB-7304X mainline: WiFi / BT (MT6625L via CONSYS) — feasibility notes
 
-Status 2026-11-17: sources and firmware collected (see "Inputs collected"), nothing built yet.
+Status 2026-11-17: **scanning works** (2.4 + 5 GHz) on a RAM-booted kernel; association not tried yet. See "Bring-up".
 
 ## Hardware
 - The WiFi/BT/GPS/FM MAC and baseband live in the SoC's **CONSYS** (connectivity subsystem); the **MT6625L** next to
@@ -27,6 +27,36 @@ Status 2026-11-17: sources and firmware collected (see "Inputs collected"), noth
   Upstream consensus: too large for mainline, depends on the WMT tools.
 - Downstream MT6735 BSP (`dhirajms/kernel_lenovo_P1m_3.18.y`, `maozi-114/android_kernel_mt6735-37_3.18.79`) has
   the MT6735-specific CONSYS platform layer (`connectivity/common/combo/linux/pub/.../mt6735`?) — to be located.
+
+## Bring-up (2026-11-17)
+Driver: `mainline/wcn` (frank-w 5.15 tree + `conn_soc/mt6735`, ported to 7.0; history in git), copied into the
+kernel by `patches/0011-wcn-mediatek.sh`, built in (`CONFIG_MTK_COMBO*`, `MTK_BTIF`, `NL80211_TESTMODE`).
+Userspace: `mainline/wcn-tools` (BPI-R2's `wmt_loader` + `stp_uart_launcher`, static).
+
+On the tablet (files in place: `/etc/firmware/{WMT_SOC.cfg,ROMv2_lm_patch_1_*_hdr.bin,WIFI_RAM_CODE_6735}`,
+`WIFI_RAM_CODE -> WIFI_RAM_CODE_6735`, `/etc/firmware/nvram/{WIFI,WIFI_CUSTOM}`):
+```
+wmt_loader                                   # chip id 0x335, registers /dev/stpwmt and /dev/wmtWifi
+setsid stp_uart_launcher -p /etc/firmware </dev/null >/tmp/launcher.log 2>&1 &   # powers CONSYS, ROM patches
+echo 1 > /dev/wmtWifi                        # WIFI_RAM_CODE download, netdev mt6625_0 (MAC from nvram/WIFI)
+ip link set mt6625_0 up; iw dev mt6625_0 scan
+```
+
+Problems found on the way (all fixed in the tree):
+- **CONSYS EMI must be 2 MB aligned.** At 0x7ef00000 (1 MB aligned) the firmware wrote its trace 1 MB lower, into
+  the kernel page tables (ASCII in PTEs, oops storm, panic). Now `consys-memory@7ee00000`, 2 MB; the driver
+  refuses unaligned bases and replaces the remap field instead of ORing it. The dtsi's 0x7f800000 is under LK's
+  framebuffer on this tablet, so it is deleted.
+- **8250_of binds `mediatek,mtk-btif`** as a plain UART; the node uses the stock `mediatek,btif`. BTIF_init then
+  oopsed on a NULL device (now fails with -ENODEV if probe did not run).
+- **vmalloc buffers handed to dma_map_single()** (RX/TX coalescing buffers, firmware download): rejected since 5.x,
+  oops on unmap. `ahb.c` bounces them through two 128 KiB coherent buffers.
+- `netdev->dev_addr` written directly (const since 5.17): `eth_hw_addr_set()`.
+- `build-in-docker.sh` ignores compile errors and packages the previous Image: check the log for `error:`.
+- A crash leaves zero-length files behind (ext4 delalloc): `sync` after copying firmware/tools.
+
+Not done: RF clock buffer (CONSYS_CLOCK_BUF_CTRL; the clock is evidently running), EMI MPU, the fbdev
+screen-state hint, BT (`CONFIG_BT`, `MTK_COMBO_BT`), GPS, FM.
 
 ## Plan sketch (out-of-tree, not upstreamable)
 1. Take frank-w's 5.15-main `drivers/misc/mediatek/{btif,connectivity}` and forward-port to 7.0 (cfg80211,

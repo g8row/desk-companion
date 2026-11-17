@@ -205,7 +205,7 @@ static void _btif_set_default_setting(void)
 	unsigned int irq_info[3] = {0, 0, 0};
 	unsigned int phy_base;
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,mtk-btif");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,btif");
 	if (node) {
 		mtk_btif.p_irq->irq_id = irq_of_parse_and_map(node, 0);
 		/*fixme, be compitable arch 64bits*/

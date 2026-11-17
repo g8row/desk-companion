@@ -175,6 +175,8 @@
 
 #if !defined(CONFIG_MTK_CLKMGR)
 #include <linux/clk.h>
+#include <linux/dma-mapping.h>
+#include <linux/mm.h>
 #endif
 
 /* #define MTK_DMA_BUF_MEMCPY_SUP */ /* no virt_to_phys() use */
@@ -219,6 +221,7 @@ HifAhbDmaEnhanceModeConf(IN GLUE_INFO_T *GlueInfo, IN UINT_32 BurstLen, IN UINT_
 static irqreturn_t HifAhbISR(IN int Irq, IN void *Arg);
 
 static int HifAhbProbe(VOID);
+static VOID HifBounceAlloc(GL_HIF_INFO_T *HifInfo);
 
 static int HifAhbRemove(VOID);
 
@@ -479,6 +482,7 @@ VOID glSetHifInfo(GLUE_INFO_T *GlueInfo, ULONG ulCookie)
 	spin_lock_init(&HifInfo->DdmaLock);
 
 	HifPdmaInit(HifInfo);
+	HifBounceAlloc(HifInfo);
 #endif /* CONF_MTK_AHB_DMA */
 
 	/* Start loopback test after 10 seconds */
@@ -858,6 +862,42 @@ BOOLEAN kalDevRegWrite(IN GLUE_INFO_T *GlueInfo, IN UINT_32 RegOffset, IN UINT_3
 * \retval FALSE         operation fail
 */
 /*----------------------------------------------------------------------------*/
+/*
+ * DMA bounce buffers. The driver hands vmalloc()ed buffers (kalMemAlloc VIR_MEM_TYPE, e.g. the firmware image and
+ * the RX/TX coalescing buffers) to dma_map_single(), which Linux rejects since 5.x ("rejecting DMA map of vmalloc
+ * memory") and then oopses on unmap. Such buffers go through a coherent bounce buffer per direction instead.
+ */
+static VOID *HifBounceVa[2];
+static dma_addr_t HifBouncePa[2];
+#define HIF_BOUNCE_RX	0
+#define HIF_BOUNCE_TX	1
+/* >= CFG_RX_COALESCING_BUFFER_SIZE (43 * 2352) and CFG_COALESCING_BUFFER_SIZE (2304 * NIC_TX_BUFF_SUM) */
+#define HIF_BOUNCE_SIZE	(128 * 1024)
+
+/* once, from glSetHifInfo() (process context); kalDevPort*() may run where sleeping is not allowed */
+static VOID HifBounceAlloc(GL_HIF_INFO_T *HifInfo)
+{
+	int Dir;
+
+	for (Dir = 0; Dir < 2; Dir++) {
+		if (HifBounceVa[Dir])
+			continue;
+		HifBounceVa[Dir] = dma_alloc_coherent(HifInfo->Dev, HIF_BOUNCE_SIZE, &HifBouncePa[Dir], GFP_KERNEL);
+		if (!HifBounceVa[Dir])
+			DBGLOG(INIT, ERROR, "[WiFi/HIF] bounce buffer %d allocation failed\n", Dir);
+	}
+}
+
+static VOID *HifBounceGet(GL_HIF_INFO_T *HifInfo, int Dir, UINT_32 Size, dma_addr_t *Pa)
+{
+	if (!HifBounceVa[Dir] || Size > HIF_BOUNCE_SIZE) {
+		DBGLOG(INIT, ERROR, "[WiFi/HIF] no bounce buffer for a %u byte vmalloc DMA\n", Size);
+		return NULL;
+	}
+	*Pa = HifBouncePa[Dir];
+	return HifBounceVa[Dir];
+}
+
 BOOLEAN
 kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT PUINT_8 Buf, IN UINT_32 MaxBufSize)
 {
@@ -902,6 +942,7 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 		MTK_WCN_HIF_DMA_CONF DmaConf;
 		UINT_32 LoopCnt;
 		unsigned long PollTimeout;
+		VOID *RxBounce = NULL;
 #if (CONF_HIF_DMA_INT == 1)
 		INT_32 RtnVal = 0;
 #endif
@@ -937,7 +978,16 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 		 */
 		/* DMA_FROM_DEVICE invalidated (without writeback) the cache */
 		/* TODO: if dst_off was not cacheline aligned */
-		DmaConf.Dst = dma_map_single(HifInfo->Dev, Buf, Size, DMA_FROM_DEVICE);
+		if (is_vmalloc_addr(Buf)) {
+			dma_addr_t Pa;
+
+			RxBounce = HifBounceGet(HifInfo, HIF_BOUNCE_RX, Size, &Pa);
+			if (!RxBounce)
+				return FALSE;
+			DmaConf.Dst = Pa;
+		} else {
+			DmaConf.Dst = dma_map_single(HifInfo->Dev, Buf, Size, DMA_FROM_DEVICE);
+		}
 #endif /* MTK_DMA_BUF_MEMCPY_SUP */
 
 		/* start to read data */
@@ -990,7 +1040,10 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 		if (DmaVBuf != NULL)
 			kalMemCopy(Buf, DmaVBuf, Size);
 #else
-		dma_unmap_single(HifInfo->Dev, DmaConf.Dst, Size, DMA_FROM_DEVICE);
+		if (RxBounce)
+			kalMemCopy(Buf, RxBounce, Size);
+		else
+			dma_unmap_single(HifInfo->Dev, DmaConf.Dst, Size, DMA_FROM_DEVICE);
 #endif /* MTK_DMA_BUF_MEMCPY_SUP */
 
 		if ((RegWHLPCR & WHLPCR_INT_EN_SET) == 1)
@@ -1088,6 +1141,7 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 		MTK_WCN_HIF_DMA_CONF DmaConf;
 		UINT_32 LoopCnt;
 		unsigned long PollTimeout;
+		BOOLEAN TxBounced = FALSE;
 #if (CONF_HIF_DMA_INT == 1)
 		INT_32 RtnVal = 0;
 #endif
@@ -1114,7 +1168,18 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 #else
 
 		/* DMA_TO_DEVICE writeback the cache */
-		DmaConf.Src = dma_map_single(HifInfo->Dev, Buf, Size, DMA_TO_DEVICE);
+		if (is_vmalloc_addr(Buf)) {
+			dma_addr_t Pa;
+			VOID *Va = HifBounceGet(HifInfo, HIF_BOUNCE_TX, Size, &Pa);
+
+			if (!Va)
+				return FALSE;
+			kalMemCopy(Va, Buf, Size);
+			DmaConf.Src = Pa;
+			TxBounced = TRUE;
+		} else {
+			DmaConf.Src = dma_map_single(HifInfo->Dev, Buf, Size, DMA_TO_DEVICE);
+		}
 #endif /* MTK_DMA_BUF_MEMCPY_SUP */
 
 		/* start to write */
@@ -1163,7 +1228,8 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 		AP_DMA_HIF_UNLOCK(HifInfo);
 
 #ifndef MTK_DMA_BUF_MEMCPY_SUP
-		dma_unmap_single(HifInfo->Dev, DmaConf.Src, Size, DMA_TO_DEVICE);
+		if (!TxBounced)
+			dma_unmap_single(HifInfo->Dev, DmaConf.Src, Size, DMA_TO_DEVICE);
 #endif /* MTK_DMA_BUF_MEMCPY_SUP */
 
 		if ((RegWHLPCR & WHLPCR_INT_EN_SET) == 1)

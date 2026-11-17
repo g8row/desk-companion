@@ -1225,7 +1225,7 @@ BOOLEAN glP2pCreateWirelessDevice(P_GLUE_INFO_T prGlueInfo)
 	/* 4.2 fill hardware address */
 	/* COPY_MAC_ADDR(rMacAddr, prAdapter->rMyMacAddr);
 	rMacAddr[0] ^= 0x2; // change to local administrated address
-	memcpy(prGlueInfo->prP2PInfo->prDevHandler->dev_addr, rMacAddr, ETH_ALEN);
+	eth_hw_addr_set(prGlueInfo->prP2PInfo->prDevHandler, rMacAddr);	/* dev_addr is const since 5.17 */
 	memcpy(prGlueInfo->prP2PInfo->prDevHandler->perm_addr,
 			prGlueInfo->prP2PInfo->prDevHandler->dev_addr, ETH_ALEN);*/
 
@@ -1376,7 +1376,7 @@ BOOLEAN glRegisterP2P(P_GLUE_INFO_T prGlueInfo, const char *prDevName, BOOLEAN f
 	/* 4.2 fill hardware address */
 	COPY_MAC_ADDR(rMacAddr, prAdapter->rMyMacAddr);
 	rMacAddr[0] ^= 0x2;	/* change to local administrated address */
-	ether_addr_copy(prDevHandler->dev_addr, rMacAddr);
+	eth_hw_addr_set(prDevHandler, rMacAddr);	/* dev_addr is const since 5.17 */
 	ether_addr_copy(prDevHandler->perm_addr, prDevHandler->dev_addr);
 
 	/* 4.3 register callback functions */
