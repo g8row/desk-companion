@@ -186,7 +186,7 @@ find_part() {
 # 4 and up: needs a human, so do not mount it
 fsck_part() {
 	[ -x /bin/e2fsck ] || { log "no e2fsck in the initramfs, mounting $1 unchecked"; return 0; }
-	# no RTC: the clock starts at 1970, and every superblock time would look like the future (a forced full check)
+	# skip time-based checks during early boot; harmless now that the RTC sets the clock
 	[ -f /etc/e2fsck.conf ] || { mkdir -p /etc; printf '[options]\n\tbroken_system_clock = 1\n' > /etc/e2fsck.conf; }
 	e2fsck -p "$1" >> $LOG 2>&1; r=$?
 	[ $r -lt 4 ] && { [ $r -gt 0 ] && log "e2fsck $1: fixed (exit $r)"; return 0; }

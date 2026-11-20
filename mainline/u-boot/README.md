@@ -12,6 +12,7 @@ loads like a kernel. Status, test history and the next plan:
 | ✅ | `tbandroid` boots stock Android + Magisk in **normal** mode: patches `atag,boot` and `/firmware/android/mode` |
 | ✅ | **Deterministic start from LK** since the image is padded: T1 passed in the state where the old image hung |
 | ✅ | `fastboot continue` carries on with the default target (fixed by patch 0002; it used to reset the tablet) |
+| ✅ | Linux is the default: `boot.cmd` boots the raw slot `tbkern_<slot>` with root `tbroot_<slot>`; Android is one-shot/default via `tbstate` |
 
 **Why the old image looped:** LK reads the DTB it hands over from the last 512 KiB of the kernel area **in the
 partition**. Our 0x5883b-byte kernel area made that read underflow, and LK fell back to whatever DTB the previous
@@ -45,8 +46,16 @@ Since 2026-11-17 12:46, U-Boot is in **`boot`** and Android in **`recovery`**, a
 scp mainline/u-boot/* $BUILD_HOST:$BUILD_DIR/mainline/u-boot/
 ssh $BUILD_HOST "M=$BUILD_DIR/mainline; docker run --rm -v \$M:/m -v tb7304-ubuild:/uout tb7304-build bash /m/u-boot/build-uboot.sh"
 scp $BUILD_HOST:$BUILD_DIR/mainline/out/u-boot-tb7304x.img mainline/out/
-# from Android (root): write to recovery, verify with cmp, then `adb reboot recovery`
 ```
 
-From LK fastboot use `mainline/scripts/fbusb mainline/out/u-boot-tb7304x.img flash:recovery`
-(stock `fastboot` stalls on LK downloads; LK has no `fastboot boot`).
+**U-Boot lives in `boot`, never in `recovery`** — `recovery` holds Android + Magisk now. From LK fastboot, write it
+to `boot` (the image passes `lk_image_check.py`):
+
+```sh
+mainline/scripts/fbusb mainline/out/u-boot-tb7304x.img flash:boot
+# or, from a Linux host with the tablet in LK fastboot:
+mainline/scripts/linux-test.sh flash mainline/out/u-boot-tb7304x.img boot
+```
+
+Stock `fastboot` stalls on LK downloads; LK itself has no `fastboot boot`. U-Boot does, and that is the RAM-test
+path. Do not write a `boot-recovery` BCB to `para`.

@@ -1,7 +1,9 @@
 # Handoff: U-Boot chainload session, night of 2026-11-16 → 2026-11-17
 
-**Written:** 2026-11-17, after the tablet was recovered.
-**Branch:** `mainline-bringup` (U-Boot work is **uncommitted**: `mainline/u-boot/`, `mainline/scripts/fbusb`).
+**Written:** 2026-11-17, after the tablet was recovered. **Historical:** it records the state before the U-Boot work
+was committed and before the live layout moved to `boot`; see [plan-dualboot.md](plan-dualboot.md) and
+[STATUS.md](STATUS.md) for what is current.
+**Branch:** `mainline-bringup` at the time (U-Boot work was uncommitted: `mainline/u-boot/`, `mainline/scripts/fbusb`).
 **Read with:** [plan-boot-recovery.md](../../plan-boot-recovery.md) (the design this tested),
 [STATUS.md](STATUS.md), [mainline/u-boot/README.md](../../mainline/u-boot/README.md).
 

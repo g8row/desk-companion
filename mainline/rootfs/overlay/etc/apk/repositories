@@ -1,3 +1,3 @@
-# http: there is no RTC driver yet, so the clock may be wrong and TLS would fail. apk still checks signatures.
+# http keeps apk usable even if the clock is wrong; the RTC and ntpd normally set it. apk still checks signatures.
 http://dl-cdn.alpinelinux.org/alpine/v3.24/main
 http://dl-cdn.alpinelinux.org/alpine/v3.24/community

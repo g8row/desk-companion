@@ -339,7 +339,7 @@ Why this one:
 Requirements this places on U-Boot (none of them is LK work):
 1. Image built per §4, gated by `lk_image_check.py`.
 2. Handle LK bootmodes from `atag,boot`: **KPOC (8/9) and alarm (7) must go to Android** (stock charging UI), or
-   power off. Linux has no charger driver yet.
+   power off. Linux now has a charger driver, but the stock charging UI is still the safer target.
 3. Own the watchdog. LK leaves 10 s armed. U-Boot's `WDT_MTK` autostart (15 s) is fine, and the Linux kernel must
    take it over in turn.
 4. Boot counter and fallback, kept in a raw record. Decided 2026-11-17: a dedicated 1 MiB `tbstate` partition

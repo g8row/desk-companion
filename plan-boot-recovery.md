@@ -1,6 +1,8 @@
 # TB-7304X boot, recovery and dual-boot plan
 
-**Status:** proposal, not implemented. Branch `plan/boot-recovery`, based on `origin/mainline-bringup`.
+**Status:** historical. This was a proposal, not implemented as written; it is superseded by
+[docs/mainline/plan-dualboot.md](docs/mainline/plan-dualboot.md). U-Boot is in `boot`, Android in `recovery`, and
+Linux boots by default.
 **Date:** 2026-11-16.
 **Scope:** boot selection, recovery, a possible U-Boot port, rootfs durability, and a boot GUI.
 **Out of scope:** kernel drivers (WiFi, charger, thermal), Android app internals, and package work inside Alpine.
@@ -150,7 +152,7 @@ fastboot, bits 4–5 = `0x10` = recovery. LK reads and clears them when it acts 
 | F10 | Magisk safe mode / Android boot loop | Rebooting Android before `sys.boot_completed` increments Magisk's counter | `linux-test.sh` waits and resets it; manual `magisk --sqlite` |
 | F11 | Testing a kernel requires writing `recovery` | LK has no `fastboot boot`; stock `fastboot download:` stalls | `fb_send.py`, flash + `oem reboot-recovery` |
 | F12 | Power loss during a flash/update | Recovery or rootfs can be left half-written | BROM/mtkclient; known-good image |
-| F13 | Low battery during a long Linux session | No charger driver; LK programs a 4.35 V/700 mA policy with the safety timer off | Watch the battery; autoreboot to Android |
+| F13 | Low battery during a long Linux session | At the time there was no charger driver; LK programmed a 4.35 V/700 mA policy with the safety timer off | Historical: the SM5414 driver is implemented and charges at 4.10 V/500 mA (STATUS.md) |
 | F14 | Timestamps are wrong | No mainline RTC driver; clock starts at 1970 | Set the date from the host |
 
 The important pattern: **F1–F4 and F8 are state/selection problems, not rootfs problems.** Moving the rootfs to
@@ -416,7 +418,8 @@ In the `cache` row, paths are relative to the cache filesystem: `/linux/...` is 
   (KPOC) path, which boots Android's `boot` kernel in charger mode. In stock MTK LK, KPOC detection runs before
   the RTC recovery check. If this LK does the same, an armed RTC does not get a charger-plug boot into U-Boot,
   and pressing Power from the charging screen boots Android normally. Phase 0 must record what this LK does
-  (test T26). This is also the **only** way the tablet charges while off, because mainline has no charger driver.
+  (test T26). At the time this was also the **only** way the tablet charged while off, because mainline had no
+  charger driver; the SM5414 driver is implemented now (STATUS.md).
 
 ### 5.3 Boot intent state machine
 

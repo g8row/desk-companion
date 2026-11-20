@@ -1,5 +1,9 @@
 # TB-7304X mainline: charger, battery, RTC, thermal, sensors (research notes)
 
+> **Current status (2026-11-19):** the charger, RTC, AUXADC, thermal zones and accelerometer described here are
+> implemented; see [STATUS.md](STATUS.md). The text below is the original research/plan, with the charger
+> implementation note in §1.
+
 Sources used:
 - `mainline/stock/stock.dts` (stock 3.18 DTB, decompiled).
 - Stock kernel, unpacked from `backup/partitions/boot.bin` (gzip Image, 17.8 MB). Strings are in
@@ -355,6 +359,9 @@ Config: `CONFIG_HWMON=y`, `CONFIG_SENSORS_NTC_THERMISTOR=y`, plus the new `MEDIA
 
 ## 3. RTC: MT6328 RTC
 
+> **Implemented 2026-11-17:** `rtc0` is registered, the kernel reads it at boot, and `hwclock` applies it. The
+> analysis below is what the patch followed.
+
 - Downstream `mtk_rtc_hal.h` for mt6735: `#define RTC_BASE (0x4000)`.
 - `mt_rtc_hw.h` uses the same register layout as MT6323/MT6397:
   - BBPU 0x00, IRQ_STA 0x02, IRQ_EN 0x04, AL_MASK 0x08, TC_SEC 0x0a, AL_SEC 0x18.
@@ -400,6 +407,9 @@ add `"mediatek,mt6328-rtc"` to the driver's match table later, for upstreaming.
 
 ## 4. Thermal
 
+> **Implemented 2026-11-16, verified 2026-11-17:** `patches/0009` adds the SoC thermal zone and the battery NTC zone; `thermal_zone0`
+> (`cpu-thermal`) reports live values and drives cpufreq at the passive trip (STATUS.md).
+
 ### SoC (THERM_CTRL 0x1100b000, irq SPI 78)
 - Mainline `drivers/thermal/mediatek/auxadc_thermal.c` (CONFIG_MTK_THERMAL, already `=y`) has mt8173, mt2701,
   mt2712, mt7622, mt7986, mt8183 and mt8365. **No mt6735**, and `mt6735.dtsi` has no thermal, auxadc or efuse node.
@@ -443,6 +453,9 @@ add `"mediatek,mt6328-rtc"` to the driver's match table later, for upstreaming.
 
 ## 5. Accelerometer (optional)
 
+> **Implemented 2026-11-17:** the fitted part is the **BMA255 @0x18** (chip ID 0xFA), driven by bmc150-accel; the
+> MC3433 @0x4c is not fitted. See the device table in STATUS.md.
+
 - Primary part: MC3433 @0x4c on i2c2 (stock `cust_accel@0`). Second-source: BMA2xx @0x18. Both drivers were built
   into stock, and one probes.
 - Mainline:
@@ -470,6 +483,9 @@ add `"mediatek,mt6328-rtc"` to the driver's match table later, for upstreaming.
 ---------------------------------------------------------------------------------------------------------------
 
 ## Recommended order
+
+> **Done:** steps 1–4 and the accelerometer were implemented on 2026-11-17 (STATUS.md). The list is kept as the
+> original plan.
 
 1. **Read-only probe**: zero new code, about 30 min, no risk.
    - Add `&i2c3 { status = "okay"; clock-frequency = <100000>; };` and `&i2c2 { status = "okay"; };` with no

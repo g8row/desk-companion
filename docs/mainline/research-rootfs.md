@@ -3,6 +3,9 @@
 Research only. Nothing was run on the tablet and no repo file was changed. I read the build host (taos) only to check
 for Docker and binfmt.
 
+> **Current status (2026-11-19):** this is the 2026-11-16 research note. The RTC, charger, AUXADC and thermal
+> drivers described as missing below are implemented; see [STATUS.md](STATUS.md). The live root is on `tbroot_a`.
+
 > **Long-term layout decided 2026-11-17** in [plan-dualboot.md](plan-dualboot.md):
 > - No microSD.
 > - `userdata` shrinks to 3 GiB. Android's data is wiped once, and its stock recovery re-formats it so Android can
@@ -182,9 +185,10 @@ try_rootfs() {
 - `/etc/fstab`:
   - `/dev/loop0 / ext4 rw,noatime 0 0`
   - `tmpfs /tmp tmpfs nosuid,nodev 0 0`
-- **No RTC driver → the clock starts in 1970.**
-  - TLS cert validity fails, so either use `http://` mirrors in `/etc/apk/repositories` (apk verifies package
-    signatures anyway), or set the time from the host at login: `ssh root@172.16.42.1 date -s @$(date +%s)`.
+- **RTC (implemented 2026-11-17):** the MT6328 RTC is `rtc0`; the kernel sets the clock at boot and `hwclock`
+  applies it. Without an RTC the clock started in 1970, so:
+  - TLS cert validity failed, so the image uses `http://` mirrors in `/etc/apk/repositories` (apk verifies package
+    signatures anyway), or the time was set from the host at login: `ssh root@172.16.42.1 date -s @$(date +%s)`.
 - **Package manager online without touching host network config.** Run a proxy on the host in Docker, bound to
   127.0.0.1:3128, then `ssh -R 3128:127.0.0.1:3128 root@172.16.42.1` and run
   `http_proxy=http://127.0.0.1:3128 apk add …` on the tablet. That needs no NAT or forwarding on the host.
@@ -264,7 +268,9 @@ Optional stage-1 additions:
 - A stage-2 hang with no panic: the safety net needs the `CONFIG_PANIC_TIMEOUT` fix plus the boot counter.
   The last resort is still holding Power for ~15 s, after which LK boots Android (recovery is one-shot via
   `oem reboot-recovery`).
-- No charger driver: long stage-2 sessions drain the battery. Watch it, and set autoreboot back to Android as default.
+- **Charger (implemented 2026-11-17):** the SM5414 driver keeps the battery safe on USB (4.10 V CV, temperature
+  gate). With the old no-driver behavior, long stage-2 sessions drained the battery; watch it and set autoreboot
+  back to Android as default.
 - Unclean shutdowns (sysrq `b`) on a loop-mounted ext4: the journal covers it. Do `s,u` first. Android's boot-time
   `check` only fscks the outer cache fs.
 - Path A rootfs differs from a "real" install because no post-install scripts ran. Run `apk fix` once online.

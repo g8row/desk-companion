@@ -1,29 +1,32 @@
-# Mainline Linux on the Lenovo TB-7304X (MT6737M): research and first boot images
+# Mainline Linux on the Lenovo TB-7304X (MT6737M): bring-up and current system
 
-Status (2026-11-16): **mainline 7.0.10 boots on the tablet** from the `recovery` partition. Working: display (on LK's
-framebuffer), touch, all buttons, all 4 CPU cores, eMMC (read-only) and a USB shell and network.
-The run steps are in [TEST-PLAN.md](TEST-PLAN.md). Results and findings are in [section 0](#0-bring-up-results-2026-11-16).
+Status (2026-11-19): **mainline 7.0.10 is the tablet's main system.** U-Boot in `boot` boots Alpine from the
+internal eMMC (kernel slot `tbkern_a`, root `tbroot_a`) by default; Android + Magisk stay in `recovery`.
+Display (mediatek-drm, 60 Hz), touch, buttons, all 4 CPU cores, eMMC, USB, WiFi, charger/battery/RTC/thermal,
+accelerometer, IOMMU and the PocketJS kiosk work. Current support, measurements and the ordered todo list:
+[docs/mainline/STATUS.md](../docs/mainline/STATUS.md).
 
-> Since 2026-11-17, `recovery` holds U-Boot, which RAM-boots these images (`fastboot boot out/boot-mainline-uboot.img`).
-> The target design is U-Boot in `boot` with Linux by default:
-> [docs/mainline/plan-dualboot.md](../docs/mainline/plan-dualboot.md).
-> Anything LK boots directly must pass `scripts/analysis/lk_image_check.py`
-> ([research-lk-bootflow.md](../docs/mainline/research-lk-bootflow.md) §4).
+> Section 0 below is the **2026-11-16 bring-up record**, not the current hardware status. The live layout is
+> U-Boot in `boot`, Android in `recovery`, and Linux by default from the raw slots
+> ([plan-dualboot.md](../docs/mainline/plan-dualboot.md)). Anything LK boots directly must pass
+> `scripts/analysis/lk_image_check.py` ([research-lk-bootflow.md](../docs/mainline/research-lk-bootflow.md) §4).
 
 ## 0. Bring-up results (2026-11-16)
 
+> Historical snapshot. For the current state see [docs/mainline/STATUS.md](../docs/mainline/STATUS.md).
+
 | Area | State | Notes |
 |---|---|---|
-| Boot | works | `fb_send.py out/boot-mainline.img flash:recovery`, then `fb_send.py - "oem reboot-recovery"` (TEST-PLAN.md). |
-| Display | works (simpledrm on LK's framebuffer) | See "Display findings" below. No DRM pipeline or panel driver yet. |
+| Boot | works (then) | `fb_send.py out/boot-mainline.img flash:recovery`, then `fb_send.py - "oem reboot-recovery"` (TEST-PLAN.md). |
+| Display | works, simpledrm (then) | See "Display findings" below. No DRM pipeline or panel driver at the time. |
 | Touch | works | Goodix GT9293 on i2c1 @0x5d, `goodix,gt911` compatible, portrait coordinates, no axis swap. |
 | Buttons | work | Vol+/Vol- on the SoC keypad (`mediatek,mt6779-keypad` @0x10003000), Power via `mt6328-keys`. |
 | CPUs | all 4 work, hotplug works | New enable-method `mediatek,mt6735-smp` (`patches/smp_mt6735.c`). See "SMP findings". |
 | USB | works (peripheral) | Legacy CDC gadget `0525:a4aa` (ECM + ACM) takes the UDC. Device 172.16.42.1, telnet without login. |
-| eMMC | probes | Not mounted by `init`. |
-| WiFi/BT | no driver | MT6625L via CONSYS: no mainline driver. |
-| Charger, battery, RTC, thermal, sensors | not done | Research in progress. |
-| IOMMU (M4U) | deferred | "mm dts parse fail". SMI larbs therefore have no IOMMU (see patch 0002). |
+| eMMC | probes (then) | Not mounted by `init` at the time; now the root is on `tbroot_a`. |
+| WiFi/BT | no driver (then) | MT6625L via CONSYS had no mainline driver then; WiFi works now and BT is WIP (STATUS.md). |
+| Charger, battery, RTC, thermal, sensors | not done (then) | All implemented now (STATUS.md). |
+| IOMMU (M4U) | deferred (then) | "mm dts parse fail". SMI larbs had no IOMMU at the time; display now runs through it. |
 
 ### Boot and tooling findings
 - LK's fastboot has no `boot`, and the stock `fastboot` tool stalls in the `download:` data phase.
@@ -67,13 +70,17 @@ The run steps are in [TEST-PLAN.md](TEST-PLAN.md). Results and findings are in [
   - cpu3 goes offline and back online, and powers back on from `PWR_CON=0x32`.
 - This should also work on other MT6735/MT6737 devices running stock ATF.
 
-## TL;DR
+## TL;DR (2026-11-16 research snapshot)
+
+> For the current system see [docs/mainline/STATUS.md](../docs/mainline/STATUS.md); these were the findings that
+> started the bring-up.
 
 - A working MT6735-family mainline kernel exists: **gitlab.com/mt6735-mainline/linux**, 7.0.10, the same one postmarketOS
   packages as `linux-postmarketos-mediatek-mt6735`. Our MT6737M is close to the Doogee X5 Pro (MT6735P) in that tree.
-- **Stock LK has no `fastboot boot` command** (found by disassembly, details below). A RAM-only test through LK fastboot is
-  therefore expected to fail. The fallback is flashing the **recovery** partition (backed up) and running
-  `fastboot oem reboot-recovery`. That writes flash, so it needs the user's OK.
+- **Stock LK has no `fastboot boot` command** (found by disassembly, details below). A RAM-only test through LK fastboot
+  was therefore expected to fail. At the time the fallback was flashing the **recovery** partition (backed up) and
+  running `fastboot oem reboot-recovery`. The chainloaded U-Boot now provides `fastboot boot`; see
+  [plan-dualboot.md](../docs/mainline/plan-dualboot.md).
 - Built: `out/boot-mainline.img` (mainline + new DTS + sign-of-life initramfs), `out/boot-mainline-noovl.img`
   (safer framebuffer probing), and `out/boot-stock-kernel-initramfs.img` (control: stock 3.18 kernel + same initramfs).
   All use the stock header layout, which we verified by re-packing the stock `boot.bin` byte-for-byte.
@@ -124,7 +131,8 @@ Fastboot product string: `HQ8735B_TB_N`.
   - `getvar:`, `download:`, `flash:`, `erase:`, `continue`, `reboot`, `reboot-bootloader`
   - `oem p2u`, `oem reboot-recovery`, `oem append-cmdline`, `oem off-mode-charge`
   - The string `boot` exists only as the tail of `fastboot`. It is used elsewhere as a partition name, never in that
-    function. **Conclusion: no `fastboot boot`** (LK answers "unknown command"). Confidence: high, but untested on the device.
+    function. **Conclusion: LK has no `fastboot boot`** (it answers "unknown command"). Our chainloaded U-Boot does
+    provide it; see [plan-dualboot.md](../docs/mainline/plan-dualboot.md).
 - Kernel loading (function around 0x41e1f480):
   - It checks `hdr->kernel_addr & 0x7FFFF == 0`; otherwise "64 bit kernel can't boot at …".
   - It finds the DTB by **scanning backwards from the end of the kernel blob for `d0 0d fe ed`**, so an appended DTB
@@ -272,8 +280,8 @@ one). Both verified 2026-11-17. The stock partition backups must be in `../backu
 - clones U-Boot at the pin in `u-boot/build-uboot.sh` if `src/u-boot` is missing
 
 ## 3. Honest list of unknowns / risks
-1. **`fastboot boot`**: almost certainly unsupported (see above). The flash-recovery route is untested. We assume, but did
-   not verify, that `oem reboot-recovery` is a one-shot request.
+1. **`fastboot boot`**: LK has no `boot` command (see above). The chainloaded U-Boot does support `fastboot boot`,
+   and that is what the live layout uses for RAM tests. The flash-recovery route is no longer the main path.
 2. **Display:** we assume LK leaves the panel running in DSI video mode, scanning OVL0 from `atag,videolfb.fb_base`.
    Other assumptions:
    - The atag struct layout (`u64 fb_base; u32 islcmfound, fps, vram; char lcmname[]`) comes from MTK sources of this
@@ -283,17 +291,18 @@ one). Both verified 2026-11-17. The stock partition backups must be in `../backu
 3. **USB gadget on mainline:** musb is in pmOS's config and the Doogee DTS. It is untested on MT6737M. VBUS/ID detection
    is not wired up; we force peripheral mode.
 4. **SMP:** solved (see section 0). Add `maxcpus=1` to the cmdline in `build-in-docker.sh` to fall back to one core.
-5. **No charger driver.** Keep the battery charged and keep the test short (auto-reboot helps).
+5. **Charger:** the SM5414 driver is in current kernels; the live `battery`/`sm5414-charger` supplies report
+   charging state and capacity. The 2026-11-16 caution no longer applies.
 6. **Watchdog:** mainline `mtk_wdt` (TOPRGU, 10 s) pets the watchdog from the kernel. Whether LK hands over an armed
    watchdog is unknown. If the kernel hangs before the watchdog driver probes, recovery may need a long press on Power.
-7. **eMMC:** probed (read-only use: init never mounts anything) at 50 MHz. If mmc init misbehaves it only costs a
-   storage device in `/proc/partitions`.
+7. **eMMC:** in use at 50 MHz; stage 1 mounts the ext4 root on `tbroot_a` and `/data` on `tbdata`. If mmc init
+   misbehaves it costs both the root and the data partition.
 
 ## 4. Next steps
-Display, rootfs, cpufreq, GPU and the PocketJS kiosk are done; the live status table, measurements and the ordered
-todo list are in [`docs/mainline/STATUS.md`](../docs/mainline/STATUS.md). Long term: a chain-loaded U-Boot
-(`gitlab.com/alifilhan0/u-boot`, MT6735 port, used by grandpplte) would give a proper `fastboot boot`-like RAM loader
-without touching LK.
+Linux boots by default through the chainloaded U-Boot, and display, rootfs, cpufreq, GPU, WiFi and the PocketJS
+kiosk are working. The live status table, measurements and the ordered todo list are in
+[`docs/mainline/STATUS.md`](../docs/mainline/STATUS.md). Next: Bluetooth, the OVL0 hardware-plane path, and an
+updater for the inactive Linux slot.
 
 ## Sources
 - mt6735 mainline group: https://gitlab.com/mt6735-mainline (kernel: https://gitlab.com/mt6735-mainline/linux)

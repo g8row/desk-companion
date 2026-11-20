@@ -1,4 +1,9 @@
-# TB-7304X mainline — test plan for the main session
+# TB-7304X mainline — bring-up test plan
+
+> **Current layout (2026-11-19):** `boot` = U-Boot, `recovery` = Android + Magisk, and Linux boots by default from
+> `tbkern_a` / `tbroot_a`. The recovery-flash flow below is the 2026-11-16 bring-up record. For the live boot/test/
+> install flow see [plan-dualboot.md §8](../docs/mainline/plan-dualboot.md) and
+> `mainline/scripts/{linux-test,tb-install}.sh`.
 
 Everything here runs from the `mainline/` folder. Images are in `out/`.
 
@@ -16,8 +21,9 @@ tags 0x4e000000, cmdline starting with `bootopt=64S3,32N2,64N2`.
 This flow is tested and boots mainline. Run each device step on its own, and check the result before the next one.
 `PY` is a Python with pyusb installed. Don't run an adb server while fastboot is in use.
 
-1. Android to fastboot: `mainline/scripts/linux-test.sh to-fastboot` (or `to-recovery` to boot what is already
-   flashed). The tablet shows up as `0bb4:0c01`. **Never use a bare `adb reboot ...` from Android.** Magisk counts
+1. Android to fastboot: `mainline/scripts/linux-test.sh to-fastboot`. (`to-recovery` used to boot the flashed image;
+   it now refuses because `recovery` holds Android, and `ml-to-recovery` means `android-direct`.) The tablet shows up
+   as `0bb4:0c01`. **Never use a bare `adb reboot ...` from Android.** Magisk counts
    every boot that doesn't reach `sys.boot_completed`, and after 2 it enters safe mode, which disables all modules.
    Without `tb7304x_strip`, Android then boot-loops (system_server NPE in PackageManagerService). adb comes up long
    before boot completes. The helper waits for boot completion and resets Magisk's counter. To recover by hand, in
@@ -31,8 +37,8 @@ This flow is tested and boots mainline. Run each device step on its own, and che
    `mlsh.py 'cmd'`. The host needs 172.16.42.2/24 on the `enx*` interface (dedicated NM profile, `never-default`).
    **Never `nmcli d connect`.**
 5. Leaving mainline: `mainline/scripts/linux-test.sh ml-to-fastboot` goes **straight to LK fastboot**, with no
-   trip through Android. `ml-to-recovery` boots mainline again, and `ml-to-android` goes to Android. On the tablet
-   itself: `tb-reboot bootloader|recovery|android` (stage 2), or
+   trip through Android. `ml-to-android` goes to Android, and `ml-to-recovery` is now `android-direct` (LK boots
+   `recovery` with no U-Boot). On the tablet itself: `tb-reboot bootloader|recovery|android` (stage 2), or
    `echo bootloader > /sys/devices/platform/rtc-boot-mode/next_boot` followed by sysrq `s`,`u`,`b`.
    - How it works: `patches/mtk-rtc-boot-mode.c` sets LK's flag in the MT6328 RTC (`RTC_PDN1` at PMIC 0x402c:
      bit 13 = fastboot, bits 4–5 = `0x10` = recovery). LK checks it at boot (confirmed in the `lk.bin`
@@ -47,7 +53,8 @@ This flow is tested and boots mainline. Run each device step on its own, and che
 ### Stage 2: Alpine on the eMMC
 - **Build:** `sh mainline/rootfs/build-rootfs.sh ~/.ssh/id_ed25519.pub` makes `mainline/rootfs/out/rootfs.img`.
   It needs Docker and no qemu.
-- **Install** from a fully booted Android. Only `cache` is touched.
+- **Install** from a fully booted Android. The 2026-11-16 flow touched only `cache`; the live root is installed on
+  `tbroot_a` by `mainline/scripts/tb-install.sh rootfs`.
   1. Push the image: `gzip -k rootfs.img; adb push rootfs.img.gz /data/local/tmp/`.
   2. Unpack it into place and reset the boot counter:
      `adb shell su -c "mkdir -p /cache/linux; /data/adb/magisk/busybox gunzip -c /data/local/tmp/rootfs.img.gz > /cache/linux/rootfs.img; echo 0 > /cache/linux/bootcount"`
@@ -63,18 +70,21 @@ This flow is tested and boots mainline. Run each device step on its own, and che
 - **devmem in stage 2:** Alpine's busybox has no `devmem`. Copy the stage-1 busybox (`/opt/arm64/usr/bin/busybox` in
   the build image) to `/usr/local/bin/bbdeb` and symlink `devmem` to it.
 
-## Important: `fastboot boot` is probably NOT available
+## Important: LK has no `fastboot boot` (U-Boot does)
 
 We disassembled the stock LK (`backup/partitions/lk.bin`). Its fastboot command table registers only:
 `getvar:`, `download:`, `flash:`, `erase:`, `continue`, `reboot`, `reboot-bootloader`,
 `oem p2u`, `oem reboot-recovery`, `oem append-cmdline`, `oem off-mode-charge`. There is **no `boot`** command.
-So `fastboot boot x.img` should fail with `FAILED (remote: 'unknown command')`. Nothing is written when that happens.
-Step 1 checks this; it costs nothing.
+So `fastboot boot x.img` against LK fails with `FAILED (remote: 'unknown command')`. Nothing is written when that
+happens. The chainloaded U-Boot does support `fastboot boot`, and that is the RAM-test path in the live layout.
 
-If step 1 fails as expected, the only way to run these images without touching `boot` is to **flash the
-`recovery` partition** and boot it once with `fastboot oem reboot-recovery` (step 3). That **writes flash**
-(recovery only). `boot` (Magisk + Android) is never touched, and stock recovery is backed up in
-`../backup/partitions/recovery.bin` (16 MiB raw). **Get the user's OK before step 3.**
+**Do not use this flow on the current layout.** On 2026-11-16 the only way to run these images without touching
+`boot` was to **flash the `recovery` partition** and boot it once with `fastboot oem reboot-recovery`. That was safe
+then because `recovery` held stock recovery. **Now `recovery` holds Android + Magisk**, so flashing it would destroy
+the Android rollback. Use the current flow in
+[plan-dualboot.md §8](../docs/mainline/plan-dualboot.md) (`linux-test.sh flash … boot` or `tb-install.sh`) instead.
+For the historical record: `boot` was never touched by that flow, and stock recovery is backed up in
+`../backup/partitions/recovery.bin` (16 MiB raw).
 
 ## Update 2026-11-16: fastboot uploads stall from the Mac
 
@@ -89,8 +99,8 @@ recovery partition, check its checksum, `adb reboot recovery`.
 
 ## 0. Before you start
 
-- **Battery above 50 %**, USB cable to the Mac. The mainline kernel has **no charger driver** (SM5414),
-  so do not leave it sitting in a hung state on a low battery.
+- **Battery above 50 %**, USB cable to the Mac. Current kernels have the SM5414 charger driver; check
+  `battery`/`sm5414-charger` before a long session.
 - Check the recovery backup: `ls -l ../backup/partitions/recovery.bin` (16777216 bytes).
 - Optionally, record the Mac's USB devices: `ioreg -p IOUSB -w0 | sed 's/@.*//' > /tmp/usb-before.txt`.
 
@@ -139,7 +149,7 @@ Timeline after the kernel starts:
 Partial success is still useful: screen colours with no USB means the kernel and initramfs run and musb needs work.
 USB with no colours means the display path needs work.
 
-## 3. Run the images (needs the user's OK: writes the recovery partition)
+## 3. Run the images (historical; **do not flash `recovery` on the current layout**)
 
 ### 3a. Control (stock kernel)
 ```sh
@@ -181,9 +191,9 @@ In order of what should happen with no hands:
    resets the SoC by itself (typically within ~30 s). **Unverified:** we did not prove from the LK binary
    that LK leaves the WDT armed. If the screen is frozen for more than 2 minutes with no new USB device, assume it did not.
 4. **Hands needed:** hold **Power for ~10–15 s** until the screen goes off and the tablet restarts
-   (MT6328 long-press reset). It then boots Android from `boot`, because the recovery request is one-shot
-   (also unverified; if it boots the test image again, hold Vol-Down/Vol-Up + Power for the LK boot menu or
-   fastboot, and run 3c).
+   (MT6328 long-press reset). In the live layout it boots Linux by default via U-Boot; `tb-reboot android`
+   reaches Android in `recovery`. In the historical recovery-flash flow it booted Android from `boot`.
+   If it boots the test image again, hold Vol-Down/Vol-Up + Power for the LK boot menu or fastboot.
 
 After any reboot back into Android, check whether the mainline kernel log survived in RAM (ramoops at
 0x43f10000, the same region the stock kernel uses for pstore):
@@ -192,6 +202,8 @@ adb shell su -c 'ls -l /sys/fs/pstore; cat /sys/fs/pstore/console-ramoops* 2>/de
 ```
 (Unverified: depends on the stock kernel's pstore config. An empty result proves nothing.)
 
-## 5. What not to do
-- Do not `fastboot flash boot` any of these images. Magisk and Android live there.
-- Do not run `fastboot erase` or `fastboot flash` on anything other than `recovery`.
+## 5. What not to do (current layout)
+- Do not `fastboot flash boot` a test image blindly. `boot` holds U-Boot; a bad write costs the default boot.
+  Use the gated flow in `linux-test.sh` / `u-boot/README.md`.
+- Do not `fastboot flash recovery`. Android + Magisk live there; overwriting it removes the rollback.
+- Do not write a `boot-recovery` BCB to `para` (LK never clears it).

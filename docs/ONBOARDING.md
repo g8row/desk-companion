@@ -3,12 +3,18 @@
 This takes you from a factory tablet to the desk companion running, and then explains the dev loop.
 Allow about an hour for parts 1–3 and 15 minutes for the rest.
 
+> **The current system is mainline Linux**, not Android: U-Boot boots Alpine from the internal eMMC by default and
+> Android + Magisk stay in `recovery`. This guide covers the Android setup (rooting, debloat, kiosk) and the
+> rollback path; the Linux bring-up, install and day-to-day flow are in
+> [docs/mainline/STATUS.md](mainline/STATUS.md) and [mainline/README.md](../mainline/README.md).
+
 **You need:**
 - a Mac (Apple Silicon or Intel);
 - a Lenovo Tab 7 **TB-7304X** (MT6737M; other TB-7304 variants are untested);
 - a USB cable that carries data.
 
-Everything after rooting runs over `adb`.
+In the Android setup below, everything after rooting runs over `adb`. On mainline the same desk runs over the USB
+network and `ssh` (`DESKD_SSH`).
 
 > ⚠️ Parts 1–2 write to the tablet's flash. They worked on our unit, but you do them at your own risk.
 > Always take the full backup first.
@@ -169,6 +175,10 @@ The hook POSTs the event JSON to deskd with a 1 s timeout and always exits 0, so
 Kiosk mode drops the whole Android framework and frees about 200 MB more RAM. See [kiosk/README.md](../kiosk/README.md).
 The power button or `kiosk.sh stop` brings Android back.
 
+> The tablet can also boot **mainline Linux** as its main system, with Android in `recovery`. That path uses the USB
+> network and `ssh` instead of adb; see [mainline/README.md](../mainline/README.md) and
+> [docs/mainline/STATUS.md](mainline/STATUS.md). The rest of this guide describes the Android setup.
+
 ## Troubleshooting
 
 - **Tablet shows "offline".**
@@ -189,7 +199,7 @@ deskd/            Mac daemon (Bun): main.ts, providers/, config.ts, deskconfig.t
 pocketjs/         submodule, branch android-host: hosts/android (Rust host + kiosk), apps/desk (the UI)
 debloat/          Magisk module + package lists
 kiosk/            kiosk.sh and helpers (on device: /data/local/tmp/kiosk)
-mainline/         mainline-Linux research, DTS, patches, build scripts (images not committed)
+mainline/         mainline Linux (the current default system): DTS, patches, U-Boot, build scripts (images not committed)
 backup/           package lists only; your partition dump lives here but is git-ignored
 docs/             this guide + screenshots
 ```

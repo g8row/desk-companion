@@ -1,8 +1,11 @@
 # TB-7304X mainline Linux: status
 
-Last updated 2026-11-17 (kernel #22 on the tablet, #23 built; boot design decided in plan-dualboot.md). Kernel 7.0.10 (mt6735-mainline `v7.0.10-mt6735`, 046883c) plus our patches in `mainline/`.
-The build, boot and test flow is in [`mainline/README.md`](../../mainline/README.md) and
-[`mainline/TEST-PLAN.md`](../../mainline/TEST-PLAN.md).
+Last updated 2026-11-19. **Linux is the tablet's main system:** U-Boot in `boot` boots kernel #18 (`7.0.10-tb7304x+`)
+from the raw slot `tbkern_a` with root on `tbroot_a`; Android + Magisk stay in `recovery`. The kernel is 7.0.10
+(mt6735-mainline `v7.0.10-mt6735`, 046883c) plus our patches in `mainline/`.
+The current build, install and boot/test flow is in [`plan-dualboot.md`](plan-dualboot.md) §8 and
+`mainline/scripts/{tb-install,linux-test}.sh`; [`mainline/README.md`](../../mainline/README.md) and
+[`mainline/TEST-PLAN.md`](../../mainline/TEST-PLAN.md) are the 2026-11-16 bring-up record.
 
 Research notes (read-only investigations of the stock firmware, mainline tree and datasheets):
 
@@ -10,10 +13,10 @@ Research notes (read-only investigations of the stock firmware, mainline tree an
 |---|---|
 | Display: D2 address map, panel (NT51021B DJ/GX), DRM bring-up plan | [research-display.md](research-display.md) |
 | Charger SM5414, battery ADC, RTC, thermal, I2C inventory, accelerometer | [research-power.md](research-power.md) |
-| Root filesystem on the eMMC (Alpine in an image on `cache`) | [research-rootfs.md](research-rootfs.md) |
+| Root filesystem on the eMMC (Alpine, now on `tbroot_a`) | [research-rootfs.md](research-rootfs.md) |
 | WiFi/BT: MT6625L via CONSYS, prior art and plan | [research-wifi.md](research-wifi.md) |
 | Power off, PMIC long-press reset | [research-poweroff.md](research-poweroff.md) |
-| U-Boot chainload: what works, the LK normal-path loop, next plan | [handoff-uboot-2026-11-17.md](handoff-uboot-2026-11-17.md) |
+| U-Boot chainload (historical): the LK normal-path loop and how it was fixed | [handoff-uboot-2026-11-17.md](handoff-uboot-2026-11-17.md) |
 | Stock LK disassembled: boot flow, image contract, why U-Boot looped | [research-lk-bootflow.md](research-lk-bootflow.md) |
 | **Dual boot, decided design:** U-Boot in `boot`, Android in `recovery`, eMMC layout, GUI, migration, test status | [plan-dualboot.md](plan-dualboot.md) |
 
@@ -21,8 +24,8 @@ Research notes (read-only investigations of the stock firmware, mainline tree an
 
 | Function | Status | How / notes | Next step |
 |---|---|---|---|
-| Boot | ✅ works | `recovery` partition via LK `oem reboot-recovery`. `fb_send.py` / `scripts/fbusb` because stock `fastboot` stalls. Cmdline ≤ 99 chars. Since 2026-11-17 `recovery` holds **U-Boot** (padded image `672f2f9a…`), which RAM-boots Linux (`fastboot boot`, no cmdline limit) or boots Android in normal mode. The "LK normal-path loop" was our image: kernel area < 512 KiB, so LK used a leftover DTB (research-lk-bootflow.md). Fixed and tested: T0 reproduced, T1 passes. Check every LK-bootable image with `scripts/analysis/lk_image_check.py` | **Dual boot live:** `boot` = U-Boot, `recovery` = Android. **Power-on and plain reboots boot Linux** from the raw slot `tbkern_a` (fallback `/cache/linux/boot-mainline-uboot.img`; `tbrescue` after 3 unhealthy boots, then Android; T9). Android: `tb-reboot android` (one-shot, normal mode) or `default-android`. Charger/alarm boots go to Android. **Boot record + U-Boot boot counter:** 3 Linux boots that never reach `healthy` → Android (crash-tested, T7). `linux-test.sh state` shows the record. **Boot menu** in stage 1 (3 s; double-tap or Vol±/Power; ghost touches from the cracked glass are filtered; T8). `fastboot continue` fixed (patch 0002). Repartitioned (§6 done). Next: an updater for the inactive slot (§7) |
-| CPU, 4× A53 | ✅ all 4 cores, hotplug, cpufreq 1040–1196 MHz (1144/1196 = overclock, boost) | `mediatek,mt6735-smp` enable-method: PSCI CPU_ON + SPM MTCMOS (`patches/smp_mt6735.c`). cpufreq-dt on ARMPLL + MT6328 VPROC, schedutil; ARMPLL /1 only (see "cpufreq" below) | Idle below 1040 MHz needs a CPU clock mux (park on MAINPLL) to change the post-divider safely; SoC thermal sensor before trusting 1196 MHz long-term |
+| Boot | ✅ works | **Linux is the default.** `boot` = U-Boot, `recovery` = Android + Magisk. Power-on / plain reboot → LK → U-Boot → Linux from the raw slot `tbkern_a` (root `tbroot_a`); Android is one step away (`tb-reboot android`). `fb_send.py` / `scripts/fbusb` are for LK fastboot (stock `fastboot` stalls); LK's 99-character cmdline limit applies only to images LK boots directly. The old "LK normal-path loop" was our image (kernel area < 512 KiB), fixed and tested (T0/T1, research-lk-bootflow.md). Check every LK-bootable image with `scripts/analysis/lk_image_check.py` | **Dual boot live:** `boot` = U-Boot, `recovery` = Android. **Power-on and plain reboots boot Linux** from the raw slot `tbkern_a` (fallback `/cache/linux/boot-mainline-uboot.img`; `tbrescue` after 3 unhealthy boots, then Android; T9). Android: `tb-reboot android` (one-shot, normal mode) or `default-android`. Charger/alarm boots go to Android. **Boot record + U-Boot boot counter:** 3 Linux boots that never reach `healthy` → Android (crash-tested, T7). `linux-test.sh state` shows the record. **Boot menu** in stage 1 (3 s; double-tap or Vol±/Power; ghost touches from the cracked glass are filtered; T8). `fastboot continue` fixed (patch 0002). Repartitioned (§6 done). Next: an updater for the inactive slot (§7) |
+| CPU, 4× A53 | ✅ all 4 cores, hotplug, cpufreq 1040–1196 MHz (1144/1196 = overclock, boost) | `mediatek,mt6735-smp` enable-method: PSCI CPU_ON + SPM MTCMOS (`patches/smp_mt6735.c`). cpufreq-dt on ARMPLL + MT6328 VPROC, schedutil; ARMPLL /1 only (see "cpufreq" below) | Idle below 1040 MHz needs a CPU clock mux (park on MAINPLL) to change the post-divider safely; long-term 1196 MHz validation with the SoC thermal zone |
 | Display | ✅ mediatek-drm, 60 Hz | RDMA0 → DSI0 → NT51021B GX (`panel-novatek-nt51021b.c`), D2 mutex table, through the IOMMU. `/dev/dri/card1`; `fb0` = mediatekdrmfb with the kernel console on screen. Refresh 60.0 Hz (VFP stretched 35 → 141 lines at the stock link rate; was 65.9 Hz with LK's porches; kmscube vsync-locked). (A one-off burst of 10 IOMMU faults at boot, before the first framebuffer is attached.) | Full OVL0 path for hardware planes |
 | Backlight | ✅ | `pwm-backlight` on DISP_PWM, `/sys/class/backlight/backlight` (0–255, default 200) | — |
 | GPU (Mali-T720 MP1, 450 MHz) | ✅ Panfrost + Mesa 24.3 | `&gpu` from mt6735.dtsi, VCORE1 as mali-supply; `/dev/dri/card0` (render). Mesa built by `mainline/gpu/build-mesa.sh` into `/opt/mesa` (EGL, GLES 2.0, GBM, kmsro). kmscube 60 fps; Mesa ships in the rootfs image | GPU devfreq/OPPs (runs at LK's 450 MHz) |
@@ -30,7 +33,7 @@ Research notes (read-only investigations of the stock firmware, mainline tree an
 | Buttons | ✅ works | Vol± on the SoC keypad (`mt6779-keypad`), Power on `mt6328-keys` | — |
 | USB | ✅ peripheral | Legacy CDC gadget `0525:a4aa` (ECM + ACM), 172.16.42.1, telnet, httpd | Host mode, VBUS/ID detection |
 | eMMC | ✅ in use | 50 MHz. Root on `tbroot_a`, `/data` on `tbdata`, kernel slots read by U-Boot (see Root filesystem) | HS200 if the bus allows |
-| Internet / time | ✅ WiFi, or via host | WiFi joins at boot (`wifi` service, saved networks in `/data/wifi`). Without WiFi: `mainline/scripts/tablet-net.sh` (`http-proxy.py` on the host + `ssh -R`, `/etc/profile.d/tb-proxy.sh`, sets the clock). Clock: busybox `ntpd` (pool.ntp.org) once WiFi is up; the kernel reads the RTC at boot. The root installed on `tbroot_a` still enables `swclock` (image from before the RTC); `build-rootfs.sh` now uses `hwclock` | Reinstall the root image (hwclock) |
+| Internet / time | ✅ WiFi, or via host | WiFi joins at boot (`wifi` service, saved networks in `/data/wifi`; the AP must be in range). Without WiFi: `mainline/scripts/tablet-net.sh` (`http-proxy.py` on the host + `ssh -R`, `/etc/profile.d/tb-proxy.sh`, sets the clock). Clock: busybox `ntpd` (pool.ntp.org) once WiFi is up; the kernel reads the RTC at boot and `hwclock` applies it. The running root on `tbroot_a` was switched from `swclock` to `hwclock` on 2026-11-19 (verified across a reboot on 2026-11-20: `hwclock` started, `swclock` stopped, clock correct); `build-rootfs.sh` has used `hwclock` since the RTC patch | — |
 | Root filesystem | ✅ Alpine 3.24.4, built image | **`tbroot_a` (mmcblk0p28, ext4, 2 GiB)**, checked with `e2fsck -p` and mounted by stage 1; `/data` = `tbdata`. Built by `rootfs/build-rootfs.sh` (packages, overlay, tools from `out/`, Mesa) and installed by `scripts/tb-install.sh rootfs` (from a RAM boot; backs up the old root, keeps `/opt/pocketjs`, `/etc/firmware`, host keys). Installed 2026-11-17. Fallback: the old loop image `/cache/linux/rootfs.img` (slot `cache`, RAM boots) | — |
 | Reboot target | ✅ | `tb-reboot android|linux|android-direct|default-android|default-linux|uboot|bootloader` (boot record via `tbstate`, or LK's RTC flag via `rtc-boot-mode`); host side `linux-test.sh ml-to-*` / `to-linux` / `to-uboot` / `state` | — |
 | Panic recovery | ✅ in build6 | `CONFIG_PANIC_TIMEOUT=10` (no cmdline room for `panic=10`) | — |
@@ -41,7 +44,7 @@ Research notes (read-only investigations of the stock firmware, mainline tree an
 | SoC thermal | ✅ verified 2026-11-17 | `patches/0009`: `mediatek,mt6735-thermal` in auxadc_thermal.c, MT8173 data with 3 banks. `thermal_zone0` cpu-thermal: 45 °C idle, 60 °C after 30 s on 4 cores, back to 47 °C. Trips 85 °C passive (cpufreq) / 110 °C critical | — |
 | Accelerometer | ✅ iio:device0 (2026-11-17) | **Bosch BMA2xx @0x18 on i2c2**, chip ID 0xFA, `bosch,bma255` → bmc150-accel, polled (no IRQ in the stock DT). `mount-matrix` from the stock `direction = 7`: 0 −1 0; −1 0 0; 0 0 −1. Lying flat: raw z −9.86 m/s² (device +Z up). MC3433 @0x4c not fitted | iio-sensor-proxy / screen rotation if wanted |
 | IOMMU (M4U) | ✅ display through it | Binds larbs 0–2 after the D2 address fix and dropping larb3. RDMA0 (D2 port 2) translates (MMU_EN = 0x4) | OVL0 ports with the OVL path |
-| WiFi | ✅ at boot, 2.4 GHz | MT6625L via CONSYS: MediaTek WMT/STP/BTIF + wlan_gen2 (frank-w 5.15 + MT6735 BSP platform layer, ported to 7.0, built in: `mainline/wcn`, patches/0011). Installed in `tbkern_a` 2026-11-17. OpenRC `wifi` → `wifi-up join` (`/data/wifi/wpa_supplicant.conf`, `wifi-up save <ssid> <psk>`). Firmware/NVRAM: `scripts/wifi-deploy.sh`. The board is 2.4 GHz only (NVRAM). research-wifi.md | Rename to wlan0 |
+| WiFi | ✅ at boot, 2.4 GHz (AP in range) | MT6625L via CONSYS: MediaTek WMT/STP/BTIF + wlan_gen2 (frank-w 5.15 + MT6735 BSP platform layer, ported to 7.0, built in: `mainline/wcn`, patches/0011). Installed in `tbkern_a` 2026-11-17. OpenRC `wifi` → `wifi-up join` (`/data/wifi/wpa_supplicant.conf`, `wifi-up save <ssid> <psk>`). Firmware/NVRAM: `scripts/wifi-deploy.sh`. The board is 2.4 GHz only (NVRAM). research-wifi.md | Rename to wlan0 |
 | Bluetooth (MT6625L) | ⚠️ WIP: powers on, scans find nothing | `CONFIG_BT` + `MTK_COMBO_BT` built in (in `tbkern_a`). `hci0` registers (re-registered when its setup power-on fails before `stp_uart_launcher` runs), BD address from NVRAM `BT_Addr` (vendor cmd 0xfc1a), powers on, LE enables. LE scan and inquiry return nothing, also with WiFi off. `bt-up` (not in the image; needs `bluez-btmgmt` and the btmgmt stdin fix) | Probably the MTK vendor init commands `libbluetooth_mtk` sends (radio, sleep, TX power offset from `BT_Addr`) |
 | Audio, camera, modem | ❌ | — | Not planned |
 
@@ -180,15 +183,17 @@ After the mainline sessions, Android boot-looped on the boot animation. The caus
   so boot never completed again and the counter never reset.
 
 Fix: counter set back to 0, modules re-enabled. Android boots normally.
-Prevention: `mainline/scripts/linux-test.sh to-fastboot|to-recovery` waits for `sys.boot_completed` and resets
-the counter before rebooting (TEST-PLAN step 1). The keypad was checked and is innocent: mainline leaves
+Prevention: `mainline/scripts/linux-test.sh to-fastboot` waits for `sys.boot_completed` and resets the counter
+before rebooting (`to-recovery` now refuses; `recovery` holds Android). The keypad was checked and is innocent: mainline leaves
 KP_SEL=0, debounce 0x400 (same as stock), no key bits set.
 
-### U-Boot runs only from LK's RTC-recovery path (open, 2026-11-17)
-The same U-Boot image works when LK enters through the RTC "reboot recovery" flag, and loops (LK logo ~25 s,
-reset, no U-Boot band) when LK boots it normally from `boot` or through a `boot-recovery` BCB in `para`. The BCB
-also disables the volume-key boot menu; recovering needed mtkclient in BROM with sudo. Never write BCB without a
-tested escape. Details, matrix and plan: [handoff-uboot-2026-11-17.md](handoff-uboot-2026-11-17.md).
+### U-Boot from LK's normal path (fixed 2026-11-17)
+The old image looped on the LK logo when LK booted it from `boot`; the cause was our image, not LK. LK reads the
+DTB from the last 512 KiB of the kernel area, and our kernel area was smaller, so LK used a leftover DTB in RAM.
+Padding the image fixed it: T1 passed, and since 2026-11-17 12:46 U-Boot lives in `boot` and Linux boots by default
+(T3/T4/T9). Never write a `boot-recovery` BCB to `para`: LK never clears it, it hides the volume-key menu, and only
+BROM (mtkclient) gets the tablet back. Details: [handoff-uboot-2026-11-17.md](handoff-uboot-2026-11-17.md),
+[research-lk-bootflow.md](research-lk-bootflow.md).
 
 ### Other
 - `reboot -f` can hang in mainline; `echo b > /proc/sysrq-trigger` works.
@@ -199,10 +204,10 @@ tested escape. Details, matrix and plan: [handoff-uboot-2026-11-17.md](handoff-u
 ## Performance expectations
 - CPU: 4× Cortex-A53, 1.04–1.2 GHz, 1 GB LPDDR3. About a Raspberry Pi Zero 2 W / Pi 3. Fine for a terminal,
   daemons, a lightweight Wayland compositor and a custom UI; Chromium/Electron will struggle mainly for RAM.
-- cpufreq yes; no thermal throttling yet (no SoC thermal driver).
+- cpufreq yes; the SoC thermal driver and passive trip are in place (see the device table above).
 - GPU: Mali-T720 MP1, small (Pi 3 class). Panfrost/Mesa give GLES 2.0 here (Midgard T720), enough for 2D compositing at 600×1024.
 
-## Tablet state at the end of 2026-11-16
+## Tablet state at the end of 2026-11-16 (historical)
 - Kernel #22 in `recovery` (thermal driver not built in; #23 is taos `mainline/out/boot-mainline.img`, sha256
   bcbfda96…). PocketJS service running the DRM build. Installed by hand on the rootfs, not in the image yet:
   `/opt/pocketjs`, `/opt/mesa`, `/usr/local/sbin/{peek,poke,swipe,tb-reboot}`, `/etc/mdev.conf`,
@@ -215,12 +220,14 @@ tested escape. Details, matrix and plan: [handoff-uboot-2026-11-17.md](handoff-u
   not come up, LK falls back to Android: write a known-good image to recovery with `su -c dd` from adb, then
   `to-recovery` (done twice on 2026-11-16 with #17).
 
-## Tablet state on 2026-11-17 (after the U-Boot session)
+## Tablet state on 2026-11-17 morning (historical, before T3)
+> Superseded later the same day by the repartitioning and T9 (see "Repartitioning" below).
 - `boot` = stock Android + Magisk (original, `backup/partitions/2026-11-17/boot-magisk.img`), `recovery` = U-Boot
   (`mainline/out/u-boot-tb7304x.img`, bc5937ad…), `para` original (no BCB). Kernel #24 is **not** in `recovery` any
   more: `adb reboot recovery` lands in U-Boot, which boots Android unless `/cache/linux/boot-target` says
   `target=linux` (`/cache/linux/boot-mainline-uboot.img`) or `target=fastboot` (then `fastboot boot` from the Mac).
-- `linux-test.sh to-recovery` / `ml-to-*` assume Linux in `recovery`; update them or put #24 back.
+- `linux-test.sh` has since been updated for the current layout: `to-recovery` refuses (`recovery` holds Android),
+  `ml-to-recovery` means `android-direct`, and `ml-to-*` use `tbstate`.
 
 ## Protected RAM at 0x5e700000 (found and fixed 2026-11-17)
 - Copying the root into `tbroot_a` crashed userspace: random segfaults (busybox applets, dropbear, pocketjs), then
@@ -245,11 +252,11 @@ tested escape. Details, matrix and plan: [handoff-uboot-2026-11-17.md](handoff-u
 - The Alpine root's `authorized_keys` now also holds the MacBook's key (it only had the build host's).
 
 ## Todo, in order
-0. Boot path: follow handoff-uboot-2026-11-17.md §6 (diagnostic U-Boot, LK path analysis, decide U-Boot vs a Linux chooser).
+0. ~~Boot path~~ (done: U-Boot in `boot`, Linux by default, T3/T4/T9). Next: an updater for the inactive slot.
 1. ~~Fix the Android safe-mode boot loop~~ (done: Magisk boot counter, see above).
 2. ~~Panic timeout~~ (in build7). The clk_summary lockup left nothing in pstore; avoid reading `clk_summary`.
 3. ~~Enable i2c2/i2c3, read SM5414 and accelerometer~~, ~~BMA2xx node~~ (done).
-4. ~~RTC (MT6328)~~ (done). Next: reinstall the root image so `hwclock` replaces `swclock`.
+4. ~~RTC (MT6328)~~ (done; the running root now uses `hwclock`). Next: what Android does with the RTC.
 5. ~~Rootfs~~, ~~proxy for apk~~, ~~image with everything installed by hand~~ (done). Next: `apk fix` for the skipped package scripts.
 6. ~~Display: D2 DT fixes, IOMMU, NT51021B GX panel driver, D2 mutex table, mediatek-drm~~ (done). Next: the OVL0 path (hardware planes).
 7. ~~MT6328 ADC + battery NTC~~, ~~SM5414 driver with the desk charging policy~~, ~~battery current + capacity~~ (done). Next: BC1.2 charger type.

@@ -148,9 +148,9 @@ Terminus 16×32, generated at build time from the kernel's `lib/fonts/font_ter16
 - **Failure:** no framebuffer within 4 s, a crash or a signal all mean exit 0 (Linux). The menu can't block or
   redirect a boot by itself.
 
-Not done yet: Linux slot A/B/rescue via `kexec` (needs the raw kernel slots from §6). Android can never be
-kexec'd: its 3.18 kernel depends on LK's DT handoff, so it always costs a reboot. Getting back to Linux from
-Android is a plain reboot (U-Boot's default is Linux).
+Superseded: Linux slot A/B/rescue is implemented with the raw kernel slots from §6 and U-Boot boots them directly
+(T9); `kexec` is not used. Android can never be kexec'd: its 3.18 kernel depends on LK's DT handoff, so it always
+costs a reboot. Getting back to Linux from Android is a plain reboot (U-Boot's default is Linux).
 
 ## 6. Migration (one session, after §8 passes)
 
@@ -194,8 +194,9 @@ recovery, para).
    - `attempts == max`: `tbrescue` once with `tb.slot=rescue` (stage 1 stays in the initramfs; its 300 s
      auto-reboot goes to Android with the RTC flag).
    - `attempts > max`: Android with `error=attempts` until re-armed.
-   Stage 1 (`init`): `tb.slot=a|b` → `e2fsck -p` (static, from Debian's `e2fsck-static`, with
-   `broken_system_clock` because there is no RTC) and mount `tbroot_<slot>`, falling back to the cache image;
+   Stage 1 (`init`): `tb.slot=a|b` → `e2fsck -p` (static, from Debian's `e2fsck-static`; it still sets
+   `broken_system_clock`, a harmless leftover from before the RTC) and mount `tbroot_<slot>`, falling back to the
+   cache image;
    `cache` (or no `tb.slot`, an older U-Boot) → the loop image as before; `rescue` → no stage 2. `tbdata` is
    checked and mounted at `/data` in every stage-2 case. `/mnt/cache` is still mounted when it exists.
    Not done: no integrity hash on the raw slots (the header check and the attempt counter cover a bad image), no

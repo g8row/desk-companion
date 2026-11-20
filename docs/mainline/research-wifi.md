@@ -1,6 +1,7 @@
 # TB-7304X mainline: WiFi / BT (MT6625L via CONSYS) — feasibility notes
 
-Status 2026-11-17: **works** on a RAM-booted kernel: 2.4 GHz scan, WPA2 association, DHCP, internet. The board is 2.4 GHz only (NVRAM). See "Bring-up".
+Status 2026-11-19: **works at boot** from `tbkern_a`: 2.4 GHz scan, WPA2 association, DHCP, internet. The board is
+2.4 GHz only (NVRAM). Association needs a saved AP in range; check `wpa_cli -i mt6625_0 status`. See "Bring-up".
 
 ## Hardware
 - The WiFi/BT/GPS/FM MAC and baseband live in the SoC's **CONSYS** (connectivity subsystem); the **MT6625L** next to
@@ -77,7 +78,8 @@ Problems found on the way (all fixed in the tree):
 - A crash leaves zero-length files behind (ext4 delalloc): `sync` after copying firmware/tools.
 
 Not done: RF clock buffer (CONSYS_CLOCK_BUF_CTRL; the clock is evidently running), EMI MPU, the fbdev
-screen-state hint, BT (`CONFIG_BT`, `MTK_COMBO_BT`), GPS, FM.
+screen-state hint, GPS, FM. BT is built in (`CONFIG_BT`, `MTK_COMBO_BT`) and powers on (`hci0`), but scans return
+nothing yet (STATUS.md).
 
 ## Plan sketch (out-of-tree, not upstreamable)
 1. Take frank-w's 5.15-main `drivers/misc/mediatek/{btif,connectivity}` and forward-port to 7.0 (cfg80211,
@@ -117,6 +119,9 @@ the BSP platform layer first, then decide.
   - `bsp/` (maozi-114 3.18.79) has only the build-in adapter stubs; the driver lives out of tree there. Not useful.
 
 ## Next steps
+> These three steps were completed on 2026-11-17; the result is in `mainline/wcn` and `patches/0011`. The list is
+> kept as the original plan.
+
 1. Diff `bsp2` vs `frankw` `conn_soc/` (35 differing files) and `btif/` to separate MT6735 platform code from
    the 3.18 to 5.15 API port.
 2. Import frank-w's tree into `mainline/src/` as an out-of-tree module or patch set, add `conn_soc/mt6735` and
